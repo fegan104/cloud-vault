@@ -6,24 +6,25 @@ export default async function UploadPage() {
   const user = await getUser();
   if (!user) return <p>Please log in</p>;
 
-  // Server Action
+  // user is now non-null inside this scope
   async function uploadAction(formData: FormData) {
     "use server";
 
-    const file = formData.get("file") as File | null;
-    if (!file) throw new Error("No file selected");
+    const file = formData.get("file") as File | null
+    if (!file) throw new Error("No file selected")
+    console.log("Uploading: " + file.name)
 
-    const buffer = Buffer.from(await file.arrayBuffer());
+    const currentUser = await getUser();
+    if (!currentUser) throw new Error("User not authenticated")
 
-    const destination = `uploads/${user.uid}/${file.name}`;
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const destination = `uploads/${currentUser.uid}/${file.name}`
+
     const fileRef = storage.file(destination);
-
     await fileRef.save(buffer, {
       metadata: { contentType: file.type },
       resumable: false,
     });
-
-    return destination;
   }
 
   return (

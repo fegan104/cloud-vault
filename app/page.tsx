@@ -1,4 +1,5 @@
 import { adminAuth } from "@/lib/firebaseAdmin";
+import { getUser } from "@/lib/getUser";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -10,16 +11,7 @@ async function signoutAction() {
 }
 
 export default async function Home() {
-  const session = (await cookies()).get("session")?.value;
-  let user = null;
-  if (session) {
-    try {
-      const decoded = await adminAuth.verifySessionCookie(session, true);
-      user = await adminAuth.getUser(decoded.uid);
-    } catch (error) {
-      // Session cookie is invalid or expired.
-    }
-  }
+  const user = await getUser()
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
