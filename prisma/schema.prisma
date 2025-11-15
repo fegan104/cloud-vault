@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  masterKeySalt String
+  publicKey     String
+  createdAt     DateTime @default(now())
+
+  sessions       Session[]
+  challenges     Challenge[]
+  encryptedFiles EncryptedFile[]
+
+  @@map("users")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  sessionToken String   @unique
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model Challenge {
+  id        String   @id @default(uuid())
+  userId    String
+  challenge String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("challenges")
+}
+
+model EncryptedFile {
+  id                      String   @id @default(uuid())
+  userId                  String
+  fileName                String
+  fileSize                Int
+  storagePath             String
+  fileIv                  String
+  fileAlgorithm           String
+  wrappedFileKey          String
+  keyWrapIv               String
+  keyDerivationSalt       String
+  keyDerivationIterations Int
+  keyDerivationAlgorithm  String
+  keyDerivationHash       String
+  createdAt               DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("encrypted_files")
+}
