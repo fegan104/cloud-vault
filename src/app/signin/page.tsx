@@ -38,10 +38,10 @@ export default function LoginForm() {
 
     const signature = await signChallenge(password, masterKeySalt, challenge)
     console.log(`Raw signature ${signature}`)
-    const signatureBase64 = btoa(signature);
-    console.log(`base64 signature ${signatureBase64}`)
+    // const signatureBase64 = btoa(signature);
+    // console.log(`base64 signature ${signatureBase64}`)
 
-    const result = await verifyChallenge(email, challenge, signatureBase64);
+    const result = await verifyChallenge(email, challenge, signature);
     if (result) {
       alert('Login successful!')
       redirect("/")

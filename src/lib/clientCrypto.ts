@@ -46,10 +46,11 @@ export async function signChallenge(
   const encoder = new TextEncoder();
 
   // 1. derive master key (HMAC key)
-  const masterKey = await deriveKeypair(password, base64ToUint8Array(masterKeySaltB64))
+  const keyPairs = await deriveKeypair(password, base64ToUint8Array(masterKeySaltB64))
+  console.log(`PublicKey = ${uint8ToBase64(keyPairs.publicKey)}, PrivateKey=${uint8ToBase64(keyPairs.privateKey)}, challenge=${challenge}}`)
 
   const messageBytes = encoder.encode(challenge);
-  const sig = nacl.sign.detached(messageBytes, masterKey.privateKey);
+  const sig = nacl.sign.detached(messageBytes, keyPairs.privateKey);
   return uint8ToBase64(sig);
 }
 
