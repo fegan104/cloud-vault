@@ -15,7 +15,7 @@ export default async function UploadPage() {
     if (!currentUser) throw new Error("User not authenticated")
 
     const buffer = Buffer.from(await cypherText.arrayBuffer())
-    const destination = `uploads/${currentUser.uid}/${fileName}.enc`
+    const destination = `uploads/${currentUser.id}/${fileName}.enc`
 
     const fileRef = storage.file(destination);
     await fileRef.save(buffer, {
@@ -26,7 +26,7 @@ export default async function UploadPage() {
 
   return (
     <div>
-      <UploadScreenContent onEncrypted={uploadAction}/>
+      <UploadScreenContent masterKeySalt={user.masterKeySalt} onEncrypted={uploadAction}/>
     </div>
   );
 }
