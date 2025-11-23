@@ -7,14 +7,18 @@ export async function generateChallenge(emailAddress: string) {
   const challenge = challengeBytes.toString("base64");
 
   const user = await prisma.user.findUnique({
-  where: {
-    email: emailAddress,
-  },
-  select: {
-    id: true,
-    masterKeySalt: true
-  },
-});
+    where: {
+      email: emailAddress,
+    },
+    select: {
+      id: true,
+      masterKeySalt: true
+    },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
 
   // Store it in the database
   const record = await prisma.challenge.create({

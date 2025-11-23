@@ -14,6 +14,8 @@ export async function getUser() {
     include: { user: true },
   });
 
+  if (!session) return null;
+
   try {
     return session.user;
   } catch {

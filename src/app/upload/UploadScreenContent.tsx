@@ -6,7 +6,20 @@ import { ChangeEvent, useState } from "react";
 
 export function UploadScreenContent({ masterKeySalt, onEncrypted }: {
   masterKeySalt: string,
-  onEncrypted: (fileName: string, cypherText: Blob) => Promise<void>;
+  onEncrypted: (
+    fileName: string,
+    encryptedBlob: Blob,
+    metadata: {
+      fileIv: string;
+      wrappedFileKey: string;
+      keyWrapIv: string;
+      fileAlgorithm: string;
+      keyDerivationSalt: string;
+      keyDerivationIterations: number;
+      keyDerivationAlgorithm: string;
+      keyDerivationHash: string;
+    }
+  ) => Promise<void>;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [password, setPassword] = useState<string>('');
@@ -50,21 +63,48 @@ export function UploadScreenContent({ masterKeySalt, onEncrypted }: {
 
     try {
       const fileBuffer = await file.arrayBuffer();
-      const salt = window.crypto.getRandomValues(new Uint8Array(16));
-      const iv = window.crypto.getRandomValues(new Uint8Array(12));
 
+      // 1. Generate a random file key
+      const fileKey = await window.crypto.subtle.generateKey(
+        { name: 'AES-GCM', length: 256 },
+        true,
+        ['encrypt', 'decrypt']
+      );
+
+      // 2. Encrypt the file with the file key
+      const fileIv = window.crypto.getRandomValues(new Uint8Array(12));
       const encryptedContent = await window.crypto.subtle.encrypt(
-        {
-          name: 'AES-GCM',
-          iv: iv,
-        },
-        masterKey,
+        { name: 'AES-GCM', iv: fileIv },
+        fileKey,
         fileBuffer
       );
 
-      const encryptedFileBlob = new Blob([salt, iv, new Uint8Array(encryptedContent)], { type: 'application/octet-stream' });
-      onEncrypted(fileName, encryptedFileBlob)
+      // 3. Wrap the file key with the master key
+      const keyWrapIv = window.crypto.getRandomValues(new Uint8Array(12));
+      const wrappedFileKey = await window.crypto.subtle.wrapKey(
+        "raw",
+        fileKey,
+        masterKey,
+        { name: "AES-GCM", iv: keyWrapIv }
+      );
+
+      // 4. Prepare metadata
+      const metadata = {
+        fileIv: Buffer.from(fileIv).toString('base64'),
+        wrappedFileKey: Buffer.from(wrappedFileKey).toString('base64'),
+        keyWrapIv: Buffer.from(keyWrapIv).toString('base64'),
+        fileAlgorithm: 'AES-GCM',
+        keyDerivationSalt: masterKeySalt,
+        keyDerivationIterations: 250_000, // Matches clientCrypto.ts
+        keyDerivationAlgorithm: 'PBKDF2',
+        keyDerivationHash: 'SHA-256',
+      };
+
+      const encryptedFileBlob = new Blob([encryptedContent], { type: 'application/octet-stream' });
+
+      await onEncrypted(fileName, encryptedFileBlob, metadata);
     } catch (err) {
+      console.error(err);
       setError(`Encryption failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setInProgress(false);
@@ -170,6 +210,7 @@ export function UploadScreenContent({ masterKeySalt, onEncrypted }: {
                         `}
             disabled={!file || inProgress}
             onClick={handleEncrypt}
+            type="button"
           >
             {inProgress ? (
               <div className="flex items-center justify-center space-x-2">

@@ -1,14 +1,12 @@
 'use client';
 
 import { createUser } from '@/actions/createUser';
-import { useAuth } from '@/context/MasterKeyContext';
 import { deriveKeypair } from '@/lib/clientCrypto';
 import { useState } from 'react';
 
 export default function SignUpForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { privateKey, setPrivateKey } = useAuth()
 
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
@@ -23,12 +21,10 @@ export default function SignUpForm() {
     // 3) Generate Ed25519 key pair
     const { publicKey, privateKey } = await deriveKeypair(password, saltBytes)
     const publicKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(publicKey)));
-    setPrivateKey(privateKey)
     // 4) Send to your server (via RSC action) to create the user
     await createUser({ email, salt, publicKey: publicKeyBase64 });
 
     // 5) Keep privateKey client-side for signing login challenges
-    // console.log('Private key:', privateKey);
   }
 
   return (

@@ -141,6 +141,6 @@ export async function deriveMasterKey(password: string, salt: BufferSource) {
     baseKey,
     { name: "AES-GCM", length: 256 },
     false,
-    ["encrypt", "decrypt"]
+    ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
   );
 }
