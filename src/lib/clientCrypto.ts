@@ -144,3 +144,39 @@ export async function deriveMasterKey(password: string, salt: BufferSource) {
     ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
   );
 }
+
+export async function decryptFile(
+  encryptedBlob: Blob,
+  masterKey: CryptoKey,
+  metadata: {
+    fileIv: string;
+    wrappedFileKey: string;
+    keyWrapIv: string;
+  }
+): Promise<Blob> {
+  // 1. Unwrap the file key using the master key
+  const wrappedKeyBytes = base64ToUint8Array(metadata.wrappedFileKey);
+  const keyWrapIvBytes = base64ToUint8Array(metadata.keyWrapIv);
+
+  const fileKey = await crypto.subtle.unwrapKey(
+    "raw",
+    wrappedKeyBytes,
+    masterKey,
+    { name: "AES-GCM", iv: keyWrapIvBytes },
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["encrypt", "decrypt"]
+  );
+
+  // 2. Decrypt the file content
+  const fileIvBytes = base64ToUint8Array(metadata.fileIv);
+  const encryptedBuffer = await encryptedBlob.arrayBuffer();
+
+  const decryptedBuffer = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: fileIvBytes },
+    fileKey,
+    encryptedBuffer
+  );
+
+  return new Blob([decryptedBuffer]);
+}
