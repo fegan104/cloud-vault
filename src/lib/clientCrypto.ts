@@ -180,3 +180,54 @@ export async function decryptFile(
 
   return new Blob([decryptedBuffer]);
 }
+
+export async function encryptFile(
+  file: File,
+  masterKey: CryptoKey,
+  masterKeySalt: string
+) {
+  const fileBuffer = await file.arrayBuffer();
+
+  // 1. Generate a random file key
+  const fileKey = await window.crypto.subtle.generateKey(
+    { name: 'AES-GCM', length: 256 },
+    true,
+    ['encrypt', 'decrypt']
+  );
+
+  // 2. Encrypt the file with the file key
+  const fileIv = window.crypto.getRandomValues(new Uint8Array(12));
+  const encryptedContent = await window.crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv: fileIv },
+    fileKey,
+    fileBuffer
+  );
+
+  // 3. Wrap the file key with the master key
+  const keyWrapIv = window.crypto.getRandomValues(new Uint8Array(12));
+  const wrappedFileKey = await window.crypto.subtle.wrapKey(
+    "raw",
+    fileKey,
+    masterKey,
+    { name: "AES-GCM", iv: keyWrapIv }
+  );
+
+  // 4. Prepare metadata
+  const metadata = {
+    fileIv: uint8ToBase64(fileIv),
+    wrappedFileKey: uint8ToBase64(new Uint8Array(wrappedFileKey)),
+    keyWrapIv: uint8ToBase64(keyWrapIv),
+    fileAlgorithm: 'AES-GCM',
+    keyDerivationSalt: masterKeySalt,
+    keyDerivationIterations: 250_000, // Matches clientCrypto.ts
+    keyDerivationAlgorithm: 'PBKDF2',
+    keyDerivationHash: 'SHA-256',
+  };
+
+  const encryptedFileBlob = new Blob([encryptedContent], { type: 'application/octet-stream' });
+
+  return {
+    encryptedFileBlob,
+    metadata
+  };
+}

@@ -1,6 +1,6 @@
 "use client"
 import { useMasterKey } from "@/context/MasterKeyContext";
-import { base64ToUint8Array, deriveMasterKey } from "@/lib/clientCrypto";
+import { base64ToUint8Array, deriveMasterKey, encryptFile } from "@/lib/clientCrypto";
 import { ChangeEvent, useState } from "react";
 
 
@@ -62,45 +62,7 @@ export function UploadScreenContent({ masterKeySalt, onEncrypted }: {
     setError('');
 
     try {
-      const fileBuffer = await file.arrayBuffer();
-
-      // 1. Generate a random file key
-      const fileKey = await window.crypto.subtle.generateKey(
-        { name: 'AES-GCM', length: 256 },
-        true,
-        ['encrypt', 'decrypt']
-      );
-
-      // 2. Encrypt the file with the file key
-      const fileIv = window.crypto.getRandomValues(new Uint8Array(12));
-      const encryptedContent = await window.crypto.subtle.encrypt(
-        { name: 'AES-GCM', iv: fileIv },
-        fileKey,
-        fileBuffer
-      );
-
-      // 3. Wrap the file key with the master key
-      const keyWrapIv = window.crypto.getRandomValues(new Uint8Array(12));
-      const wrappedFileKey = await window.crypto.subtle.wrapKey(
-        "raw",
-        fileKey,
-        masterKey,
-        { name: "AES-GCM", iv: keyWrapIv }
-      );
-
-      // 4. Prepare metadata
-      const metadata = {
-        fileIv: Buffer.from(fileIv).toString('base64'),
-        wrappedFileKey: Buffer.from(wrappedFileKey).toString('base64'),
-        keyWrapIv: Buffer.from(keyWrapIv).toString('base64'),
-        fileAlgorithm: 'AES-GCM',
-        keyDerivationSalt: masterKeySalt,
-        keyDerivationIterations: 250_000, // Matches clientCrypto.ts
-        keyDerivationAlgorithm: 'PBKDF2',
-        keyDerivationHash: 'SHA-256',
-      };
-
-      const encryptedFileBlob = new Blob([encryptedContent], { type: 'application/octet-stream' });
+      const { encryptedFileBlob, metadata } = await encryptFile(file, masterKey, masterKeySalt);
 
       await onEncrypted(fileName, encryptedFileBlob, metadata);
     } catch (err) {

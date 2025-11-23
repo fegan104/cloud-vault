@@ -5,11 +5,9 @@ import { base64ToUint8Array, deriveMasterKey, decryptFile } from "@/lib/clientCr
 import { ChangeEvent, useState } from "react";
 import { EncryptedFile } from "@prisma/client";
 
-import { getEncryptedFile } from "./actions";
-
 type DashboardClientProps = {
   masterKeySalt: string;
-  files: EncryptedFile[];
+  files: (EncryptedFile & { downloadUrl: string })[];
 };
 
 export default function DashboardClient({ masterKeySalt, files }: DashboardClientProps) {
@@ -27,15 +25,15 @@ export default function DashboardClient({ masterKeySalt, files }: DashboardClien
     setMasterKey(newMasterKey);
   };
 
-  const handleDownload = async (file: EncryptedFile) => {
+  const handleDownload = async (file: EncryptedFile & { downloadUrl: string }) => {
     if (!masterKey) return;
     setDownloadingId(file.id);
 
     try {
-      // 1. Fetch the encrypted file via Server Action
-      const base64File = await getEncryptedFile(file.id);
-      const encryptedBytes = base64ToUint8Array(base64File);
-      const encryptedBlob = new Blob([encryptedBytes]);
+      // 1. Fetch the encrypted file
+      const response = await fetch(file.downloadUrl);
+      if (!response.ok) throw new Error("Failed to fetch file");
+      const encryptedBlob = await response.blob();
 
       // 2. Decrypt the file
       const decryptedBlob = await decryptFile(encryptedBlob, masterKey, {

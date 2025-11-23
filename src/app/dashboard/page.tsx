@@ -31,23 +31,23 @@ export default async function Dashboard() {
   }
 
   // Generate signed URLs for each file
-  // const filesWithUrls = await Promise.all(
-  //   userWithFiles.user.encryptedFiles.map(async (file) => {
-  //     const [url] = await storage.file(file.storagePath).getSignedUrl({
-  //       action: 'read',
-  //       expires: Date.now() + 1000 * 60 * 60, // 1 hour
-  //     });
-  //     return {
-  //       ...file,
-  //       downloadUrl: url,
-  //     };
-  //   })
-  // );
+  const filesWithUrls = await Promise.all(
+    userWithFiles.user.encryptedFiles.map(async (file) => {
+      const [url] = await storage.file(file.storagePath).getSignedUrl({
+        action: 'read',
+        expires: Date.now() + 1000 * 60 * 60, // 1 hour
+      });
+      return {
+        ...file,
+        downloadUrl: url,
+      };
+    })
+  );
 
   return (
     <DashboardClient
       masterKeySalt={user.masterKeySalt}
-      files={userWithFiles.user.encryptedFiles}
+      files={filesWithUrls}
     />
   );
 }
