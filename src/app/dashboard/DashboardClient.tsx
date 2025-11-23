@@ -4,10 +4,11 @@ import { useMasterKey } from "@/context/MasterKeyContext";
 import { base64ToUint8Array, deriveMasterKey, decryptFile } from "@/lib/clientCrypto";
 import { ChangeEvent, useState } from "react";
 import { EncryptedFile } from "@prisma/client";
+import { getDownloadUrl } from "./actions";
 
 type DashboardClientProps = {
   masterKeySalt: string;
-  files: (EncryptedFile & { downloadUrl: string })[];
+  files: EncryptedFile[];
 };
 
 export default function DashboardClient({ masterKeySalt, files }: DashboardClientProps) {
@@ -25,24 +26,27 @@ export default function DashboardClient({ masterKeySalt, files }: DashboardClien
     setMasterKey(newMasterKey);
   };
 
-  const handleDownload = async (file: EncryptedFile & { downloadUrl: string }) => {
+  const handleDownload = async (file: EncryptedFile) => {
     if (!masterKey) return;
     setDownloadingId(file.id);
 
     try {
-      // 1. Fetch the encrypted file
-      const response = await fetch(file.downloadUrl);
+      // 1. Get a signed URL for the file
+      const downloadUrl = await getDownloadUrl(file.id);
+
+      // 2. Fetch the encrypted file
+      const response = await fetch(downloadUrl);
       if (!response.ok) throw new Error("Failed to fetch file");
       const encryptedBlob = await response.blob();
 
-      // 2. Decrypt the file
+      // 3. Decrypt the file
       const decryptedBlob = await decryptFile(encryptedBlob, masterKey, {
         fileIv: file.fileIv,
         wrappedFileKey: file.wrappedFileKey,
         keyWrapIv: file.keyWrapIv,
       });
 
-      // 3. Trigger download
+      // 4. Trigger download
       const url = URL.createObjectURL(decryptedBlob);
       const a = document.createElement('a');
       a.href = url;

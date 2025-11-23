@@ -1,8 +1,8 @@
-import { cookies } from "next/headers";
 import { prisma } from "./db";
+import { getSessionToken } from "./getSessionToken";
 
 export async function getUser() {
-  const sessionToken = (await cookies()).get("session")?.value;
+  const sessionToken = await getSessionToken();
   if (!sessionToken) return null;
   const session = await prisma.session.findUnique({
     where: {

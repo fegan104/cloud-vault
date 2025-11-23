@@ -1,22 +1,21 @@
 import { prisma } from "@/lib/db";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getUser } from "@/lib/getUser";
-import { storage } from "@/lib/firebaseAdmin";
 import DashboardClient from "./DashboardClient";
+import { getSessionToken } from "@/lib/getSessionToken";
 
 export default async function Dashboard() {
-  const sessionToken = (await cookies()).get("session")?.value
+  const sessionToken = await getSessionToken()
   if (!sessionToken) {
-    redirect("/")
-  }
-  const user = await getUser();
-  if (!user) {
-    redirect("/")
+    redirect("/signin")
   }
 
-  const userWithFiles = await prisma.session.findUnique({
-    where: { sessionToken },
+  const session = await prisma.session.findUnique({
+    where: {
+      sessionToken,
+      expiresAt: {
+        gt: new Date(), // only include sessions that haven't expired
+      }
+    },
     include: {
       user: {
         include: {
@@ -26,28 +25,14 @@ export default async function Dashboard() {
     },
   });
 
-  if (!userWithFiles) {
-    redirect("/")
+  if (!session) {
+    redirect("/signin")
   }
-
-  // Generate signed URLs for each file
-  const filesWithUrls = await Promise.all(
-    userWithFiles.user.encryptedFiles.map(async (file) => {
-      const [url] = await storage.file(file.storagePath).getSignedUrl({
-        action: 'read',
-        expires: Date.now() + 1000 * 60 * 60, // 1 hour
-      });
-      return {
-        ...file,
-        downloadUrl: url,
-      };
-    })
-  );
 
   return (
     <DashboardClient
-      masterKeySalt={user.masterKeySalt}
-      files={filesWithUrls}
+      masterKeySalt={session.user.masterKeySalt}
+      files={session.user.encryptedFiles}
     />
   );
 }

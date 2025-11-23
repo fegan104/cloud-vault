@@ -6,6 +6,4 @@ export async function createUser({ email, salt, publicKey }: { email: string; sa
   await prisma.user.create({
     data: { email, masterKeySalt: salt, publicKey },
   });
-
-  redirect("/signin")
 }
