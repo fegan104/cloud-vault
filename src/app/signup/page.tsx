@@ -4,11 +4,12 @@ import { createUser } from '@/actions/createUser';
 import { deriveKeypair, deriveMasterKey } from '@/lib/clientCrypto';
 import { useState } from 'react';
 import { useMasterKey } from '@/context/MasterKeyContext';
+import { redirect } from 'next/navigation';
 
 export default function SignUpForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { masterKey, setMasterKey } = useMasterKey()
+  const { setMasterKey } = useMasterKey()
 
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
@@ -26,6 +27,7 @@ export default function SignUpForm() {
     // 4) Keep privateKey client-side for signing login challenges
     const masterKey = await deriveMasterKey(password, saltBytes)
     setMasterKey(masterKey)
+    redirect('/dashboard')
   }
 
   return (

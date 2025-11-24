@@ -1,11 +1,8 @@
+"use client"
 import nacl from "tweetnacl";
 
-//TODO
-// const { publicKey, privateKey } = await crypto.subtle.generateKey(
-//       { name: 'Ed25519' },
-//       true,
-//       ['sign', 'verify']
-//     );
+const AES_KEY_ITERATIONS = 250_000;
+
 export async function deriveKeypair(password: string, salt: Uint8Array<ArrayBuffer>) {
   const pwBytes = new TextEncoder().encode(password);
 
@@ -37,7 +34,6 @@ export async function deriveKeypair(password: string, salt: Uint8Array<ArrayBuff
   };
 }
 
-
 export async function signChallenge(
   password: string,
   masterKeySaltB64: string,
@@ -62,53 +58,6 @@ function uint8ToBase64(u8: Uint8Array): string {
   }
   return btoa(binary);
 }
-
-
-// export async function signChallenge(
-//   password: string,
-//   masterKeySaltB64: string,
-//   challenge: string
-// ) {
-//   const encoder = new TextEncoder();
-
-//   // 1. derive master key (HMAC key)
-//   const masterKey = await deriveMasterKey(password, masterKeySaltB64);
-
-//   // 2. sign the challenge
-//   const signature = await crypto.subtle.sign(
-//     "HMAC",
-//     masterKey,
-//     encoder.encode(challenge)
-//   );
-
-//   // 3. return base64 signature
-//   return btoa(String.fromCharCode(...new Uint8Array(signature)));
-// }
-
-// Derive a key from password + salt using PBKDF2 → HMAC-SHA256
-// export async function deriveMasterKey(password: string, masterKeySaltB64: string) {
-//   const encoder = new TextEncoder();
-//   const pwdKey = await crypto.subtle.importKey(
-//     "raw",
-//     encoder.encode(password),
-//     { name: "PBKDF2" },
-//     false,
-//     ["deriveKey"]
-//   );
-
-//   return crypto.subtle.deriveKey(
-//     {
-//       name: "PBKDF2",
-//       salt: Uint8Array.from(atob(masterKeySaltB64), c => c.charCodeAt(0)),
-//       iterations: 310000,
-//       hash: "SHA-256",
-//     },
-//     pwdKey,
-//     { name: "HMAC", hash: "SHA-256", length: 256 },
-//     false,
-//     ["sign"]
-//   );
-// }
 
 export function base64ToUint8Array(base64: string) {
   const binaryString = atob(base64); // Decode the Base64 string to a binary string
@@ -135,7 +84,7 @@ export async function deriveMasterKey(password: string, salt: BufferSource) {
     {
       name: "PBKDF2",
       salt,
-      iterations: 250_000,
+      iterations: AES_KEY_ITERATIONS,
       hash: "SHA-256",
     },
     baseKey,
@@ -219,7 +168,7 @@ export async function encryptFile(
     keyWrapIv: uint8ToBase64(keyWrapIv),
     fileAlgorithm: 'AES-GCM',
     keyDerivationSalt: masterKeySalt,
-    keyDerivationIterations: 250_000, // Matches clientCrypto.ts
+    keyDerivationIterations: AES_KEY_ITERATIONS,
     keyDerivationAlgorithm: 'PBKDF2',
     keyDerivationHash: 'SHA-256',
   };
