@@ -38,6 +38,9 @@ export default async function Home() {
             <Link href="/signin" className="bg-blue-600 text-white px-4 py-2 rounded">
               Sign In
             </Link>
+            <Link href="/signup" className="bg-blue-600 text-white px-4 py-2 rounded">
+              Sign Up
+            </Link>
           </div>
         )}
       </main>
