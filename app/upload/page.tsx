@@ -1,4 +1,4 @@
-import { getUser } from "@/lib/getUser";
+import { getUser } from "../../lib/getUser";
 import { UploadScreenContent } from "./UploadScreenContent";
 import { uploadAction } from "./actions";
 import { redirect } from "next/navigation";

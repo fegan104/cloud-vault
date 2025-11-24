@@ -1,7 +1,7 @@
-import { prisma } from "@/lib/db";
+import { prisma } from "../../lib/db";
 import { redirect } from "next/navigation";
 import DashboardClient from "./DashboardClient";
-import { getSessionToken } from "@/lib/getSessionToken";
+import { getSessionToken } from "../../lib/getSessionToken";
 
 export default async function Dashboard() {
   const sessionToken = await getSessionToken()

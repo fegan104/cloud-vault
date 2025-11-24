@@ -1,12 +1,12 @@
 "use client";
 
-import { useMasterKey } from "@/context/MasterKeyContext";
-import { decryptFile } from "@/lib/clientCrypto";
+import { useMasterKey } from "../../context/MasterKeyContext";
+import { decryptFile } from "../../lib/clientCrypto";
 import { useState } from "react";
 import { EncryptedFile } from "@prisma/client";
 import { getDownloadUrl } from "./actions";
 
-import MasterKeyGuard from "@/components/MasterKeyGuard";
+import MasterKeyGuard from "../../components/MasterKeyGuard";
 
 type DashboardClientProps = {
   masterKeySalt: string;

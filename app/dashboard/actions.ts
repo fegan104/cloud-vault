@@ -1,8 +1,8 @@
 "use server";
 
-import { storage } from "@/lib/firebaseAdmin";
-import { prisma } from "@/lib/db";
-import { getSessionToken } from "@/lib/getSessionToken";
+import { storage } from "../../lib/firebaseAdmin";
+import { prisma } from "../../lib/db";
+import { getSessionToken } from "../../lib/getSessionToken";
 
 export async function getDownloadUrl(fileId: string) {
   const sessionToken = await getSessionToken();

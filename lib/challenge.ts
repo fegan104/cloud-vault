@@ -1,5 +1,5 @@
 "use server"
-import { prisma } from '@/lib/db';
+import { prisma } from './db';
 import crypto from 'crypto';
 import { cookies } from 'next/headers';
 import nacl from "tweetnacl";

@@ -1,10 +1,10 @@
 "use client"
-import { useMasterKey } from "@/context/MasterKeyContext";
-import { base64ToUint8Array, deriveMasterKey, encryptFile } from "@/lib/clientCrypto";
+import { useMasterKey } from "../../context/MasterKeyContext";
+import { base64ToUint8Array, deriveMasterKey, encryptFile } from "../../lib/clientCrypto";
 import { ChangeEvent, useState } from "react";
 
 
-import MasterKeyGuard from "@/components/MasterKeyGuard";
+import MasterKeyGuard from "../../components/MasterKeyGuard";
 
 export function UploadScreenContent({ masterKeySalt, onEncrypted }: {
   masterKeySalt: string,

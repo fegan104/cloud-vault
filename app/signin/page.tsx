@@ -1,8 +1,8 @@
 'use client';
-import { generateChallenge } from '@/lib/challenge';
-import { verifyChallenge } from '@/lib/challenge';
-import { useMasterKey } from '@/context/MasterKeyContext';
-import { base64ToUint8Array, deriveMasterKey, signChallenge } from '@/lib/clientCrypto';
+import { generateChallenge } from '../../lib/challenge';
+import { verifyChallenge } from '../../lib/challenge';
+import { useMasterKey } from '../../context/MasterKeyContext';
+import { base64ToUint8Array, deriveMasterKey, signChallenge } from '../../lib/clientCrypto';
 import { redirect } from 'next/navigation';
 import { useState } from 'react';
 

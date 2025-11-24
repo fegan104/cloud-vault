@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { MasterKeyProvider } from '@/context/MasterKeyContext';
+import { MasterKeyProvider } from '../context/MasterKeyContext';
 
 
 const geistSans = Geist({
@@ -29,7 +29,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-         <MasterKeyProvider>{children}</MasterKeyProvider>
+        <MasterKeyProvider>{children}</MasterKeyProvider>
       </body>
     </html>
   );

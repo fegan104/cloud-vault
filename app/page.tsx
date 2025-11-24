@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/db";
-import { getUser } from "@/lib/getUser";
+import { prisma } from "../lib/db";
+import { getUser } from "../lib/getUser";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";

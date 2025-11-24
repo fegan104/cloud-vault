@@ -1,7 +1,7 @@
 "use server";
-import { prisma } from "@/lib/db";
-import { storage } from "@/lib/firebaseAdmin";
-import { getUser } from "@/lib/getUser";
+import { prisma } from "../../lib/db";
+import { storage } from "../../lib/firebaseAdmin";
+import { getUser } from "../../lib/getUser";
 
 export async function uploadAction(
   fileName: string,
