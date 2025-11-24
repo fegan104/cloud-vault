@@ -1,6 +1,6 @@
 'use client';
 
-import { createUser } from '@/actions/createUser';
+import { createUser } from '@/lib/createUser';
 import { deriveKeypair, deriveMasterKey } from '@/lib/clientCrypto';
 import { useState } from 'react';
 import { useMasterKey } from '@/context/MasterKeyContext';

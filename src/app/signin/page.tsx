@@ -1,6 +1,6 @@
 'use client';
-import { generateChallenge } from '@/actions/challenge';
-import { verifyChallenge } from '@/actions/verifyChallenge';
+import { generateChallenge } from '@/lib/challenge';
+import { verifyChallenge } from '@/lib/challenge';
 import { useMasterKey } from '@/context/MasterKeyContext';
 import { base64ToUint8Array, deriveMasterKey, signChallenge } from '@/lib/clientCrypto';
 import { redirect } from 'next/navigation';
@@ -9,7 +9,7 @@ import { useState } from 'react';
 export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { masterKey, setMasterKey } = useMasterKey()
+  const { setMasterKey } = useMasterKey()
 
   async function handleRequestChallenge() {
     const { challenge, masterKeySalt } = await generateChallenge(email);
@@ -28,8 +28,8 @@ export default function LoginForm() {
   return (
     <div>
       <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" />
-      {masterKey ? (<></>) : (<input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" />)}
-      <button onClick={handleRequestChallenge}>Request Challenge</button>
+      <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" />
+      <button onClick={handleRequestChallenge}>Sign In</button>
     </div>
   );
 }

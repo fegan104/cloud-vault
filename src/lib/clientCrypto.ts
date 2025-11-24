@@ -43,20 +43,9 @@ export async function signChallenge(
 
   // 1. derive master key (HMAC key)
   const keyPairs = await deriveKeypair(password, base64ToUint8Array(masterKeySaltB64))
-  console.log(`PublicKey = ${uint8ToBase64(keyPairs.publicKey)}, PrivateKey=${uint8ToBase64(keyPairs.privateKey)}, challenge=${challenge}}`)
-
   const messageBytes = encoder.encode(challenge);
   const sig = nacl.sign.detached(messageBytes, keyPairs.privateKey);
   return uint8ToBase64(sig);
-}
-
-function uint8ToBase64(u8: Uint8Array): string {
-  // Convert bytes → binary string → base64
-  let binary = "";
-  for (let i = 0; i < u8.length; i++) {
-    binary += String.fromCharCode(u8[i]);
-  }
-  return btoa(binary);
 }
 
 export function base64ToUint8Array(base64: string) {
@@ -179,4 +168,13 @@ export async function encryptFile(
     encryptedFileBlob,
     metadata
   };
+}
+
+function uint8ToBase64(u8: Uint8Array): string {
+  // Convert bytes → binary string → base64
+  let binary = "";
+  for (let i = 0; i < u8.length; i++) {
+    binary += String.fromCharCode(u8[i]);
+  }
+  return btoa(binary);
 }

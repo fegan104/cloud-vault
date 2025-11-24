@@ -1,8 +1,8 @@
 "use client";
 
 import { useMasterKey } from "@/context/MasterKeyContext";
-import { base64ToUint8Array, deriveMasterKey, decryptFile } from "@/lib/clientCrypto";
-import { ChangeEvent, useState } from "react";
+import { decryptFile } from "@/lib/clientCrypto";
+import { useState } from "react";
 import { EncryptedFile } from "@prisma/client";
 import { getDownloadUrl } from "./actions";
 
