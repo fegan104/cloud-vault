@@ -1,6 +1,6 @@
 "use client";
 
-import { useMasterKey } from "../../context/MasterKeyContext";
+import { useMasterKey } from "../../components/MasterKeyContext";
 import { decryptFile } from "../../lib/clientCrypto";
 import { useState } from "react";
 import { EncryptedFile } from "@prisma/client";

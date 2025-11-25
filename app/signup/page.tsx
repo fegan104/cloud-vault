@@ -3,7 +3,7 @@
 import { createUser } from '../../lib/createUser';
 import { deriveKeypair, deriveMasterKey } from '../../lib/clientCrypto';
 import { useState } from 'react';
-import { useMasterKey } from '../../context/MasterKeyContext';
+import { useMasterKey } from '../../components/MasterKeyContext';
 import { redirect } from 'next/navigation';
 
 export default function SignUpForm() {

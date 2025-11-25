@@ -1,9 +1,7 @@
 "use client"
-import { useMasterKey } from "../../context/MasterKeyContext";
-import { base64ToUint8Array, deriveMasterKey, encryptFile } from "../../lib/clientCrypto";
+import { useMasterKey } from "../../components/MasterKeyContext";
+import { encryptFile } from "../../lib/clientCrypto";
 import { ChangeEvent, useState } from "react";
-
-
 import MasterKeyGuard from "../../components/MasterKeyGuard";
 
 export function UploadScreenContent({ masterKeySalt, onEncrypted }: {
@@ -31,7 +29,7 @@ export function UploadScreenContent({ masterKeySalt, onEncrypted }: {
 
   /**
    * Handles file selection changes from the hidden input.
-   * @param {Event} event - The change event from the file input.
+   * @param {Event} e - The change event from the file input.
    */
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {

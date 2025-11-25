@@ -1,7 +1,7 @@
 "use client";
 
 import { generateChallengeForSession, verifyChallengeForSession } from "../lib/challenge";
-import { useMasterKey } from "../context/MasterKeyContext";
+import { useMasterKey } from "./MasterKeyContext";
 import { base64ToUint8Array, deriveMasterKey, signChallenge } from "../lib/clientCrypto";
 import { ChangeEvent, useState } from "react";
 

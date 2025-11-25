@@ -22,12 +22,7 @@ export async function uploadAction(
 
   const buffer = Buffer.from(await cypherText.arrayBuffer())
   const destination = `uploads/${currentUser.id}/${fileName}.enc`
-
-  const fileRef = storage.file(destination);
-  await fileRef.save(buffer, {
-    metadata: { contentType: "application/octet-stream" },
-    resumable: false,
-  });
+  await saveToFirebaseStorage(destination, buffer)
 
   await prisma.encryptedFile.create({
     data: {
@@ -44,5 +39,13 @@ export async function uploadAction(
       keyDerivationAlgorithm: metadata.keyDerivationAlgorithm,
       keyDerivationHash: metadata.keyDerivationHash,
     }
+  });
+}
+
+async function saveToFirebaseStorage(destination: string, buffer: Buffer<ArrayBuffer>) {
+  const fileRef = storage.file(destination);
+  await fileRef.save(buffer, {
+    metadata: { contentType: "application/octet-stream" },
+    resumable: false,
   });
 }
