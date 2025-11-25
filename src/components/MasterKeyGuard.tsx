@@ -4,6 +4,7 @@ import { generateChallengeForSession, verifyChallengeForSession } from "../lib/c
 import { useMasterKey } from "./MasterKeyContext";
 import { base64ToUint8Array, deriveMasterKey, signChallenge } from "../lib/clientCrypto";
 import { ChangeEvent, useState } from "react";
+import CircularProgress from "./CircularProgress";
 
 type MasterKeyGuardProps = {
   masterKeySalt: string;
@@ -12,6 +13,7 @@ type MasterKeyGuardProps = {
 
 export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGuardProps) {
   const [password, setPassword] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const { masterKey, setMasterKey } = useMasterKey();
 
@@ -22,6 +24,7 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
 
   const submitPassword = async () => {
     try {
+      setIsLoading(true);
       const { challenge } = await generateChallengeForSession();
       const signature = await signChallenge(password, masterKeySalt, challenge);
       const verified = await verifyChallengeForSession(challenge, signature);
@@ -36,6 +39,8 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
     } catch (e) {
       console.error(e);
       setError("An error occurred during verification");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -68,7 +73,7 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
             onClick={submitPassword}
             className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
           >
-            Unlock
+            {isLoading ? <CircularProgress color="text-white" size={20} /> : 'Unlock'}
           </button>
         </div>
       </div>

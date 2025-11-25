@@ -8,6 +8,14 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
+  if (!session && request.nextUrl.pathname === '/dashboard') {
+    return NextResponse.redirect(new URL('/signin', request.url))
+  }
+
+  if (!session && request.nextUrl.pathname === '/upload') {
+    return NextResponse.redirect(new URL('/signin', request.url))
+  }
+
   return NextResponse.next()
 }
 
