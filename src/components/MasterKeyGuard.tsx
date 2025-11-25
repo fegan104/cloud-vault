@@ -52,6 +52,11 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
             type="password"
             value={password}
             onChange={handlePasswordChange}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                submitPassword();
+              }
+            }}
             placeholder="Enter your password"
             className={`px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${error
               ? "border-red-500 focus:ring-red-500 focus:border-red-500"
