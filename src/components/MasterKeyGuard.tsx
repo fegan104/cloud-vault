@@ -71,9 +71,9 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
           {error && <p className="text-sm text-red-500">{error}</p>}
           <button
             onClick={submitPassword}
-            className="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+            className="w-full bg-secondary text-white py-2 rounded-lg hover:bg-secondary-container transition-colors font-medium"
           >
-            {isLoading ? <CircularProgress color="text-white" size={20} /> : 'Unlock'}
+            {isLoading ? <CircularProgress color="secondary-on" size={20} /> : 'Unlock'}
           </button>
         </div>
       </div>

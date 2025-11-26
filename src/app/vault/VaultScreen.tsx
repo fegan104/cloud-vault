@@ -5,14 +5,33 @@ import MasterKeyGuard from "../../components/MasterKeyGuard";
 import { decryptFile } from "../../lib/clientCrypto";
 import { useState } from "react";
 import { EncryptedFile } from "@prisma/client";
-import { getDownloadUrl } from "./actions";
-import { FileText, Download } from "lucide-react";
+import { getDownloadUrl, signOut } from "./actions";
+import { FileText, Download, LogOut } from "lucide-react";
 import CircularProgress from "@/components/CircularProgress";
 
 type VaultScreenProps = {
   masterKeySalt: string;
   files: EncryptedFile[];
 };
+
+function AppBar() {
+  return (
+    <div className="border-b border-gray-200">
+      <div className="w-full max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+        <h1 className="text-xl font-semibold text-gray-800">Encrypted Vault</h1>
+        <form action={signOut}>
+          <button
+            type="submit"
+            className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) {
   const { masterKey } = useMasterKey();
@@ -56,53 +75,56 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
   };
 
   return (
-    <MasterKeyGuard masterKeySalt={masterKeySalt}>
-      <div className="w-full max-w-4xl mx-auto p-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">Your Encrypted Files</h1>
-        {files.length === 0 ? (
-          <p className="text-gray-500 text-center py-10">No files uploaded yet.</p>
-        ) : (
-          <ul className="space-y-3">
-            {files.map((file) => (
-              <li
-                key={file.id}
-                className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center justify-between hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="bg-indigo-100 p-2 rounded-full">
-                    <FileText className="w-6 h-6 text-indigo-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{file.fileName}</p>
-                    <p className="text-xs text-gray-500">{(file.fileSize / 1024).toFixed(2)} KB • {new Date(file.createdAt).toLocaleDateString()}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleDownload(file)}
-                  disabled={downloadingId === file.id}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2
-                    ${downloadingId === file.id
-                      ? 'bg-gray-100 text-gray-400 cursor-wait'
-                      : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
-                    }`}
+    <>
+      <AppBar />
+      <MasterKeyGuard masterKeySalt={masterKeySalt}>
+        <div className="w-full max-w-4xl mx-auto p-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">Your Encrypted Files</h2>
+          {files.length === 0 ? (
+            <p className="text-gray-500 text-center py-10">No files uploaded yet.</p>
+          ) : (
+            <ul className="space-y-3">
+              {files.map((file) => (
+                <li
+                  key={file.id}
+                  className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex items-center justify-between hover:shadow-md transition-shadow"
                 >
-                  {downloadingId === file.id ? (
-                    <>
-                      <CircularProgress size={20} />
-                      <span>Decrypting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-4 h-4" />
-                      <span>Download</span>
-                    </>
-                  )}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </MasterKeyGuard>
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-indigo-100 p-2 rounded-full">
+                      <FileText className="w-6 h-6 text-indigo-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{file.fileName}</p>
+                      <p className="text-xs text-gray-500">{(file.fileSize / 1024).toFixed(2)} KB • {new Date(file.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleDownload(file)}
+                    disabled={downloadingId === file.id}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2
+                    ${downloadingId === file.id
+                        ? 'bg-gray-100 text-gray-400 cursor-wait'
+                        : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                      }`}
+                  >
+                    {downloadingId === file.id ? (
+                      <>
+                        <CircularProgress size={20} />
+                        <span>Decrypting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4" />
+                        <span>Download</span>
+                      </>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </MasterKeyGuard>
+    </>
   );
 }

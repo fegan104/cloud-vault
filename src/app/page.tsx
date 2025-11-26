@@ -1,17 +1,5 @@
-import { prisma } from "../lib/db";
 import { getUser } from "../lib/getUser";
-import { cookies } from "next/headers";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-
-async function signoutAction() {
-  "use server";
-  const requestCookies = await cookies();
-  const sessionToken = requestCookies.get("session")?.value;
-  await prisma.session.delete({ where: { sessionToken } })
-  requestCookies.delete("session");
-  redirect("/");
-}
 
 export default async function Home() {
   const user = await getUser()
@@ -24,11 +12,6 @@ export default async function Home() {
             <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
               Welcome, {user.email}
             </h1>
-            <form action={signoutAction}>
-              <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
-                Sign Out
-              </button>
-            </form>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">

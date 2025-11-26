@@ -3,6 +3,8 @@
 import { storage } from "../../lib/firebaseAdmin";
 import { prisma } from "../../lib/db";
 import { getSessionToken } from "../../lib/getSessionToken";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 export async function getDownloadUrl(fileId: string) {
   const sessionToken = await getSessionToken();
@@ -43,4 +45,12 @@ export async function getDownloadUrl(fileId: string) {
   });
 
   return url;
+}
+
+export async function signOut() {
+  const requestCookies = await cookies();
+  const sessionToken = requestCookies.get("session")?.value;
+  await prisma.session.delete({ where: { sessionToken } })
+  requestCookies.delete("session");
+  redirect("/");
 }
