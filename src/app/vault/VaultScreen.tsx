@@ -9,12 +9,12 @@ import { getDownloadUrl } from "./actions";
 import { FileText, Download } from "lucide-react";
 import CircularProgress from "@/components/CircularProgress";
 
-type DashboardClientProps = {
+type VaultScreenProps = {
   masterKeySalt: string;
   files: EncryptedFile[];
 };
 
-export default function DashboardClient({ masterKeySalt, files }: DashboardClientProps) {
+export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) {
   const { masterKey } = useMasterKey();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 

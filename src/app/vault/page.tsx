@@ -1,6 +1,6 @@
 import { prisma } from "../../lib/db";
 import { redirect } from "next/navigation";
-import DashboardClient from "./DashboardClient";
+import DashboardClient from "./VaultScreen";
 import { getSessionToken } from "../../lib/getSessionToken";
 
 export default async function Dashboard() {

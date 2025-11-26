@@ -1,8 +1,8 @@
 "use client"
-import { useMasterKey } from "../../components/MasterKeyContext";
-import { encryptFile } from "../../lib/clientCrypto";
+import { useMasterKey } from "../../../components/MasterKeyContext";
+import { encryptFile } from "../../../lib/clientCrypto";
 import { ChangeEvent, useState } from "react";
-import MasterKeyGuard from "../../components/MasterKeyGuard";
+import MasterKeyGuard from "../../../components/MasterKeyGuard";
 import { Check, Upload, Loader2 } from "lucide-react";
 
 export function UploadScreenContent({ masterKeySalt, onEncrypted }: {
