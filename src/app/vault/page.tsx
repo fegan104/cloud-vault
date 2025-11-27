@@ -19,7 +19,11 @@ export default async function Dashboard() {
     include: {
       user: {
         include: {
-          encryptedFiles: true,
+          encryptedFiles: {
+            orderBy: {
+              createdAt: "desc",
+            }
+          }
         },
       },
     },

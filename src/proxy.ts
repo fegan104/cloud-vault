@@ -34,7 +34,6 @@ export const config = {
   matcher: [
     '/',
     '/vault',
-    '/vault/upload',
     '/signin',
     '/signup'
   ]

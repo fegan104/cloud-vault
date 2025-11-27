@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
@@ -20,23 +21,79 @@
   /* Primary */
   --color-primary: #B71D57;
   --color-primary-container: #FFD9DD;
+  --color-on-primary: #FFFFFF;
+  --color-on-primary-container: #3E001D;
 
   /* Secondary */
   --color-secondary: #5F527E;
   --color-secondary-container: #E6DBFF;
+  --color-on-secondary: #FFFFFF;
+  --color-on-secondary-container: #1B0261;
 
   /* Tertiary */
   --color-tertiary: #006497;
   --color-tertiary-container: #CEE5FF;
+  --color-on-tertiary: #FFFFFF;
+  --color-on-tertiary-container: #001E2F;
 
   /* Surface, Background, and Outline */
   --color-background: #FFFBFB;
   --color-surface: #FFFBFB;
   --color-surface-variant: #F3DDE1;
+  --color-on-surface: #1F1A1B;
+  --color-on-surface-variant: #524345;
+  --color-outline: #857375;
+  --color-outline-variant: #D7C2C4;
 
   /* Error */
   --color-error: #BA1A1A;
   --color-error-container: #FFDAD5;
+  --color-on-error: #FFFFFF;
+  --color-on-error-container: #410002;
+
+  /* Material 3 Elevation Shadows */
+  --shadow-1: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-2: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-3: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-4: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-5: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* Material 3 Shape (Border Radius) */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 28px;
+  --radius-full: 9999px;
+
+  /* Material 3 Spacing Scale */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+
+  /* Typography Scale */
+  --font-display-lg: 3.5rem;
+  --font-display-md: 2.8125rem;
+  --font-display-sm: 2.25rem;
+  --font-headline-lg: 2rem;
+  --font-headline-md: 1.75rem;
+  --font-headline-sm: 1.5rem;
+  --font-title-lg: 1.375rem;
+  --font-title-md: 1rem;
+  --font-title-sm: 0.875rem;
+  --font-label-lg: 0.875rem;
+  --font-label-md: 0.75rem;
+  --font-label-sm: 0.6875rem;
+  --font-body-lg: 1rem;
+  --font-body-md: 0.875rem;
+  --font-body-sm: 0.75rem;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -46,8 +103,11 @@
   }
 }
 
+
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }

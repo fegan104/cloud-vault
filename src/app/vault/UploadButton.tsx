@@ -24,19 +24,21 @@ export function UploadButton({ masterKeySalt, onEncrypted }: {
 }) {
   const [error, setError] = useState<string>('');
   const [inProgress, setInProgress] = useState<boolean>(false);
-  const [fileName, setFileName] = useState<string>('');
   const { masterKey } = useMasterKey()
 
-  const handleEncrypt = async (e: ChangeEvent<HTMLInputElement>) => {
+  const onFileSelected = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    console.log(file?.name || "No File name")
+    setError('');
+    if (!file) return;
+    handleEncrypt(file)
+  }
 
-    if (file) {
-      setFileName(file.name);
-      setError('');
-    }
+  const handleEncrypt = async (file: File) => {
+    console.log(file)
 
-    if (!file || !masterKey) {
-      setError('Please select a file and unlock your vault.');
+    if (!masterKey) {
+      setError('Please unlock your vault.');
       return;
     }
 
@@ -46,25 +48,27 @@ export function UploadButton({ masterKeySalt, onEncrypted }: {
     try {
       const { encryptedFileBlob, metadata } = await encryptFile(file, masterKey, masterKeySalt);
 
-      await onEncrypted(fileName, encryptedFileBlob, metadata);
+      await onEncrypted(file.name, encryptedFileBlob, metadata);
     } catch (err) {
       console.error(err);
       setError(`Encryption failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setInProgress(false);
-      setFileName("")
     }
   };
 
   return (
-    <div className="space-y-6">
-      <form className="space-y-4">
+    <div className="w-full">
+      <form>
         <button
-          className={`relative w-full p-3 text-white font-semibold rounded-lg shadow-md transition duration-200 focus:outline-none focus:ring-4 focus:ring-opacity-50
-              ${!inProgress
-              ? 'bg-primary hover:brightness-120 hover:shadow-lg focus:ring-primary'
-              : 'bg-gray-400 cursor-not-allowed'}`}
+          className={`relative w-full px-6 py-4 text-on-primary font-semibold rounded-[--radius-lg] 
+                     shadow-[--shadow-2] transition-all duration-200 focus:outline-none focus:ring-2 
+                     focus:ring-primary focus:ring-offset-2
+                     ${!inProgress
+              ? 'bg-primary hover:shadow-[--shadow-3] hover:brightness-110 active:shadow-[--shadow-1]'
+              : 'bg-surface-variant text-on-surface-variant cursor-not-allowed'}`}
           type="button"
+          disabled={inProgress}
         >
           {/* Hidden file input that fills the button */}
           <input
@@ -72,26 +76,31 @@ export function UploadButton({ masterKeySalt, onEncrypted }: {
             name="file-upload"
             type="file"
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-            onChange={handleEncrypt}
+            onChange={onFileSelected}
             disabled={inProgress}
           />
 
-          <div className="relative z-0 pointer-events-none flex items-center justify-center space-x-2">
+          <div className="relative z-0 pointer-events-none flex items-center justify-center gap-2.5">
             {inProgress ? (
               <>
                 <CircularProgress size={20} />
-                <span>Uploading...</span>
+                <span className="text-[--font-label-lg]">Uploading...</span>
               </>
             ) : (
               <>
-                <Upload className="w-4 h-4" />
-                <span>Upload</span>
+                <Upload className="w-5 h-5" />
+                <span className="text-[--font-label-lg]">Upload Encrypted File</span>
               </>
             )}
           </div>
         </button>
       </form>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+
+      {error && (
+        <div className="mt-3 p-3 rounded-[--radius-md] bg-error-container">
+          <p className="text-[--font-body-sm] text-on-error-container">{error}</p>
+        </div>
+      )}
     </div>
   );
 };
