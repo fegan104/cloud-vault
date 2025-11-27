@@ -12,38 +12,31 @@
 */
 
 @theme {
+  /*
+    The --color-* namespace generates utility classes (e.g., bg-primary, text-on-primary-container).
+    It is best practice to define the variables with the --color- prefix.
+  */
+
   /* Primary */
   --color-primary: #B71D57;
-  --color-on-primary: #FFFFFF;
   --color-primary-container: #FFD9DD;
-  --color-on-primary-container: #400018;
 
   /* Secondary */
   --color-secondary: #5F527E;
-  --color-on-secondary: #FFFFFF;
   --color-secondary-container: #E6DBFF;
-  --color-on-secondary-container: #1B0C37;
 
   /* Tertiary */
   --color-tertiary: #006497;
-  --color-on-tertiary: #FFFFFF;
   --color-tertiary-container: #CEE5FF;
-  --color-on-tertiary-container: #001D31;
 
   /* Surface, Background, and Outline */
   --color-background: #FFFBFB;
-  --color-on-background: #201A1A;
   --color-surface: #FFFBFB;
-  --color-on-surface: #201A1A;
   --color-surface-variant: #F3DDE1;
-  --color-on-surface-variant: #514346;
-  --color-outline: #847376;
 
   /* Error */
   --color-error: #BA1A1A;
-  --color-on-error: #FFFFFF;
   --color-error-container: #FFDAD5;
-  --color-on-error-container: #410002;
 }
 
 @media (prefers-color-scheme: dark) {
