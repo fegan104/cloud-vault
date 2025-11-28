@@ -1,26 +1,20 @@
 import { initializeApp, getApps, cert, ServiceAccount } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getStorage } from "firebase-admin/storage";
-import path from "path";
-import fs from "fs";
 
-const serviceAccountPath = path.join(process.cwd(), "serviceAccountKey.json");
-
-if (!fs.existsSync(serviceAccountPath)) {
-  throw new Error("Missing serviceAccountKey.json. Please add your Firebase service account file.");
-}
-
-const raw = fs.readFileSync(serviceAccountPath, "utf-8");
-
-// Use a stricter type to ensure all required fields exist
-const serviceAccount: ServiceAccount = JSON.parse(raw) as ServiceAccount;
+// Load service account credentials from environment variables
+const serviceAccount: ServiceAccount = {
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+};
 
 const app = getApps().length
   ? getApps()[0]
   : initializeApp({
-      credential: cert(serviceAccount),
-      storageBucket: "web-encryption-7ac01.firebasestorage.app"
-    });
+    credential: cert(serviceAccount),
+    storageBucket: "web-encryption-7ac01.firebasestorage.app"
+  });
 
 export const adminAuth = getAuth(app);
 export const storage = getStorage(app).bucket();
