@@ -20,28 +20,21 @@ export default function SignUpForm() {
     setIsLoading(true);
     setError(null);
 
-    try {
-      // 1) Generate salt
-      const saltBytes = crypto.getRandomValues(new Uint8Array(16));
-      const salt = btoa(String.fromCharCode(...saltBytes));
+    // 1) Generate salt
+    const saltBytes = crypto.getRandomValues(new Uint8Array(16));
+    const salt = btoa(String.fromCharCode(...saltBytes));
 
-      // 2) Generate Ed25519 key pair
-      const { publicKey } = await deriveKeypair(password, saltBytes)
-      const publicKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(publicKey)));
+    // 2) Generate Ed25519 key pair
+    const { publicKey } = await deriveKeypair(password, saltBytes)
+    const publicKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(publicKey)));
 
-      // 3) Send to your server (via RSC action) to create the user
-      await createUser({ email, salt, publicKey: publicKeyBase64 });
+    // 3) Send to your server (via RSC action) to create the user
+    await createUser({ email, salt, publicKey: publicKeyBase64 });
 
-      // 4) Keep privateKey client-side for signing login challenges
-      const masterKey = await deriveMasterKey(password, saltBytes)
-      setMasterKey(masterKey)
-      redirect('/vault')
-    } catch (err) {
-      setError('Sign up failed. Email may already be in use.')
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
+    // 4) Keep privateKey client-side for signing login challenges
+    const masterKey = await deriveMasterKey(password, saltBytes)
+    setMasterKey(masterKey)
+    redirect('/vault')
   }
 
   return (
