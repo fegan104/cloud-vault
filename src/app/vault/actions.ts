@@ -8,9 +8,32 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getUser } from "../../lib/getUser";
 
+export async function getUploadUrl(fileName: string) {
+  const currentUser = await getUser();
+  if (!currentUser) throw new Error("User not authenticated");
+
+  // Generate a unique storage path with UUID to prevent collisions
+  const uuid = crypto.randomUUID();
+  const storagePath = `uploads/${currentUser.id}/${uuid}-${fileName}.enc`;
+
+  // Generate a signed URL valid for 15 minutes
+  const [uploadUrl] = await storage.file(storagePath).getSignedUrl({
+    version: 'v4',
+    action: 'write',
+    expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+    contentType: 'application/octet-stream',
+  });
+
+  return {
+    uploadUrl,
+    storagePath,
+  };
+}
+
 export async function uploadAction(
   fileName: string,
-  cypherText: Blob,
+  storagePath: string,
+  fileSize: number,
   metadata: {
     fileIv: string;
     wrappedFileKey: string;
@@ -23,18 +46,26 @@ export async function uploadAction(
   }
 ) {
   const currentUser = await getUser();
-  if (!currentUser) throw new Error("User not authenticated")
+  if (!currentUser) throw new Error("User not authenticated");
 
-  const buffer = Buffer.from(await cypherText.arrayBuffer())
-  const destination = `uploads/${currentUser.id}/${fileName}.enc`
-  await saveToFirebaseStorage(destination, buffer)
+  // Verify the storage path belongs to this user
+  if (!storagePath.startsWith(`uploads/${currentUser.id}/`)) {
+    throw new Error("Invalid storage path");
+  }
+
+  // Verify the file exists at the storage path
+  const fileRef = storage.file(storagePath);
+  const [exists] = await fileRef.exists();
+  if (!exists) {
+    throw new Error("File not found at storage path");
+  }
 
   await prisma.encryptedFile.create({
     data: {
       userId: currentUser.id,
       fileName: fileName,
-      fileSize: buffer.length,
-      storagePath: destination,
+      fileSize: fileSize,
+      storagePath: storagePath,
       fileIv: metadata.fileIv,
       fileAlgorithm: metadata.fileAlgorithm,
       wrappedFileKey: metadata.wrappedFileKey,
@@ -45,15 +76,7 @@ export async function uploadAction(
       keyDerivationHash: metadata.keyDerivationHash,
     }
   });
-  revalidatePath("/vault")
-}
-
-async function saveToFirebaseStorage(destination: string, buffer: Buffer<ArrayBuffer>) {
-  const fileRef = storage.file(destination);
-  await fileRef.save(buffer, {
-    metadata: { contentType: "application/octet-stream" },
-    resumable: false,
-  });
+  revalidatePath("/vault");
 }
 
 export async function getDownloadUrl(fileId: string) {

@@ -4,12 +4,14 @@ import { encryptFile } from "../../lib/clientCrypto";
 import { ChangeEvent, useState } from "react";
 import { Upload } from "lucide-react";
 import CircularProgress from "@/components/CircularProgress";
+import { getUploadUrl } from "./actions";
 
 export function UploadButton({ masterKeySalt, onEncrypted }: {
   masterKeySalt: string,
   onEncrypted: (
     fileName: string,
-    encryptedBlob: Blob,
+    storagePath: string,
+    fileSize: number,
     metadata: {
       fileIv: string;
       wrappedFileKey: string;
@@ -28,15 +30,12 @@ export function UploadButton({ masterKeySalt, onEncrypted }: {
 
   const onFileSelected = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    console.log(file?.name || "No File name")
     setError('');
     if (!file) return;
     handleEncrypt(file)
   }
 
   const handleEncrypt = async (file: File) => {
-    console.log(file)
-
     if (!masterKey) {
       setError('Please unlock your vault.');
       return;
@@ -46,9 +45,27 @@ export function UploadButton({ masterKeySalt, onEncrypted }: {
     setError('');
 
     try {
+      // 1. Encrypt the file locally
       const { encryptedFileBlob, metadata } = await encryptFile(file, masterKey, masterKeySalt);
 
-      await onEncrypted(file.name, encryptedFileBlob, metadata);
+      // 2. Request a signed upload URL from the server
+      const { uploadUrl, storagePath } = await getUploadUrl(file.name);
+
+      // 3. Upload the encrypted file directly to Firebase Storage
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/octet-stream',
+        },
+        body: encryptedFileBlob,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+      }
+
+      // 4. Notify the server that the upload is complete
+      await onEncrypted(file.name, storagePath, encryptedFileBlob.size, metadata);
     } catch (err) {
       console.error(err);
       setError(`Encryption failed: ${err instanceof Error ? err.message : String(err)}`);
