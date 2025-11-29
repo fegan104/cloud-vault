@@ -18,7 +18,7 @@ type VaultScreenProps = {
 
 function AppBar() {
   return (
-    <div className="bg-surface-variant shadow-[--shadow-2] sticky top-0 z-50">
+    <div className="sticky top-0 z-50">
       <div className="w-full max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center">
@@ -85,7 +85,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
     <>
       <AppBar />
       <MasterKeyGuard masterKeySalt={masterKeySalt}>
-        <div className="min-h-[calc(100vh-72px)]" style={{ background: 'var(--color-background)' }}>
+        <div className="min-h-[calc(100vh-72px)]">
           <div className="w-full max-w-5xl mx-auto p-8 flex flex-col items-center">
             <div className="w-full mb-8 text-center">
               <h2 className="text-[--font-headline-lg] font-bold text-on-surface mb-3">

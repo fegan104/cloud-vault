@@ -1,6 +1,6 @@
 import { prisma } from "../../lib/db";
 import { redirect } from "next/navigation";
-import DashboardClient from "./VaultScreen";
+import VaultScreen from "./VaultScreen";
 import { getSessionToken } from "../../lib/getSessionToken";
 
 export default async function Dashboard() {
@@ -34,7 +34,7 @@ export default async function Dashboard() {
   }
 
   return (
-    <DashboardClient
+    <VaultScreen
       masterKeySalt={session.user.masterKeySalt}
       files={session.user.encryptedFiles}
     />

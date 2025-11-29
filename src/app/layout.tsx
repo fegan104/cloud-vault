@@ -27,7 +27,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} 
+          antialiased bg-background font-mono 
+          h-full overflow-hidden flex flex-col`}
       >
         <MasterKeyProvider>{children}</MasterKeyProvider>
       </body>
