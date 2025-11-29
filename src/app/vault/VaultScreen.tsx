@@ -11,35 +11,14 @@ import CircularProgress from "@/components/CircularProgress";
 import { UploadButton } from "./UploadButton";
 import { TextButton, TonalButton } from "@/components/Buttons";
 import { DeleteConfirmationModal } from "@/components/DeleteConfirmationModal";
+import { VaultAppBar } from "@/components/VaultAppBar";
 
 type VaultScreenProps = {
   masterKeySalt: string;
   files: EncryptedFile[];
 };
 
-function AppBar() {
-  return (
-    <div className="sticky top-0 z-50">
-      <div className="w-full max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center">
-            <FileText className="w-5 h-5 text-on-primary-container" />
-          </div>
-          <h1 className="text-[--font-title-lg] font-semibold text-on-surface">Encrypted Vault</h1>
-        </div>
-        <form action={signOut}>
-          <TonalButton
-            type="submit"
-            className="flex items-center gap-2"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Sign Out</span>
-          </TonalButton>
-        </form>
-      </div>
-    </div>
-  );
-}
+
 
 export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) {
   const { masterKey } = useMasterKey();
@@ -112,7 +91,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
         onConfirm={confirmDelete}
         onCancel={() => setFileToDelete(null)}
       />
-      <AppBar />
+      <VaultAppBar />
       <MasterKeyGuard masterKeySalt={masterKeySalt}>
         <div className="min-h-[calc(100vh-72px)] max-h-[calc(100vh-72px)] overflow-y-auto">
           <div className="w-full max-w-5xl mx-auto p-8 flex flex-col items-center">
