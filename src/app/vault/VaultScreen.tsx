@@ -126,6 +126,19 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
 }
 
 
+function formatFileSize(bytes: number): string {
+  const kb = bytes / 1024;
+  if (kb < 1024) {
+    return `${kb.toFixed(2)} KB`;
+  }
+  const mb = kb / 1024;
+  if (mb < 1024) {
+    return `${mb.toFixed(2)} MB`;
+  }
+  const gb = mb / 1024;
+  return `${gb.toFixed(2)} GB`;
+}
+
 function FileListItem({ file, downloadingId, onDownload }: {
   file: EncryptedFile;
   downloadingId: string | null;
@@ -148,7 +161,7 @@ function FileListItem({ file, downloadingId, onDownload }: {
             {file.fileName}
           </p>
           <p className="text-[--font-body-sm] text-on-surface-variant">
-            {(file.fileSize / 1024).toFixed(2)} KB • {new Date(file.createdAt).toLocaleDateString()}
+            {formatFileSize(file.fileSize)} • {new Date(file.createdAt).toLocaleDateString()}
           </p>
         </div>
       </div>
