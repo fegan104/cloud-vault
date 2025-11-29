@@ -77,7 +77,7 @@ export default function LoginForm() {
 
               {/* Error Message */}
               {error && (
-                <div className="p-3 rounded-[--radius-md] bg-error-container">
+                <div className="p-3 rounded-[var(--radius-md)] bg-error-container">
                   <p className="text-[--font-body-sm] text-on-error-container">{error}</p>
                 </div>
               )}

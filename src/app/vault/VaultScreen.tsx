@@ -5,11 +5,12 @@ import MasterKeyGuard from "../../components/MasterKeyGuard";
 import { decryptFile } from "../../lib/clientCrypto";
 import { useState } from "react";
 import { EncryptedFile } from "@prisma/client";
-import { getDownloadUrl, signOut, uploadAction } from "./actions";
-import { FileText, Download, LogOut } from "lucide-react";
+import { getDownloadUrl, signOut, uploadAction, deleteFile } from "./actions";
+import { FileText, Download, LogOut, Trash2 } from "lucide-react";
 import CircularProgress from "@/components/CircularProgress";
 import { UploadButton } from "./UploadButton";
 import { TextButton, TonalButton } from "@/components/Buttons";
+import { DeleteConfirmationModal } from "@/components/DeleteConfirmationModal";
 
 type VaultScreenProps = {
   masterKeySalt: string;
@@ -43,6 +44,8 @@ function AppBar() {
 export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) {
   const { masterKey } = useMasterKey();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [fileToDelete, setFileToDelete] = useState<EncryptedFile | null>(null);
 
   const handleDownload = async (file: EncryptedFile) => {
     if (!masterKey) return;
@@ -81,8 +84,34 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
     }
   };
 
+  const handleDelete = async (file: EncryptedFile) => {
+    setFileToDelete(file);
+  };
+
+  const confirmDelete = async () => {
+    if (!fileToDelete) return;
+
+    setDeletingId(fileToDelete.id);
+    setFileToDelete(null);
+
+    try {
+      await deleteFile(fileToDelete.id);
+    } catch (error) {
+      console.error("Delete failed:", error);
+      alert("Failed to delete file.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <>
+      <DeleteConfirmationModal
+        isOpen={fileToDelete !== null}
+        fileName={fileToDelete?.fileName || ""}
+        onConfirm={confirmDelete}
+        onCancel={() => setFileToDelete(null)}
+      />
       <AppBar />
       <MasterKeyGuard masterKeySalt={masterKeySalt}>
         <div className="min-h-[calc(100vh-72px)] max-h-[calc(100vh-72px)] overflow-y-auto">
@@ -102,7 +131,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
 
             {files.length === 0 ? (
               <div className="w-full max-w-3xl mt-12 text-center">
-                <div className="bg-surface rounded-[--radius-xl] p-12 shadow-[--shadow-2]">
+                <div className="bg-surface rounded-[var(--radius-xl)] p-12 shadow-[--shadow-2]">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-variant mb-4">
                     <FileText className="w-8 h-8 text-on-surface-variant" />
                   </div>
@@ -114,7 +143,14 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
             ) : (
               <ul className="w-full max-w-3xl space-y-3">
                 {files.map((file) => (
-                  <FileListItem key={file.id} file={file} downloadingId={downloadingId} onDownload={handleDownload} />
+                  <FileListItem
+                    key={file.id}
+                    file={file}
+                    downloadingId={downloadingId}
+                    deletingId={deletingId}
+                    onDownload={handleDownload}
+                    onDelete={handleDelete}
+                  />
                 ))}
               </ul>
             )}
@@ -139,12 +175,15 @@ function formatFileSize(bytes: number): string {
   return `${gb.toFixed(2)} GB`;
 }
 
-function FileListItem({ file, downloadingId, onDownload }: {
+function FileListItem({ file, downloadingId, deletingId, onDownload, onDelete }: {
   file: EncryptedFile;
   downloadingId: string | null;
-  onDownload: (file: EncryptedFile) => void
+  deletingId: string | null;
+  onDownload: (file: EncryptedFile) => void;
+  onDelete: (file: EncryptedFile) => void;
 }) {
   const isDownloading = downloadingId === file.id;
+  const isDeleting = deletingId === file.id;
 
   return (
     <li
@@ -165,23 +204,38 @@ function FileListItem({ file, downloadingId, onDownload }: {
           </p>
         </div>
       </div>
-      <TextButton
-        onClick={() => onDownload(file)}
-        disabled={isDownloading}
-        className={`w-full ring-1 ring-primary sm:w-auto flex-shrink-0 ${isDownloading ? 'opacity-50 cursor-wait' : ''
-          }`}
-      >
-        {isDownloading ? (
-          <>
-            <CircularProgress size={18} />
-            <span>Decrypting...</span>
-          </>
-        ) : (
-          <>
-            <span>Download</span>
-          </>
-        )}
-      </TextButton>
+      <div className="flex gap-2 w-full sm:w-auto flex-shrink-0">
+        <TextButton
+          onClick={() => onDownload(file)}
+          disabled={isDownloading || isDeleting}
+          className={`flex-1 sm:flex-initial ring-1 ring-primary ${(isDownloading || isDeleting) ? 'opacity-50 cursor-wait' : ''
+            }`}
+        >
+          {isDownloading ? (
+            <>
+              <CircularProgress size={18} />
+              <span>Decrypting...</span>
+            </>
+          ) : (
+            <>
+              <span>Download</span>
+            </>
+          )}
+        </TextButton>
+        <button
+          onClick={() => onDelete(file)}
+          disabled={isDownloading || isDeleting}
+          className={`p-2 rounded-lg transition-all duration-200 hover:bg-error/10 ${(isDownloading || isDeleting) ? 'opacity-50 cursor-wait' : ''
+            }`}
+          aria-label="Delete file"
+        >
+          {isDeleting ? (
+            <CircularProgress size={20} />
+          ) : (
+            <Trash2 className="w-5 h-5 text-error" />
+          )}
+        </button>
+      </div>
     </li>
   )
 }

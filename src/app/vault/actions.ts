@@ -120,6 +120,37 @@ export async function getDownloadUrl(fileId: string) {
   return url;
 }
 
+export async function deleteFile(fileId: string) {
+  const currentUser = await getUser();
+  if (!currentUser) throw new Error("User not authenticated");
+
+  // Get the file record to ensure it belongs to this user
+  const fileRecord = await prisma.encryptedFile.findUnique({
+    where: {
+      id: fileId,
+      userId: currentUser.id,
+    },
+  });
+
+  if (!fileRecord) {
+    throw new Error("File not found or unauthorized");
+  }
+
+  // Delete from Firebase Storage
+  const fileRef = storage.file(fileRecord.storagePath);
+  const [exists] = await fileRef.exists();
+  if (exists) {
+    await fileRef.delete();
+  }
+
+  // Delete from database
+  await prisma.encryptedFile.delete({
+    where: { id: fileId },
+  });
+
+  revalidatePath("/vault");
+}
+
 export async function signOut() {
   const requestCookies = await cookies();
   const sessionToken = requestCookies.get("session")?.value;

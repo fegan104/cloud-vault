@@ -114,7 +114,7 @@ export function UploadButton({ masterKeySalt, onEncrypted }: {
       </form>
 
       {error && (
-        <div className="mt-3 p-3 rounded-[--radius-md] bg-error-container">
+        <div className="mt-3 p-3 rounded-[var(--radius-md)] bg-error-container">
           <p className="text-[--font-body-sm] text-on-error-container">{error}</p>
         </div>
       )}

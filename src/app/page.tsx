@@ -11,7 +11,7 @@ export default async function Home() {
         {user ? (
           <div className="w-full max-w-2xl">
             {/* Welcome Card */}
-            <div className="bg-surface rounded-[--radius-xl] p-10 shadow-[--shadow-4] text-center">
+            <div className="bg-surface rounded-[var(--radius-xl)] p-10 shadow-[--shadow-4] text-center">
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-tertiary-container mb-6">
                 <Shield className="w-10 h-10 text-on-tertiary-container" />
               </div>
@@ -37,7 +37,7 @@ export default async function Home() {
         ) : (
           <div className="w-full max-w-2xl">
             {/* Hero Card */}
-            <div className="bg-surface rounded-[--radius-xl] p-10 shadow-[--shadow-4] text-center">
+            <div className="bg-surface rounded-[var(--radius-xl)] p-10 shadow-[--shadow-4] text-center">
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary-container mb-6">
                 <Key className="w-10 h-10 text-on-primary-container" />
               </div>
