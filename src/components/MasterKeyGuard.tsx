@@ -3,8 +3,11 @@
 import { generateChallengeForSession, verifyChallengeForSession } from "../lib/challenge";
 import { useMasterKey } from "./MasterKeyContext";
 import { base64ToUint8Array, deriveMasterKey, signChallenge } from "../lib/clientCrypto";
-import { ChangeEvent, useState } from "react";
+import { useState } from "react";
 import CircularProgress from "./CircularProgress";
+import { File } from "lucide-react";
+import { PasswordInput } from "@/components/TextInput";
+import { TonalButton } from "@/components/Buttons";
 
 type MasterKeyGuardProps = {
   masterKeySalt: string;
@@ -17,8 +20,8 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
   const [error, setError] = useState<string | null>(null);
   const { masterKey, setMasterKey } = useMasterKey();
 
-  const handlePasswordChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    setPassword(e.target.value);
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
     setError(null);
   };
 
@@ -46,15 +49,13 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
 
   if (!masterKey) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--color-surface-variant)' }}>
+      <div className="min-h-screen flex items-center justify-center px-4 bg-surface-variant">
         <div className="w-full max-w-md">
           <div className="bg-surface rounded-[--radius-xl] p-8 shadow-[--shadow-4]">
             {/* Header */}
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-tertiary-container mb-4">
-                <svg className="w-8 h-8 text-on-tertiary-container" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
+                <File className="w-8 h-8 text-on-tertiary-container" />
               </div>
               <h2 className="text-[--font-headline-md] font-semibold text-on-surface mb-2">
                 Unlock Your Vault
@@ -66,33 +67,19 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
 
             {/* Form */}
             <div className="space-y-5">
-              <div className="space-y-2">
-                <label
-                  htmlFor="password-input"
-                  className="block text-[--font-label-lg] font-medium text-on-surface"
-                >
-                  Password
-                </label>
-                <input
-                  id="password-input"
-                  type="password"
-                  value={password}
-                  onChange={handlePasswordChange}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      submitPassword();
-                    }
-                  }}
-                  placeholder="Enter your password"
-                  className={`w-full px-4 py-3 bg-surface-variant border rounded-[--radius-md] 
-                           text-on-surface placeholder:text-on-surface-variant
-                           focus:outline-none focus:ring-2 transition-all duration-200
-                           ${error
-                      ? "border-error focus:ring-error focus:border-error"
-                      : "border-outline-variant focus:ring-tertiary focus:border-tertiary"
-                    }`}
-                />
-              </div>
+              <PasswordInput
+                label="Password"
+                value={password}
+                onChange={handlePasswordChange}
+                placeholder="Enter your password"
+                name="password-input"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    submitPassword();
+                  }
+                }}
+                error={error}
+              />
 
               {error && (
                 <div className="p-3 rounded-[--radius-md] bg-error-container">
@@ -100,15 +87,10 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
                 </div>
               )}
 
-              <button
+              <TonalButton
                 onClick={submitPassword}
                 disabled={isLoading}
-                className="w-full bg-tertiary text-on-tertiary py-3 px-6 rounded-full
-                         font-medium text-[--font-label-lg] shadow-[--shadow-2]
-                         hover:shadow-[--shadow-3] hover:brightness-110
-                         active:shadow-[--shadow-1]
-                         disabled:opacity-50 disabled:cursor-not-allowed
-                         transition-all duration-200 flex items-center justify-center gap-2"
+                className="w-full py-3 px-6"
               >
                 {isLoading ? (
                   <>
@@ -118,7 +100,7 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
                 ) : (
                   'Unlock Vault'
                 )}
-              </button>
+              </TonalButton>
             </div>
           </div>
         </div>

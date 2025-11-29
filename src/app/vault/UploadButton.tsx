@@ -78,7 +78,7 @@ export function UploadButton({ masterKeySalt, onEncrypted }: {
     <div className="w-full">
       <form>
         <button
-          className={`relative w-full px-6 py-4 text-on-primary font-semibold rounded-[--radius-lg] 
+          className={`relative w-full px-6 py-4 text-on-primary font-semibold rounded-full 
                      shadow-[--shadow-2] transition-all duration-200 focus:outline-none focus:ring-2 
                      focus:ring-primary focus:ring-offset-2
                      ${!inProgress

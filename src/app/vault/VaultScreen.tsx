@@ -9,6 +9,7 @@ import { getDownloadUrl, signOut, uploadAction } from "./actions";
 import { FileText, Download, LogOut } from "lucide-react";
 import CircularProgress from "@/components/CircularProgress";
 import { UploadButton } from "./UploadButton";
+import { TonalButton } from "@/components/Buttons";
 
 type VaultScreenProps = {
   masterKeySalt: string;
@@ -26,16 +27,13 @@ function AppBar() {
           <h1 className="text-[--font-title-lg] font-semibold text-on-surface">Encrypted Vault</h1>
         </div>
         <form action={signOut}>
-          <button
+          <TonalButton
             type="submit"
-            className="flex items-center gap-2 px-5 py-2.5 text-[--font-label-lg] font-medium 
-                     bg-secondary-container text-on-secondary-container rounded-full
-                     hover:shadow-[--shadow-2] hover:brightness-95
-                     transition-all duration-200"
+            className="flex items-center gap-2"
           >
             <LogOut className="w-4 h-4" />
             <span>Sign Out</span>
-          </button>
+          </TonalButton>
         </form>
       </div>
     </div>
@@ -138,15 +136,15 @@ function FileListItem({ file, downloadingId, onDownload }: {
   return (
     <li
       className="bg-surface p-5 rounded-[--radius-lg] shadow-[--shadow-2] 
-               flex items-center justify-between 
+               flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4
                hover:shadow-[--shadow-3] transition-all duration-200"
     >
-      <div className="flex items-center gap-4">
-        <div className="bg-tertiary-container p-3 rounded-[--radius-md]">
+      <div className="flex items-center gap-4 min-w-0">
+        <div className="bg-tertiary-container p-3 rounded-[--radius-md] flex-shrink-0">
           <FileText className="w-6 h-6 text-on-tertiary-container" />
         </div>
-        <div>
-          <p className="font-semibold text-[--font-body-lg] text-on-surface mb-1">
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-[--font-body-lg] text-on-surface mb-1 break-words">
             {file.fileName}
           </p>
           <p className="text-[--font-body-sm] text-on-surface-variant">
@@ -154,14 +152,10 @@ function FileListItem({ file, downloadingId, onDownload }: {
           </p>
         </div>
       </div>
-      <button
+      <TonalButton
         onClick={() => onDownload(file)}
         disabled={isDownloading}
-        className={`px-5 py-2.5 rounded-full text-[--font-label-md] font-medium 
-                   flex items-center gap-2 transition-all duration-200
-                   ${isDownloading
-            ? 'bg-surface-variant text-on-surface-variant cursor-wait'
-            : 'bg-tertiary text-on-tertiary shadow-[--shadow-2] hover:shadow-[--shadow-3] hover:brightness-110'
+        className={`w-full sm:w-auto flex-shrink-0 ${isDownloading ? 'opacity-50 cursor-wait' : ''
           }`}
       >
         {isDownloading ? (
@@ -175,7 +169,7 @@ function FileListItem({ file, downloadingId, onDownload }: {
             <span>Download</span>
           </>
         )}
-      </button>
+      </TonalButton>
     </li>
   )
 }

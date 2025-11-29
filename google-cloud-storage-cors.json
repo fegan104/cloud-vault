@@ -1,0 +1,18 @@
+[
+  {
+    "origin": [
+      "https://cloud-vault-beryl.vercel.app",
+      "http://localhost:3000"
+    ],
+    "method": [
+      "GET",
+      "PUT",
+      "POST",
+      "OPTIONS"
+    ],
+    "responseHeader": [
+      "Content-Type"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]

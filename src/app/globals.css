@@ -2,7 +2,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #fafafa;
   --foreground: #171717;
 }
 
@@ -19,16 +19,16 @@
   */
 
   /* Primary */
-  --color-primary: #B71D57;
-  --color-primary-container: #FFD9DD;
+  --color-primary: #1d4ed8;
+  --color-primary-container: #dbeafe;
   --color-on-primary: #FFFFFF;
   --color-on-primary-container: #3E001D;
 
   /* Secondary */
   --color-secondary: #5F527E;
-  --color-secondary-container: #E6DBFF;
+  --color-secondary-container: #DCE2F9;
   --color-on-secondary: #FFFFFF;
-  --color-on-secondary-container: #1B0261;
+  --color-on-secondary-container: #151B2C;
 
   /* Tertiary */
   --color-tertiary: #006497;
@@ -37,10 +37,10 @@
   --color-on-tertiary-container: #001E2F;
 
   /* Surface, Background, and Outline */
-  --color-background: #FFFBFB;
+  --color-background: #fafafa;
   --color-surface: #FFFBFB;
-  --color-surface-variant: #F3DDE1;
-  --color-on-surface: #1F1A1B;
+  --color-surface-variant: #fff;
+  --color-on-surface: #121212;
   --color-on-surface-variant: #524345;
   --color-outline: #857375;
   --color-outline-variant: #D7C2C4;

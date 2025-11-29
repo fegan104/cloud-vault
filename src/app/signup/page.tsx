@@ -7,6 +7,8 @@ import { useMasterKey } from '../../components/MasterKeyContext';
 import { redirect } from 'next/navigation';
 import { UserPlus } from 'lucide-react';
 import Link from 'next/link';
+import { TextInput, PasswordInput } from '@/components/TextInput';
+import { TonalButton } from '@/components/Buttons';
 
 export default function SignUpForm() {
   const [email, setEmail] = useState('');
@@ -58,46 +60,21 @@ export default function SignUpForm() {
           {/* Form */}
           <form onSubmit={handleSignUp} className="space-y-5">
             {/* Email Input */}
-            <div className="space-y-2">
-              <label
-                htmlFor="email"
-                className="block text-[--font-label-lg] font-medium text-on-surface"
-              >
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-3 bg-surface-variant border border-outline-variant rounded-[--radius-md] 
-                         text-on-surface placeholder:text-on-surface-variant
-                         focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary
-                         transition-all duration-200"
-              />
-            </div>
+            <TextInput
+              label="Email"
+              value={email}
+              onChange={setEmail}
+              placeholder="you@example.com"
+              type="email"
+            />
 
             {/* Password Input */}
-            <div className="space-y-2">
-              <label
-                htmlFor="password"
-                className="block text-[--font-label-lg] font-medium text-on-surface"
-              >
-                Master Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                placeholder="Choose a strong password"
+            <div className="space-y-1">
+              <PasswordInput
+                label="Master Password"
                 value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-3 bg-surface-variant border border-outline-variant rounded-[--radius-md] 
-                         text-on-surface placeholder:text-on-surface-variant
-                         focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary
-                         transition-all duration-200"
+                onChange={setPassword}
+                placeholder="Choose a strong password"
               />
               <p className="text-[--font-body-sm] text-on-surface-variant">
                 Choose a strong password. You cannot recover it if lost.
@@ -112,18 +89,13 @@ export default function SignUpForm() {
             )}
 
             {/* Submit Button */}
-            <button
+            <TonalButton
               type="submit"
               disabled={isLoading}
-              className="w-full bg-secondary text-on-secondary py-3 px-6 rounded-full
-                       font-medium text-[--font-label-lg] shadow-[--shadow-2]
-                       hover:shadow-[--shadow-3] hover:brightness-110
-                       active:shadow-[--shadow-1]
-                       disabled:opacity-50 disabled:cursor-not-allowed
-                       transition-all duration-200"
+              className="w-full py-3"
             >
               {isLoading ? 'Creating account...' : 'Sign Up'}
-            </button>
+            </TonalButton>
           </form>
 
           {/* Sign In Link */}

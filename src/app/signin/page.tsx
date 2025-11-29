@@ -7,6 +7,8 @@ import { redirect } from 'next/navigation';
 import { useState } from 'react';
 import { LogIn } from 'lucide-react';
 import Link from 'next/link';
+import { TextInput, PasswordInput } from '@/components/TextInput';
+import { TonalButton } from '@/components/Buttons';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -55,48 +57,21 @@ export default function LoginForm() {
           {/* Form */}
           <form onSubmit={handleRequestChallenge} className="space-y-5">
             {/* Email Input */}
-            <div className="space-y-2">
-              <label
-                htmlFor="email"
-                className="block text-[--font-label-lg] font-medium text-on-surface"
-              >
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                required
-                className="w-full px-4 py-3 bg-surface-variant border border-outline-variant rounded-[--radius-md] 
-                         text-on-surface placeholder:text-on-surface-variant
-                         focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary
-                         transition-all duration-200"
-              />
-            </div>
+            <TextInput
+              label="Email"
+              value={email}
+              onChange={setEmail}
+              placeholder="you@example.com"
+              type="email"
+            />
 
             {/* Password Input */}
-            <div className="space-y-2">
-              <label
-                htmlFor="password"
-                className="block text-[--font-label-lg] font-medium text-on-surface"
-              >
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                required
-                className="w-full px-4 py-3 bg-surface-variant border border-outline-variant rounded-[--radius-md] 
-                         text-on-surface placeholder:text-on-surface-variant
-                         focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary
-                         transition-all duration-200"
-              />
-            </div>
+            <PasswordInput
+              label="Password"
+              value={password}
+              onChange={setPassword}
+              placeholder="Enter your password"
+            />
 
             {/* Error Message */}
             {error && (
@@ -106,18 +81,13 @@ export default function LoginForm() {
             )}
 
             {/* Submit Button */}
-            <button
+            <TonalButton
               type="submit"
               disabled={isLoading}
-              className="w-full bg-primary text-on-primary py-3 px-6 rounded-full
-                       font-medium text-[--font-label-lg] shadow-[--shadow-2]
-                       hover:shadow-[--shadow-3] hover:brightness-110
-                       active:shadow-[--shadow-1]
-                       disabled:opacity-50 disabled:cursor-not-allowed
-                       transition-all duration-200"
+              className="w-full py-3"
             >
               {isLoading ? 'Signing in...' : 'Sign In'}
-            </button>
+            </TonalButton>
           </form>
 
           {/* Sign Up Link */}
