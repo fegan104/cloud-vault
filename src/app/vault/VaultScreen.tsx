@@ -9,7 +9,7 @@ import { getDownloadUrl, signOut, uploadAction } from "./actions";
 import { FileText, Download, LogOut } from "lucide-react";
 import CircularProgress from "@/components/CircularProgress";
 import { UploadButton } from "./UploadButton";
-import { TonalButton } from "@/components/Buttons";
+import { TextButton, TonalButton } from "@/components/Buttons";
 
 type VaultScreenProps = {
   masterKeySalt: string;
@@ -135,12 +135,12 @@ function FileListItem({ file, downloadingId, onDownload }: {
 
   return (
     <li
-      className="bg-surface p-5 rounded-[--radius-lg] shadow-[--shadow-2] 
+      className="bg-surface-variant p-5 rounded-[8px] shadow-[--shadow-2] 
                flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4
                hover:shadow-[--shadow-3] transition-all duration-200"
     >
       <div className="flex items-center gap-4 min-w-0">
-        <div className="bg-tertiary-container p-3 rounded-[--radius-md] flex-shrink-0">
+        <div className="p-3 flex-shrink-0">
           <FileText className="w-6 h-6 text-on-tertiary-container" />
         </div>
         <div className="min-w-0 flex-1">
@@ -152,10 +152,10 @@ function FileListItem({ file, downloadingId, onDownload }: {
           </p>
         </div>
       </div>
-      <TonalButton
+      <TextButton
         onClick={() => onDownload(file)}
         disabled={isDownloading}
-        className={`w-full sm:w-auto flex-shrink-0 ${isDownloading ? 'opacity-50 cursor-wait' : ''
+        className={`w-full ring-1 ring-primary sm:w-auto flex-shrink-0 ${isDownloading ? 'opacity-50 cursor-wait' : ''
           }`}
       >
         {isDownloading ? (
@@ -165,11 +165,10 @@ function FileListItem({ file, downloadingId, onDownload }: {
           </>
         ) : (
           <>
-            <Download className="w-4 h-4" />
             <span>Download</span>
           </>
         )}
-      </TonalButton>
+      </TextButton>
     </li>
   )
 }

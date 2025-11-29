@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "web-encryption",
+  title: "cloud vault",
   description: "An end-to-end encrypted cloud file storage web app",
 };
 

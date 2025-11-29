@@ -39,7 +39,7 @@
   /* Surface, Background, and Outline */
   --color-background: #fafafa;
   --color-surface: #FFFBFB;
-  --color-surface-variant: #fff;
+  --color-surface-variant: #dbeafe;
   --color-on-surface: #121212;
   --color-on-surface-variant: #524345;
   --color-outline: #857375;
@@ -107,7 +107,6 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

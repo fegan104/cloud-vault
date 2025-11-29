@@ -41,7 +41,7 @@ export default function LoginForm() {
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full flex justify-center">
         {/* Card Container */}
-        <Card className="p-8 space-y-4 md:w-[512px] sm:w-full">
+        <Card className="w-full md:w-[512px] p-8 space-y-4">
           <div>
             {/* Header */}
             <div className="text-center mb-8">
