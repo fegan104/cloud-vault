@@ -2,7 +2,8 @@
   {
     "origin": [
       "https://cloud-vault-beryl.vercel.app",
-      "http://localhost:3000"
+      "http://localhost:3000",
+      "https://cloudvault.frankegan.com"
     ],
     "method": [
       "GET",
