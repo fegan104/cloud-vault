@@ -23,10 +23,10 @@ export default function Home() {
               <div className="px-4 py-2 rounded-full bg-secondary-container text-on-secondary-container text-[--font-label-md] font-medium">
                 🔒 End-to-End Encrypted
               </div>
-              <div className="px-4 py-2 rounded-full bg-tertiary-container text-on-tertiary-container text-[--font-label-md] font-medium">
+              <div className="px-4 py-2 rounded-full bg-secondary-container text-on-secondary-container text-[--font-label-md] font-medium">
                 🚀 Zero-Knowledge
               </div>
-              <div className="px-4 py-2 rounded-full bg-primary-container text-on-primary-container text-[--font-label-md] font-medium">
+              <div className="px-4 py-2 rounded-full bg-secondary-container text-on-secondary-container text-[--font-label-md] font-medium">
                 ✨ Secure Storage
               </div>
             </div>
