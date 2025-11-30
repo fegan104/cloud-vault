@@ -18,9 +18,10 @@ export function UploadButton({ masterKeySalt, onEncrypted }: {
       keyWrapIv: string;
       fileAlgorithm: string;
       keyDerivationSalt: string;
-      keyDerivationIterations: number;
-      keyDerivationAlgorithm: string;
-      keyDerivationHash: string;
+      argon2MemorySize: number;
+      argon2Iterations: number;
+      argon2Parallelism: number;
+      argon2HashLength: number;
     }
   ) => Promise<void>;
 }) {

@@ -57,9 +57,11 @@ model EncryptedFile {
   wrappedFileKey          String
   keyWrapIv               String
   keyDerivationSalt       String
-  keyDerivationIterations Int
-  keyDerivationAlgorithm  String
-  keyDerivationHash       String
+
+  argon2MemorySize        Int
+  argon2Iterations        Int
+  argon2Parallelism       Int
+  argon2HashLength        Int
   createdAt               DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

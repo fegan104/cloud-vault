@@ -1,32 +1,30 @@
 "use client"
 import nacl from "tweetnacl";
+import { argon2id } from "hash-wasm";
 
-const AES_KEY_ITERATIONS = 250_000;
+const ARGON2_MEMORY_SIZE = 131_072; // 128 MB
+const ARGON2_ITERATIONS = 4;
+const ARGON2_PARALLELISM = 1;
+const ARGON2_HASH_LENGTH = 32;
 
 export async function deriveKeypair(password: string, salt: Uint8Array<ArrayBuffer>) {
-  const pwBytes = new TextEncoder().encode(password);
+  const seedHex = await argon2id({
+    password,
+    salt,
+    parallelism: ARGON2_PARALLELISM,
+    iterations: ARGON2_ITERATIONS,
+    memorySize: ARGON2_MEMORY_SIZE,
+    hashLength: ARGON2_HASH_LENGTH,
+    outputType: "hex",
+  });
 
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw",
-    pwBytes,
-    { name: "PBKDF2" },
-    false,
-    ["deriveBits"]
-  );
-
-  const seed = await crypto.subtle.deriveBits(
-    {
-      name: "PBKDF2",
-      salt,
-      iterations: 200_000,
-      hash: "SHA-256"
-    },
-    keyMaterial,
-    256
+  // Convert hex string to Uint8Array
+  const seed = new Uint8Array(
+    seedHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
   );
 
   // Convert seed → Ed25519 keypair using TweetNaCl
-  const keypair = nacl.sign.keyPair.fromSeed(new Uint8Array(seed));
+  const keypair = nacl.sign.keyPair.fromSeed(seed);
 
   return {
     publicKey: keypair.publicKey,
@@ -60,23 +58,24 @@ export function base64ToUint8Array(base64: string) {
   return bytes;
 }
 
-export async function deriveMasterKey(password: string, salt: BufferSource) {
-  const enc = new TextEncoder();
-  const baseKey = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(password),
-    "PBKDF2",
-    false,
-    ["deriveKey"]
+export async function deriveMasterKey(password: string, salt: Uint8Array) {
+  const keyHex = await argon2id({
+    password,
+    salt,
+    parallelism: ARGON2_PARALLELISM,
+    iterations: ARGON2_ITERATIONS,
+    memorySize: ARGON2_MEMORY_SIZE,
+    hashLength: ARGON2_HASH_LENGTH,
+    outputType: "hex",
+  });
+
+  const keyBytes = new Uint8Array(
+    keyHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
   );
-  return crypto.subtle.deriveKey(
-    {
-      name: "PBKDF2",
-      salt,
-      iterations: AES_KEY_ITERATIONS,
-      hash: "SHA-256",
-    },
-    baseKey,
+
+  return crypto.subtle.importKey(
+    "raw",
+    keyBytes,
     { name: "AES-GCM", length: 256 },
     false,
     ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
@@ -157,9 +156,10 @@ export async function encryptFile(
     keyWrapIv: uint8ToBase64(keyWrapIv),
     fileAlgorithm: 'AES-GCM',
     keyDerivationSalt: masterKeySalt,
-    keyDerivationIterations: AES_KEY_ITERATIONS,
-    keyDerivationAlgorithm: 'PBKDF2',
-    keyDerivationHash: 'SHA-256',
+    argon2MemorySize: ARGON2_MEMORY_SIZE,
+    argon2Iterations: ARGON2_ITERATIONS,
+    argon2Parallelism: ARGON2_PARALLELISM,
+    argon2HashLength: ARGON2_HASH_LENGTH,
   };
 
   const encryptedFileBlob = new Blob([encryptedContent], { type: 'application/octet-stream' });

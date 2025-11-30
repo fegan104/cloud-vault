@@ -40,9 +40,10 @@ export async function uploadAction(
     keyWrapIv: string;
     fileAlgorithm: string;
     keyDerivationSalt: string;
-    keyDerivationIterations: number;
-    keyDerivationAlgorithm: string;
-    keyDerivationHash: string;
+    argon2MemorySize: number;
+    argon2Iterations: number;
+    argon2Parallelism: number;
+    argon2HashLength: number;
   }
 ) {
   const currentUser = await getUser();
@@ -71,9 +72,10 @@ export async function uploadAction(
       wrappedFileKey: metadata.wrappedFileKey,
       keyWrapIv: metadata.keyWrapIv,
       keyDerivationSalt: metadata.keyDerivationSalt,
-      keyDerivationIterations: metadata.keyDerivationIterations,
-      keyDerivationAlgorithm: metadata.keyDerivationAlgorithm,
-      keyDerivationHash: metadata.keyDerivationHash,
+      argon2MemorySize: metadata.argon2MemorySize,
+      argon2Iterations: metadata.argon2Iterations,
+      argon2Parallelism: metadata.argon2Parallelism,
+      argon2HashLength: metadata.argon2HashLength,
     }
   });
   revalidatePath("/vault");
