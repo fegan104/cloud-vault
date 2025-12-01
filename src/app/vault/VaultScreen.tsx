@@ -84,7 +84,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
   };
 
   return (
-    <>
+    <div className="overflow-hidden flex flex-col h-full">
       <DeleteConfirmationModal
         isOpen={fileToDelete !== null}
         fileName={fileToDelete?.fileName || ""}
@@ -93,7 +93,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
       />
       <VaultAppBar />
       <MasterKeyGuard masterKeySalt={masterKeySalt}>
-        <div className="min-h-[calc(100vh-72px)] max-h-[calc(100vh-72px)] overflow-y-auto">
+        <div className="overflow-y-auto">
           <div className="w-full max-w-5xl mx-auto p-8 flex flex-col items-center">
             <div className="w-full mb-8 text-center">
               <h2 className="text-[--font-headline-lg] font-bold text-on-surface mb-3">
@@ -136,7 +136,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
           </div>
         </div>
       </MasterKeyGuard>
-    </>
+    </div>
   );
 }
 

@@ -21,10 +21,6 @@ export async function proxy(request: NextRequest) {
     if (request.nextUrl.pathname === '/vault') {
       return NextResponse.redirect(new URL('/signin', request.url))
     }
-
-    if (request.nextUrl.pathname === '/vault/upload') {
-      return NextResponse.redirect(new URL('/signin', request.url))
-    }
   }
 
   return NextResponse.next()
