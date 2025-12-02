@@ -6,7 +6,7 @@ import { decryptFile } from "../../lib/clientCrypto";
 import { useState } from "react";
 import { EncryptedFile } from "@prisma/client";
 import { getDownloadUrl, signOut, uploadAction, deleteFile, renameFile } from "./actions";
-import { FileText, Download, LogOut, Trash2, FilePenLine } from "lucide-react";
+import { FileText, Download, LogOut, Trash2, FilePenLine, MoreVertical } from "lucide-react";
 import CircularProgress from "@/components/CircularProgress";
 import { UploadButton } from "./UploadButton";
 import { TextButton, TonalButton } from "@/components/Buttons";
@@ -17,8 +17,6 @@ type VaultScreenProps = {
   masterKeySalt: string;
   files: EncryptedFile[];
 };
-
-
 
 export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) {
   const { masterKey } = useMasterKey();
@@ -210,6 +208,7 @@ function FileListItem({ file, downloadingId, deletingId, renamingId, onDownload,
   onDelete: (file: EncryptedFile) => void;
   onRename: (file: EncryptedFile) => void;
 }) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isDownloading = downloadingId === file.id;
   const isDeleting = deletingId === file.id;
   const isRenaming = renamingId === file.id;
@@ -238,8 +237,8 @@ function FileListItem({ file, downloadingId, deletingId, renamingId, onDownload,
         <TextButton
           onClick={() => onDownload(file)}
           disabled={isBusy}
-          className={`flex-1 sm:flex-initial ring-1 ring-primary ${isBusy ? 'opacity-50 cursor-wait' : ''
-            }`}
+          className={`flex-1 sm:flex-initial ring-1 ring-primary 
+            ${isBusy ? 'opacity-50 cursor-wait' : ''}`}
         >
           {isDownloading ? (
             <>
@@ -252,32 +251,54 @@ function FileListItem({ file, downloadingId, deletingId, renamingId, onDownload,
             </>
           )}
         </TextButton>
-        <button
-          onClick={() => onRename(file)}
-          disabled={isBusy}
-          className={`p-2 rounded-lg transition-all duration-200 hover:bg-primary/10 ${isBusy ? 'opacity-50 cursor-wait' : ''
-            }`}
-          aria-label="Rename file"
-        >
-          {isRenaming ? (
-            <CircularProgress size={20} />
-          ) : (
-            <FilePenLine className="w-5 h-5 text-primary" />
+        <div className="relative">
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            disabled={isBusy}
+            className={`p-2 rounded-lg transition-all duration-200
+              text-on-secondary-container hover:bg-secondary-container/70 
+              ${isBusy ? 'opacity-50 cursor-wait' : ''}`}
+            aria-label="More actions"
+          >
+            {(isBusy) ? (
+              <CircularProgress size={20} />
+            ) : (
+              <MoreVertical className="w-5 h-5 text-on-surface" />
+            )}
+          </button>
+          {isMenuOpen && !isBusy && (
+            <>
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setIsMenuOpen(false)}
+              />
+              <div className="absolute right-0 mt-2 w-48 bg-surface rounded-lg shadow-[--shadow-4] z-20 overflow-hidden">
+                {/* Rename button */}
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    onRename(file);
+                  }}
+                  className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-surface-variant transition-colors"
+                >
+                  <FilePenLine className="w-5 h-5 text-on-surface" />
+                  <span className="text-[--font-body-md] text-on-surface">Rename</span>
+                </button>
+                {/* Delete button */}
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    onDelete(file);
+                  }}
+                  className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-error/10 transition-colors"
+                >
+                  <Trash2 className="w-5 h-5 text-error" />
+                  <span className="text-[--font-body-md] text-error">Delete</span>
+                </button>
+              </div>
+            </>
           )}
-        </button>
-        <button
-          onClick={() => onDelete(file)}
-          disabled={isBusy}
-          className={`p-2 rounded-lg transition-all duration-200 hover:bg-error/10 ${isBusy ? 'opacity-50 cursor-wait' : ''
-            }`}
-          aria-label="Delete file"
-        >
-          {isDeleting ? (
-            <CircularProgress size={20} />
-          ) : (
-            <Trash2 className="w-5 h-5 text-error" />
-          )}
-        </button>
+        </div>
       </div>
     </li>
   )

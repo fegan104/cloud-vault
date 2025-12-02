@@ -1,19 +1,20 @@
 import { prisma } from "../../lib/db";
 import { redirect } from "next/navigation";
 import VaultScreen from "./VaultScreen";
-import { getSessionToken } from "../../lib/getSessionToken";
+import { getSessionToken, deleteSessionToken } from "../../lib/getSessionToken";
 
-export default async function Dashboard() {
+export default async function FileVault() {
   const sessionToken = await getSessionToken()
   if (!sessionToken) {
     redirect("/signin")
   }
 
+  // Query for a non-expired session and user's encrypted files
   const session = await prisma.session.findUnique({
     where: {
       sessionToken,
       expiresAt: {
-        gt: new Date(), // only include sessions that haven't expired
+        gt: new Date(),
       }
     },
     include: {
@@ -30,7 +31,17 @@ export default async function Dashboard() {
   });
 
   if (!session) {
+    // Delete the session token cookie in case one is leftover
+    deleteSessionToken()
     redirect("/signin")
+  } else {
+    //extend the current valid session by 24 hours  
+    await prisma.session.update({
+      where: { sessionToken },
+      data: {
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      },
+    })
   }
 
   return (

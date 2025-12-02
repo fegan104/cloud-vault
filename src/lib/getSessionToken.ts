@@ -5,3 +5,7 @@ export async function getSessionToken() {
   if (!sessionToken) return null;
   return sessionToken;
 }
+
+export async function deleteSessionToken() {
+  (await cookies()).delete("session")
+}

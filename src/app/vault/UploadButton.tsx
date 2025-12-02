@@ -50,7 +50,7 @@ export function UploadButton({ masterKeySalt, onEncrypted }: {
       const { encryptedFileBlob, metadata } = await encryptFile(file, masterKey, masterKeySalt);
 
       // 2. Request a signed upload URL from the server
-      const { uploadUrl, storagePath } = await getUploadUrl(file.name);
+      const { uploadUrl, storagePath } = await getUploadUrl();
 
       // 3. Upload the encrypted file directly to Firebase Storage
       const uploadResponse = await fetch(uploadUrl, {

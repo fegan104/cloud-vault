@@ -8,13 +8,13 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getUser } from "../../lib/getUser";
 
-export async function getUploadUrl(fileName: string) {
+export async function getUploadUrl() {
   const currentUser = await getUser();
   if (!currentUser) throw new Error("User not authenticated");
 
   // Generate a unique storage path with UUID to prevent collisions
   const uuid = crypto.randomUUID();
-  const storagePath = `uploads/${currentUser.id}/${uuid}-${fileName}.enc`;
+  const storagePath = `uploads/${currentUser.id}/${uuid}.enc`;
 
   // Generate a signed URL valid for 15 minutes
   const [uploadUrl] = await storage.file(storagePath).getSignedUrl({
