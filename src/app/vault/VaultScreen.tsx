@@ -5,12 +5,12 @@ import MasterKeyGuard from "../../components/MasterKeyGuard";
 import { decryptFile } from "../../lib/clientCrypto";
 import { useState } from "react";
 import { EncryptedFile } from "@prisma/client";
-import { getDownloadUrl, signOut, uploadAction, deleteFile } from "./actions";
-import { FileText, Download, LogOut, Trash2 } from "lucide-react";
+import { getDownloadUrl, signOut, uploadAction, deleteFile, renameFile } from "./actions";
+import { FileText, Download, LogOut, Trash2, FilePenLine } from "lucide-react";
 import CircularProgress from "@/components/CircularProgress";
 import { UploadButton } from "./UploadButton";
 import { TextButton, TonalButton } from "@/components/Buttons";
-import { DeleteConfirmationModal } from "@/components/DeleteConfirmationModal";
+import { DeleteConfirmationModal, TextInputModal } from "@/components/Modals";
 import { VaultAppBar } from "@/components/VaultAppBar";
 
 type VaultScreenProps = {
@@ -25,6 +25,8 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [fileToDelete, setFileToDelete] = useState<EncryptedFile | null>(null);
+  const [fileToRename, setFileToRename] = useState<EncryptedFile | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
 
   const handleDownload = async (file: EncryptedFile) => {
     if (!masterKey) return;
@@ -83,6 +85,31 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
     }
   };
 
+  const handleRename = (file: EncryptedFile) => {
+    setFileToRename(file);
+  };
+
+  const confirmRename = async (newBaseName: string) => {
+    if (!fileToRename || !newBaseName.trim()) return;
+
+    // Extract the original extension and preserve it
+    const lastDotIndex = fileToRename.fileName.lastIndexOf('.');
+    const extension = lastDotIndex > 0 ? fileToRename.fileName.substring(lastDotIndex) : '';
+    const newFileName = newBaseName.trim() + extension;
+
+    setRenamingId(fileToRename.id);
+    setFileToRename(null);
+
+    try {
+      await renameFile(fileToRename.id, newFileName);
+    } catch (error) {
+      console.error("Rename failed:", error);
+      alert("Failed to rename file.");
+    } finally {
+      setRenamingId(null);
+    }
+  };
+
   return (
     <div className="overflow-hidden flex flex-col h-full">
       <DeleteConfirmationModal
@@ -90,6 +117,24 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
         fileName={fileToDelete?.fileName || ""}
         onConfirm={confirmDelete}
         onCancel={() => setFileToDelete(null)}
+      />
+      <TextInputModal
+        isOpen={fileToRename !== null}
+        title="Rename File"
+        description="Enter a new name for this file:"
+        placeholder={
+          fileToRename
+            ? (() => {
+              const lastDotIndex = fileToRename.fileName.lastIndexOf('.');
+              return lastDotIndex > 0
+                ? fileToRename.fileName.substring(0, lastDotIndex)
+                : fileToRename.fileName;
+            })()
+            : ""
+        }
+        confirmLabel="Rename"
+        onConfirm={confirmRename}
+        onCancel={() => setFileToRename(null)}
       />
       <VaultAppBar />
       <MasterKeyGuard masterKeySalt={masterKeySalt}>
@@ -127,8 +172,10 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
                     file={file}
                     downloadingId={downloadingId}
                     deletingId={deletingId}
+                    renamingId={renamingId}
                     onDownload={handleDownload}
                     onDelete={handleDelete}
+                    onRename={handleRename}
                   />
                 ))}
               </ul>
@@ -154,15 +201,19 @@ function formatFileSize(bytes: number): string {
   return `${gb.toFixed(2)} GB`;
 }
 
-function FileListItem({ file, downloadingId, deletingId, onDownload, onDelete }: {
+function FileListItem({ file, downloadingId, deletingId, renamingId, onDownload, onDelete, onRename }: {
   file: EncryptedFile;
   downloadingId: string | null;
   deletingId: string | null;
+  renamingId: string | null;
   onDownload: (file: EncryptedFile) => void;
   onDelete: (file: EncryptedFile) => void;
+  onRename: (file: EncryptedFile) => void;
 }) {
   const isDownloading = downloadingId === file.id;
   const isDeleting = deletingId === file.id;
+  const isRenaming = renamingId === file.id;
+  const isBusy = isDownloading || isDeleting || isRenaming;
 
   return (
     <li
@@ -186,8 +237,8 @@ function FileListItem({ file, downloadingId, deletingId, onDownload, onDelete }:
       <div className="flex gap-2 w-full sm:w-auto flex-shrink-0">
         <TextButton
           onClick={() => onDownload(file)}
-          disabled={isDownloading || isDeleting}
-          className={`flex-1 sm:flex-initial ring-1 ring-primary ${(isDownloading || isDeleting) ? 'opacity-50 cursor-wait' : ''
+          disabled={isBusy}
+          className={`flex-1 sm:flex-initial ring-1 ring-primary ${isBusy ? 'opacity-50 cursor-wait' : ''
             }`}
         >
           {isDownloading ? (
@@ -202,9 +253,22 @@ function FileListItem({ file, downloadingId, deletingId, onDownload, onDelete }:
           )}
         </TextButton>
         <button
+          onClick={() => onRename(file)}
+          disabled={isBusy}
+          className={`p-2 rounded-lg transition-all duration-200 hover:bg-primary/10 ${isBusy ? 'opacity-50 cursor-wait' : ''
+            }`}
+          aria-label="Rename file"
+        >
+          {isRenaming ? (
+            <CircularProgress size={20} />
+          ) : (
+            <FilePenLine className="w-5 h-5 text-primary" />
+          )}
+        </button>
+        <button
           onClick={() => onDelete(file)}
-          disabled={isDownloading || isDeleting}
-          className={`p-2 rounded-lg transition-all duration-200 hover:bg-error/10 ${(isDownloading || isDeleting) ? 'opacity-50 cursor-wait' : ''
+          disabled={isBusy}
+          className={`p-2 rounded-lg transition-all duration-200 hover:bg-error/10 ${isBusy ? 'opacity-50 cursor-wait' : ''
             }`}
           aria-label="Delete file"
         >

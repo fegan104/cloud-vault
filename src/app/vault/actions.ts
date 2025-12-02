@@ -160,3 +160,45 @@ export async function signOut() {
   requestCookies.delete("session");
   redirect("/");
 }
+
+export async function renameFile(fileId: string, newFileName: string) {
+  const sessionToken = await getSessionToken();
+  if (!sessionToken) {
+    throw new Error("Unauthorized");
+  }
+
+  // Get the session and user so we can verify the file belongs to this user
+  const session = await prisma.session.findUnique({
+    where: {
+      sessionToken,
+      expiresAt: {
+        gt: new Date(), // only include sessions that haven't expired
+      }
+    },
+    include: {
+      user: {
+        include: {
+          encryptedFiles: {
+            where: {
+              id: fileId,
+            },
+          }
+        },
+      },
+    },
+  });
+
+  const fileRecord = session?.user.encryptedFiles?.[0];
+
+  if (!fileRecord) {
+    throw new Error("File not found or unauthorized");
+  }
+
+  // Update the file name in the database
+  await prisma.encryptedFile.update({
+    where: { id: fileId },
+    data: { fileName: newFileName },
+  });
+
+  revalidatePath("/vault");
+}
