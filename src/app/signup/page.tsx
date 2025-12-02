@@ -14,6 +14,7 @@ import { Card } from '@/components/Card';
 export default function SignUpForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { setMasterKey } = useMasterKey()
@@ -22,6 +23,13 @@ export default function SignUpForm() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+
+    // Validate passwords match
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
 
     // 1) Generate salt
     const saltBytes = crypto.getRandomValues(new Uint8Array(16));
@@ -77,6 +85,15 @@ export default function SignUpForm() {
                 onChange={setPassword}
                 placeholder="Choose a strong password"
               />
+
+              {/* Confirm Password Input */}
+              <PasswordInput
+                label="Confirm Master Password"
+                value={confirmPassword}
+                onChange={setConfirmPassword}
+                placeholder="Re-enter your password"
+                error={confirmPassword.length > 0 && password !== confirmPassword ? 'Passwords do not match' : null}
+              />
               <p className="text-[--font-body-sm] text-on-surface-variant">
                 Choose a strong password. You cannot recover it if lost.
               </p>
@@ -91,7 +108,7 @@ export default function SignUpForm() {
               {/* Submit Button */}
               <TonalButton
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !email || !password || !confirmPassword || password !== confirmPassword}
                 className="w-full py-3"
               >
                 {isLoading ? 'Creating account...' : 'Sign Up'}

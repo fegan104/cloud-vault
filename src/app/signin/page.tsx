@@ -85,7 +85,7 @@ export default function LoginForm() {
               {/* Submit Button */}
               <TonalButton
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !email || !password}
                 className="w-full py-3"
               >
                 {isLoading ? 'Signing in...' : 'Sign In'}
