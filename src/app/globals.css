@@ -29,12 +29,6 @@
   --color-on-secondary: #FFFFFF;
   --color-on-secondary-container: #151B2C;
 
-  /* Tertiary */
-  --color-tertiary: #006497;
-  --color-tertiary-container: #CEE5FF;
-  --color-on-tertiary: #FFFFFF;
-  --color-on-tertiary-container: #001E2F;
-
   /* Surface, Background, and Outline */
   --color-background: #fafafa;
   --color-surface: #fff;

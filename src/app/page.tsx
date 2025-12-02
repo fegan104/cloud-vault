@@ -3,33 +3,20 @@ import { Key } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, var(--color-primary-container) 0%, var(--color-tertiary-container) 100%)' }}>
+    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, var(--color-primary-container) 0%, var(--color-secondary-container) 100%)' }}>
       <main className="flex min-h-screen w-full max-w-5xl mx-auto flex-col items-center justify-center py-16 px-6">
         <div className="w-full max-w-2xl">
           {/* Hero Card */}
           <div className="bg-surface rounded-[var(--radius-xl)] p-10 shadow-[--shadow-4] text-center">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary-container mb-6">
-              <Key className="w-10 h-10 text-on-primary-container" />
+              <Key className="w-10 h-10 text-primary" />
             </div>
             <h1 className="text-[--font-display-sm] font-bold text-on-surface mb-4">
-              Secure File Encryption
+              Cloud Vault
             </h1>
             <p className="text-[--font-body-lg] text-on-surface-variant mb-10 max-w-lg mx-auto">
-              Protect your files with end-to-end encryption. Your data stays private and secure with client-side encryption.
+              Files are encrypted client-side using AES-GCM. Encryption keys are derived locally using <a target="_blank" className="text-primary" href="https://en.wikipedia.org/wiki/Argon2">Argon2id</a> and never transmitted to the server, ensuring a zero-knowledge architecture where only you can access your data.
             </p>
-
-            {/* Feature Pills */}
-            <div className="flex flex-wrap justify-center gap-3 mb-10">
-              <div className="px-4 py-2 rounded-full bg-secondary-container text-on-secondary-container text-[--font-label-md] font-medium">
-                🔒 End-to-End Encrypted
-              </div>
-              <div className="px-4 py-2 rounded-full bg-secondary-container text-on-secondary-container text-[--font-label-md] font-medium">
-                🚀 Zero-Knowledge
-              </div>
-              <div className="px-4 py-2 rounded-full bg-secondary-container text-on-secondary-container text-[--font-label-md] font-medium">
-                ✨ Secure Storage
-              </div>
-            </div>
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

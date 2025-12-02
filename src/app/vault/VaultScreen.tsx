@@ -5,8 +5,8 @@ import MasterKeyGuard from "../../components/MasterKeyGuard";
 import { decryptFile } from "../../lib/clientCrypto";
 import { useState } from "react";
 import { EncryptedFile } from "@prisma/client";
-import { getDownloadUrl, signOut, uploadAction, deleteFile, renameFile } from "./actions";
-import { FileText, Download, LogOut, Trash2, FilePenLine, MoreVertical } from "lucide-react";
+import { getDownloadUrl, uploadAction, deleteFile, renameFile } from "./actions";
+import { FileText, Trash2, FilePenLine, MoreVertical } from "lucide-react";
 import CircularProgress from "@/components/CircularProgress";
 import { UploadButton } from "./UploadButton";
 import { TextButton, TonalButton } from "@/components/Buttons";
@@ -239,7 +239,7 @@ function FileListItem({ file, downloadingId, deletingId, renamingId, onDownload,
     >
       <div className="flex items-center gap-4 min-w-0">
         <div className="p-3 flex-shrink-0">
-          <FileText className="w-6 h-6 text-on-tertiary-container" />
+          <FileText className="w-6 h-6 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-[--font-body-lg] text-on-surface mb-1 break-words">
