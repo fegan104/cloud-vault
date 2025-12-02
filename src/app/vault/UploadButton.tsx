@@ -27,6 +27,7 @@ export function UploadButton({ masterKeySalt, onEncrypted }: {
 }) {
   const [error, setError] = useState<string>('');
   const [inProgress, setInProgress] = useState<boolean>(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
   const { masterKey } = useMasterKey()
 
   const onFileSelected = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -53,17 +54,7 @@ export function UploadButton({ masterKeySalt, onEncrypted }: {
       const { uploadUrl, storagePath } = await getUploadUrl();
 
       // 3. Upload the encrypted file directly to Firebase Storage
-      const uploadResponse = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/octet-stream',
-        },
-        body: encryptedFileBlob,
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
-      }
+      await uploadFileWithProgress(uploadUrl, encryptedFileBlob, setUploadProgress);
 
       // 4. Notify the server that the upload is complete
       await onEncrypted(file.name, storagePath, encryptedFileBlob.size, metadata);
@@ -72,6 +63,7 @@ export function UploadButton({ masterKeySalt, onEncrypted }: {
       setError(`Encryption failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setInProgress(false);
+      setUploadProgress(0);
     }
   };
 
@@ -102,7 +94,7 @@ export function UploadButton({ masterKeySalt, onEncrypted }: {
             {inProgress ? (
               <>
                 <CircularProgress size={20} />
-                <span className="text-[--font-label-lg]">Uploading...</span>
+                <span className="text-[--font-label-lg]">Uploading... {uploadProgress}%</span>
               </>
             ) : (
               <>
@@ -122,3 +114,34 @@ export function UploadButton({ masterKeySalt, onEncrypted }: {
     </div>
   );
 };
+
+function uploadFileWithProgress(
+  uploadUrl: string,
+  fileBlob: Blob,
+  onProgress: (progress: number) => void
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // the fetch api doesn't support progress events, so we use XMLHttpRequest
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', uploadUrl);
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = Math.round((event.loaded / event.total) * 100);
+        onProgress(percentComplete);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve();
+      } else {
+        reject(new Error(`Upload failed: ${xhr.statusText}`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error during upload'));
+    xhr.send(fileBlob);
+  });
+}
