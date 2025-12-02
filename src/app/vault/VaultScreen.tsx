@@ -25,6 +25,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
   const [fileToDelete, setFileToDelete] = useState<EncryptedFile | null>(null);
   const [fileToRename, setFileToRename] = useState<EncryptedFile | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const handleDownload = async (file: EncryptedFile) => {
     if (!masterKey) return;
@@ -134,7 +135,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
         onConfirm={confirmRename}
         onCancel={() => setFileToRename(null)}
       />
-      <VaultAppBar />
+      <VaultAppBar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
       <MasterKeyGuard masterKeySalt={masterKeySalt}>
         <div className="overflow-y-auto">
           <div className="w-full max-w-5xl mx-auto p-8 flex flex-col items-center">
@@ -151,33 +152,49 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
               <UploadButton masterKeySalt={masterKeySalt} onEncrypted={uploadAction} />
             </div>
 
-            {files.length === 0 ? (
-              <div className="w-full max-w-3xl mt-12 text-center">
-                <div className="bg-surface rounded-[var(--radius-xl)] p-12 shadow-[--shadow-2]">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-variant mb-4">
-                    <FileText className="w-8 h-8 text-on-surface-variant" />
+            {(() => {
+              const filteredFiles = files.filter(file =>
+                file.fileName.toLowerCase().includes(searchQuery.toLowerCase())
+              );
+
+              return filteredFiles.length === 0 ? (
+                <div className="w-full max-w-3xl mt-12 text-center">
+                  <div className="bg-surface rounded-[var(--radius-xl)] p-12 shadow-[--shadow-2]">
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-variant mb-4">
+                      <FileText className="w-8 h-8 text-on-surface-variant" />
+                    </div>
+                    <p className="text-[--font-body-lg] text-on-surface-variant">
+                      {searchQuery.trim()
+                        ? `No files found matching "${searchQuery}".`
+                        : "No files uploaded yet. Upload your first file to get started."
+                      }
+                    </p>
+                    {searchQuery.trim() && (
+                      <div className="mt-6">
+                        <TonalButton onClick={() => setSearchQuery("")}>
+                          Clear Search
+                        </TonalButton>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-[--font-body-lg] text-on-surface-variant">
-                    No files uploaded yet. Upload your first file to get started.
-                  </p>
                 </div>
-              </div>
-            ) : (
-              <ul className="w-full max-w-3xl space-y-3">
-                {files.map((file) => (
-                  <FileListItem
-                    key={file.id}
-                    file={file}
-                    downloadingId={downloadingId}
-                    deletingId={deletingId}
-                    renamingId={renamingId}
-                    onDownload={handleDownload}
-                    onDelete={handleDelete}
-                    onRename={handleRename}
-                  />
-                ))}
-              </ul>
-            )}
+              ) : (
+                <ul className="w-full max-w-3xl space-y-3">
+                  {filteredFiles.map((file) => (
+                    <FileListItem
+                      key={file.id}
+                      file={file}
+                      downloadingId={downloadingId}
+                      deletingId={deletingId}
+                      renamingId={renamingId}
+                      onDownload={handleDownload}
+                      onDelete={handleDelete}
+                      onRename={handleRename}
+                    />
+                  ))}
+                </ul>
+              );
+            })()}
           </div>
         </div>
       </MasterKeyGuard>
