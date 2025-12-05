@@ -1,15 +1,19 @@
 import Navigation from "@/components/Navigation";
-import { AppBar } from "@/components/AppBar";
+import { VaultAppBar } from "@/components/VaultAppBar";
 
 type VaultLayoutProps = {
   children: React.ReactNode;
+  /** Optional search query for the app bar */
+  searchQuery?: string;
+  /** Optional search change handler for the app bar */
+  onSearchChange?: (query: string) => void;
 };
 
-export default function VaultLayout({ children }: VaultLayoutProps) {
+export default function VaultLayout({ children, searchQuery, onSearchChange }: VaultLayoutProps) {
   return (
     <div className="h-full flex flex-col">
       {/* Full-width app bar at top */}
-      <AppBar />
+      <VaultAppBar searchQuery={searchQuery} onSearchChange={onSearchChange} />
       {/* Below app bar: navigation rail + content */}
       <div className="flex-1 flex flex-row overflow-hidden">
         <Navigation />
@@ -21,4 +25,3 @@ export default function VaultLayout({ children }: VaultLayoutProps) {
     </div>
   );
 }
-

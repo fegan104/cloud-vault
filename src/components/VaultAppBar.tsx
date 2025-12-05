@@ -6,16 +6,17 @@ import { TextInput } from "./TextInput";
 import { useState } from "react";
 
 type VaultAppBarProps = {
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
 };
 
-export function VaultAppBar({ searchQuery, onSearchChange }: VaultAppBarProps) {
+export function VaultAppBar({ searchQuery = "", onSearchChange }: VaultAppBarProps) {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const showSearch = onSearchChange !== undefined;
 
   const handleSearchToggle = () => {
     setIsSearchExpanded(!isSearchExpanded);
-    if (isSearchExpanded) {
+    if (isSearchExpanded && onSearchChange) {
       // Clear search when closing
       onSearchChange("");
     }
@@ -23,7 +24,7 @@ export function VaultAppBar({ searchQuery, onSearchChange }: VaultAppBarProps) {
 
   return (
     <div className="sticky top-0 z-50 bg-background shadow-[--shadow-1]">
-      <div className="w-full max-w-6xl mx-auto px-4 py-4">
+      <div className="w-full max-w-6xl mx-auto px-5 py-4">
         {/* Desktop layout - always visible */}
         <div className="hidden md:grid md:grid-cols-[1fr_auto_1fr] items-center gap-4">
           {/* Left section: Logo and title */}
@@ -34,15 +35,17 @@ export function VaultAppBar({ searchQuery, onSearchChange }: VaultAppBarProps) {
             <h1 className="text-[--font-title-lg] font-semibold text-on-surface">Cloud Vault</h1>
           </div>
 
-          {/* Center section: Search bar */}
-          <div className="w-full min-w-96 max-w-2xl">
-            <TextInput
-              value={searchQuery}
-              onChange={onSearchChange}
-              placeholder="Search files by name..."
-              className="w-full"
-            />
-          </div>
+          {/* Center section: Search bar (only if search is enabled) */}
+          {showSearch && (
+            <div className="w-full min-w-96 max-w-2xl">
+              <TextInput
+                value={searchQuery}
+                onChange={onSearchChange}
+                placeholder="Search files by name..."
+                className="w-full"
+              />
+            </div>
+          )}
 
           {/* Right section: Sign out button */}
           <div className="flex justify-end">
@@ -58,7 +61,7 @@ export function VaultAppBar({ searchQuery, onSearchChange }: VaultAppBarProps) {
           </div>
         </div>
 
-        {/* Mobile layout - conditional rendering */}
+        {/* Mobile layout */}
         <div className="md:hidden flex items-center gap-3">
           {!isSearchExpanded ? (
             <>
@@ -67,13 +70,15 @@ export function VaultAppBar({ searchQuery, onSearchChange }: VaultAppBarProps) {
                 <h1 className="text-[--font-title-lg] font-semibold text-on-surface">Cloud Vault</h1>
               </div>
 
-              <button
-                onClick={handleSearchToggle}
-                className="p-2 rounded-lg hover:bg-surface-variant transition-colors"
-                aria-label="Open search"
-              >
-                <Search className="w-5 h-5 text-on-surface" />
-              </button>
+              {showSearch && (
+                <button
+                  onClick={handleSearchToggle}
+                  className="p-2 rounded-lg hover:bg-surface-variant transition-colors"
+                  aria-label="Open search"
+                >
+                  <Search className="w-5 h-5 text-on-surface" />
+                </button>
+              )}
 
               <form action={signOut}>
                 <TonalButton
@@ -90,7 +95,7 @@ export function VaultAppBar({ searchQuery, onSearchChange }: VaultAppBarProps) {
               <div className="flex-1">
                 <TextInput
                   value={searchQuery}
-                  onChange={onSearchChange}
+                  onChange={onSearchChange!}
                   placeholder="Search files..."
                   className="w-full"
                 />

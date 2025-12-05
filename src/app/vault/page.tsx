@@ -1,7 +1,6 @@
 import { prisma } from "../../lib/db";
 import { redirect } from "next/navigation";
 import VaultScreen from "./VaultScreen";
-import VaultLayout from "./VaultLayout";
 import { getSessionToken, deleteSessionToken } from "../../lib/getSessionToken";
 
 export default async function FileVault() {
@@ -46,11 +45,9 @@ export default async function FileVault() {
   }
 
   return (
-    <VaultLayout>
-      <VaultScreen
-        masterKeySalt={session.user.masterKeySalt}
-        files={session.user.encryptedFiles}
-      />
-    </VaultLayout>
+    <VaultScreen
+      masterKeySalt={session.user.masterKeySalt}
+      files={session.user.encryptedFiles}
+    />
   );
 }

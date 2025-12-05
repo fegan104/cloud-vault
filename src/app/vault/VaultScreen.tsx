@@ -11,7 +11,7 @@ import CircularProgress from "@/components/CircularProgress";
 import { UploadButton } from "./UploadButton";
 import { TextButton, TonalButton } from "@/components/Buttons";
 import { DeleteConfirmationModal, TextInputModal } from "@/components/Modals";
-import { TextInput } from "@/components/TextInput";
+import VaultLayout from "./VaultLayout";
 
 type VaultScreenProps = {
   masterKeySalt: string;
@@ -110,104 +110,96 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
   };
 
   return (
-    <div className="overflow-hidden flex flex-col h-full">
-      <DeleteConfirmationModal
-        isOpen={fileToDelete !== null}
-        fileName={fileToDelete?.fileName || ""}
-        onConfirm={confirmDelete}
-        onCancel={() => setFileToDelete(null)}
-      />
-      <TextInputModal
-        isOpen={fileToRename !== null}
-        title="Rename File"
-        description="Enter a new name for this file:"
-        placeholder={
-          fileToRename
-            ? (() => {
-              const lastDotIndex = fileToRename.fileName.lastIndexOf('.');
-              return lastDotIndex > 0
-                ? fileToRename.fileName.substring(0, lastDotIndex)
-                : fileToRename.fileName;
-            })()
-            : ""
-        }
-        confirmLabel="Rename"
-        onConfirm={confirmRename}
-        onCancel={() => setFileToRename(null)}
-      />
-      <MasterKeyGuard masterKeySalt={masterKeySalt}>
-        <div className="overflow-y-auto ring-1 ring-on-surface ring-1 rounded-2xl m-4" style={{ "scrollbarWidth": "none" }}>
-          <div className="w-full max-w-5xl mx-auto p-4 flex flex-col items-center">
-            {/* Search bar */}
-            <div className="w-full max-w-3xl mb-6">
-              <TextInput
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder="Search files by name..."
-                className="w-full"
-              />
-            </div>
+    <VaultLayout searchQuery={searchQuery} onSearchChange={setSearchQuery}>
+      <div className="overflow-hidden flex flex-col h-full">
+        <DeleteConfirmationModal
+          isOpen={fileToDelete !== null}
+          fileName={fileToDelete?.fileName || ""}
+          onConfirm={confirmDelete}
+          onCancel={() => setFileToDelete(null)}
+        />
+        <TextInputModal
+          isOpen={fileToRename !== null}
+          title="Rename File"
+          description="Enter a new name for this file:"
+          placeholder={
+            fileToRename
+              ? (() => {
+                const lastDotIndex = fileToRename.fileName.lastIndexOf('.');
+                return lastDotIndex > 0
+                  ? fileToRename.fileName.substring(0, lastDotIndex)
+                  : fileToRename.fileName;
+              })()
+              : ""
+          }
+          confirmLabel="Rename"
+          onConfirm={confirmRename}
+          onCancel={() => setFileToRename(null)}
+        />
+        <MasterKeyGuard masterKeySalt={masterKeySalt}>
+          <div className="overflow-y-auto ring-1 ring-on-surface ring-1 rounded-2xl m-4" style={{ "scrollbarWidth": "none" }}>
+            <div className="w-full max-w-5xl mx-auto p-4 flex flex-col items-center">
+              <div className="w-full mb-8 text-center">
+                <h2 className="text-[--font-headline-lg] font-bold text-on-surface mb-3">
+                  Your Encrypted Files
+                </h2>
+                <p className="text-[--font-body-md] text-on-surface-variant">
+                  All files are encrypted with your master key
+                </p>
+              </div>
 
-            <div className="w-full mb-8 text-center">
-              <h2 className="text-[--font-headline-lg] font-bold text-on-surface mb-3">
-                Your Encrypted Files
-              </h2>
-              <p className="text-[--font-body-md] text-on-surface-variant">
-                All files are encrypted with your master key
-              </p>
-            </div>
+              <div className="w-full max-w-3xl mb-6">
+                <UploadButton masterKeySalt={masterKeySalt} onEncrypted={uploadAction} />
+              </div>
 
-            <div className="w-full max-w-3xl mb-6">
-              <UploadButton masterKeySalt={masterKeySalt} onEncrypted={uploadAction} />
-            </div>
+              {(() => {
+                const filteredFiles = files.filter(file =>
+                  file.fileName.toLowerCase().includes(searchQuery.toLowerCase())
+                );
 
-            {(() => {
-              const filteredFiles = files.filter(file =>
-                file.fileName.toLowerCase().includes(searchQuery.toLowerCase())
-              );
-
-              return filteredFiles.length === 0 ? (
-                <div className="w-full max-w-3xl mt-12 text-center">
-                  <div className="bg-surface rounded-[var(--radius-xl)] p-12 shadow-[--shadow-2]">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-variant mb-4">
-                      <FileText className="w-8 h-8 text-on-surface-variant" />
-                    </div>
-                    <p className="text-[--font-body-lg] text-on-surface-variant">
-                      {searchQuery.trim()
-                        ? `No files found matching "${searchQuery}".`
-                        : "No files uploaded yet. Upload your first file to get started."
-                      }
-                    </p>
-                    {searchQuery.trim() && (
-                      <div className="mt-6">
-                        <TonalButton onClick={() => setSearchQuery("")}>
-                          Clear Search
-                        </TonalButton>
+                return filteredFiles.length === 0 ? (
+                  <div className="w-full max-w-3xl mt-12 text-center">
+                    <div className="bg-surface rounded-[var(--radius-xl)] p-12 shadow-[--shadow-2]">
+                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-variant mb-4">
+                        <FileText className="w-8 h-8 text-on-surface-variant" />
                       </div>
-                    )}
+                      <p className="text-[--font-body-lg] text-on-surface-variant">
+                        {searchQuery.trim()
+                          ? `No files found matching "${searchQuery}".`
+                          : "No files uploaded yet. Upload your first file to get started."
+                        }
+                      </p>
+                      {searchQuery.trim() && (
+                        <div className="mt-6">
+                          <TonalButton onClick={() => setSearchQuery("")}>
+                            Clear Search
+                          </TonalButton>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <ul className="w-full max-w-3xl space-y-3">
-                  {filteredFiles.map((file) => (
-                    <FileListItem
-                      key={file.id}
-                      file={file}
-                      downloadingId={downloadingId}
-                      deletingId={deletingId}
-                      renamingId={renamingId}
-                      onDownload={handleDownload}
-                      onDelete={handleDelete}
-                      onRename={handleRename}
-                    />
-                  ))}
-                </ul>
-              );
-            })()}
+                ) : (
+                  <ul className="w-full max-w-3xl space-y-3">
+                    {filteredFiles.map((file) => (
+                      <FileListItem
+                        key={file.id}
+                        file={file}
+                        downloadingId={downloadingId}
+                        deletingId={deletingId}
+                        renamingId={renamingId}
+                        onDownload={handleDownload}
+                        onDelete={handleDelete}
+                        onRename={handleRename}
+                      />
+                    ))}
+                  </ul>
+                );
+              })()}
+            </div>
           </div>
-        </div>
-      </MasterKeyGuard>
-    </div>
+        </MasterKeyGuard>
+      </div>
+    </VaultLayout>
   );
 }
 
@@ -327,5 +319,5 @@ function FileListItem({ file, downloadingId, deletingId, renamingId, onDownload,
         </div>
       </div>
     </li>
-  )
+  );
 }
