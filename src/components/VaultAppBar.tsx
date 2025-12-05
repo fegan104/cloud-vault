@@ -22,7 +22,7 @@ export function VaultAppBar({ searchQuery, onSearchChange }: VaultAppBarProps) {
   };
 
   return (
-    <div className="sticky top-0 z-50 bg-surface shadow-[--shadow-1]">
+    <div className="sticky top-0 z-50 bg-background shadow-[--shadow-1]">
       <div className="w-full max-w-6xl mx-auto px-4 py-4">
         {/* Desktop layout - always visible */}
         <div className="hidden md:grid md:grid-cols-[1fr_auto_1fr] items-center gap-4">
@@ -64,9 +64,6 @@ export function VaultAppBar({ searchQuery, onSearchChange }: VaultAppBarProps) {
             <>
               {/* Default mobile view */}
               <div className="flex items-center gap-3 flex-1">
-                <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-primary" />
-                </div>
                 <h1 className="text-[--font-title-lg] font-semibold text-on-surface">Cloud Vault</h1>
               </div>
 
@@ -83,7 +80,7 @@ export function VaultAppBar({ searchQuery, onSearchChange }: VaultAppBarProps) {
                   type="submit"
                   className="flex items-center gap-2"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
                 </TonalButton>
               </form>
             </>
