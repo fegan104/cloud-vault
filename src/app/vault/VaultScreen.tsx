@@ -11,7 +11,7 @@ import CircularProgress from "@/components/CircularProgress";
 import { UploadButton } from "./UploadButton";
 import { TextButton, TonalButton } from "@/components/Buttons";
 import { DeleteConfirmationModal, TextInputModal } from "@/components/Modals";
-import { VaultAppBar } from "@/components/VaultAppBar";
+import { TextInput } from "@/components/TextInput";
 
 type VaultScreenProps = {
   masterKeySalt: string;
@@ -135,10 +135,19 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
         onConfirm={confirmRename}
         onCancel={() => setFileToRename(null)}
       />
-      <VaultAppBar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
       <MasterKeyGuard masterKeySalt={masterKeySalt}>
         <div className="overflow-y-auto ring-1 ring-on-surface ring-1 rounded-2xl m-4" style={{ "scrollbarWidth": "none" }}>
           <div className="w-full max-w-5xl mx-auto p-4 flex flex-col items-center">
+            {/* Search bar */}
+            <div className="w-full max-w-3xl mb-6">
+              <TextInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search files by name..."
+                className="w-full"
+              />
+            </div>
+
             <div className="w-full mb-8 text-center">
               <h2 className="text-[--font-headline-lg] font-bold text-on-surface mb-3">
                 Your Encrypted Files

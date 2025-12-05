@@ -55,8 +55,8 @@ export default function Navigation() {
 
       {/* Desktop Navigation Rail */}
       <nav
-        className="hidden sm:flex fixed left-0 top-0 bottom-0 z-50
-          w-20 bg-background
+        className="hidden sm:flex flex-shrink-0
+          w-20 h-full bg-background
           flex-col items-center pt-6 gap-3"
       >
         {navItems.map((item) => {
