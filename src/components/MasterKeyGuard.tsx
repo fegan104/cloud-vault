@@ -5,7 +5,7 @@ import { useMasterKey } from "./MasterKeyContext";
 import { base64ToUint8Array, deriveMasterKey, signChallenge } from "../lib/clientCrypto";
 import { useState } from "react";
 import CircularProgress from "./CircularProgress";
-import { FileText } from "lucide-react";
+import { FileText, Key } from "lucide-react";
 import { PasswordInput } from "@/components/TextInput";
 import { TonalButton } from "@/components/Buttons";
 import { Card } from "./Card";
@@ -56,7 +56,7 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
             {/* Header */}
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-container mb-4">
-                <FileText className="w-8 h-8 text-primary" />
+                <Key className="w-8 h-8 text-primary" />
               </div>
               <h2 className="text-[--font-headline-md] font-semibold text-on-surface mb-2">
                 Unlock Your Vault
