@@ -110,7 +110,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
   };
 
   return (
-    <VaultLayout searchQuery={searchQuery} onSearchChange={setSearchQuery}>
+    <VaultLayout searchQuery={searchQuery} onSearchChange={setSearchQuery} searchPlaceholder="Search files by name...">
       <div className="overflow-hidden flex flex-col h-full">
         <DeleteConfirmationModal
           isOpen={fileToDelete !== null}

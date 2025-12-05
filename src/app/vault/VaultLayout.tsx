@@ -7,13 +7,15 @@ type VaultLayoutProps = {
   searchQuery?: string;
   /** Optional search change handler for the app bar */
   onSearchChange?: (query: string) => void;
+  /** Optional custom placeholder for search input */
+  searchPlaceholder?: string;
 };
 
-export default function VaultLayout({ children, searchQuery, onSearchChange }: VaultLayoutProps) {
+export default function VaultLayout({ children, searchQuery, onSearchChange, searchPlaceholder }: VaultLayoutProps) {
   return (
     <div className="h-full flex flex-col">
       {/* Full-width app bar at top */}
-      <VaultAppBar searchQuery={searchQuery} onSearchChange={onSearchChange} />
+      <VaultAppBar searchQuery={searchQuery} onSearchChange={onSearchChange} searchPlaceholder={searchPlaceholder} />
       {/* Below app bar: navigation rail + content */}
       <div className="flex-1 flex flex-row overflow-hidden">
         <Navigation />

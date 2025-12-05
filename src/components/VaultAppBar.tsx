@@ -8,9 +8,11 @@ import { useState } from "react";
 type VaultAppBarProps = {
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
+  /** Custom placeholder for search input */
+  searchPlaceholder?: string;
 };
 
-export function VaultAppBar({ searchQuery = "", onSearchChange }: VaultAppBarProps) {
+export function VaultAppBar({ searchQuery = "", onSearchChange, searchPlaceholder }: VaultAppBarProps) {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const showSearch = onSearchChange !== undefined;
 
@@ -41,7 +43,7 @@ export function VaultAppBar({ searchQuery = "", onSearchChange }: VaultAppBarPro
               <TextInput
                 value={searchQuery}
                 onChange={onSearchChange}
-                placeholder="Search files by name..."
+                placeholder={searchPlaceholder}
                 className="w-full"
               />
             </div>
@@ -96,7 +98,7 @@ export function VaultAppBar({ searchQuery = "", onSearchChange }: VaultAppBarPro
                 <TextInput
                   value={searchQuery}
                   onChange={onSearchChange!}
-                  placeholder="Search files..."
+                  placeholder={searchPlaceholder}
                   className="w-full"
                 />
               </div>
