@@ -137,7 +137,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
           onCancel={() => setFileToRename(null)}
         />
         <MasterKeyGuard masterKeySalt={masterKeySalt}>
-          <div className="overflow-y-auto ring-1 ring-on-surface ring-1 rounded-2xl m-4" style={{ "scrollbarWidth": "none" }}>
+          <div className="overflow-y-auto md:ring-1 ring-on-surface rounded-2xl md:m-4" style={{ "scrollbarWidth": "none" }}>
             <div className="w-full max-w-5xl mx-auto p-4 flex flex-col items-center">
               <div className="w-full mb-8 text-center">
                 <h2 className="text-[--font-headline-lg] font-bold text-on-surface mb-3">

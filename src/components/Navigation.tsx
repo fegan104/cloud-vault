@@ -23,8 +23,7 @@ export default function Navigation() {
       {/* Mobile Bottom Bar */}
       <nav
         className="sm:hidden fixed bottom-0 left-0 right-0 z-50 
-          h-20 bg-surface shadow-[0_-2px_10px_rgba(0,0,0,0.1)]
-          flex items-center justify-around"
+          h-20 bg-surface flex items-center justify-around"
       >
         {navItems.map((item) => {
           const isActive = pathname === item.href;
