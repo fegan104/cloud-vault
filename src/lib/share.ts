@@ -1,32 +1,44 @@
 "use server"
 
 import { prisma } from "./db"
-import { getUser } from "./getUser"
+import { getSessionToken } from "./getSessionToken"
 
 export async function getSharesForUser() {
-  const user = await getUser()
-  if (!user) return []
+  const sessionToken = await getSessionToken()
+  if (!sessionToken) return []
 
-  const shares = await prisma.share.findMany({
+  const session = await prisma.session.findUnique({
     where: {
-      file: {
-        userId: user.id
-      }
+      sessionToken
     },
     include: {
-      file: {
-        select: {
-          fileName: true,
-          fileSize: true
+      user: {
+        include: {
+          encryptedFiles: {
+            include: {
+              shares: {
+                include: {
+                  file: {
+                    select: {
+                      fileName: true,
+                      fileSize: true
+                    }
+                  }
+                },
+                orderBy: {
+                  createdAt: "desc"
+                }
+              }
+            }
+          }
         }
       }
-    },
-    orderBy: {
-      createdAt: "desc"
     }
   })
 
-  return shares
+  if (!session) return []
+
+  return session.user.encryptedFiles.map((encryptedFile) => encryptedFile.shares).flat()
 }
 
 export async function createShare(
