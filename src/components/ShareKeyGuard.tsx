@@ -6,7 +6,6 @@ import { Key } from "lucide-react";
 import { PasswordInput } from "@/components/TextInput";
 import { TonalButton } from "@/components/Buttons";
 import { Card } from "./Card";
-import { base64ToUint8Array, deriveShareKey } from "@/lib/clientCrypto";
 import { Share } from "@prisma/client";
 
 export type ShareKeyDerivationParams = {
@@ -20,15 +19,15 @@ export type ShareKeyDerivationParams = {
 };
 
 type ShareKeyGuardProps = {
-  shareKeyDerivationParams: ShareKeyDerivationParams;
   share: Share | null;
+  name: string;
   onUnlock: (password: string) => Promise<void>;
   children: React.ReactNode;
 };
 
 export default function ShareKeyGuard({
-  shareKeyDerivationParams,
   share,
+  name,
   onUnlock,
   children,
 }: ShareKeyGuardProps) {
@@ -64,7 +63,7 @@ export default function ShareKeyGuard({
                 <Key className="w-8 h-8 text-primary" />
               </div>
               <h2 className="text-[--font-headline-md] font-semibold text-on-surface mb-2">
-                Unlock Shared File "{shareKeyDerivationParams.name}"
+                Unlock Shared File "{name}"
               </h2>
               <p className="text-[--font-body-md] text-on-surface-variant">
                 Enter the share password to decrypt this file

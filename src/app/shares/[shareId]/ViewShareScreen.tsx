@@ -2,26 +2,19 @@
 
 import ShareKeyGuard, { ShareKeyDerivationParams } from "@/components/ShareKeyGuard";
 import FileListItem from "@/components/FileListItem";
-import { verifyChallengeForShare } from "@/lib/challenge";
+import { generateChallengeForShare, verifyChallengeForShare } from "@/lib/challenge";
 import { base64ToUint8Array, decryptFile, deriveShareKey, signShareChallenge, unwrapFileKey } from "@/lib/clientCrypto";
 import { useState } from "react";
 import { getShareById, getShareDownloadUrl, ShareWithFile } from "./actions";
 
-export default function ViewShareScreen({
-  shareId,
-  challenge,
-  shareKeyDerivationParams,
-}: {
-  shareId: string;
-  challenge: string;
-  shareKeyDerivationParams: ShareKeyDerivationParams;
-}) {
+export default function ViewShareScreen({ shareId, name }: { shareId: string, name: string }) {
 
   const [shareKey, setShareKey] = useState<CryptoKey | null>(null);
   const [share, setShare] = useState<ShareWithFile | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const handleUnlock = async (password: string) => {
+    const { challenge, shareKeyDerivationParams } = await generateChallengeForShare(shareId);
     const encodedSalt = base64ToUint8Array(shareKeyDerivationParams.keyDerivationSalt);
     const { shareKey, privateKey } = await deriveShareKey(password, encodedSalt);
     setShareKey(shareKey);
@@ -74,7 +67,7 @@ export default function ViewShareScreen({
   return (
     <ShareKeyGuard
       share={share}
-      shareKeyDerivationParams={shareKeyDerivationParams}
+      name={name}
       onUnlock={handleUnlock}>
       <ShareScreen
         share={share}

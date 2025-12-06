@@ -1,4 +1,3 @@
-import { generateChallengeForShare } from "@/lib/challenge";
 import { prisma } from "@/lib/db";
 import ViewShareScreen from "./ViewShareScreen";
 
@@ -8,9 +7,16 @@ export default async function Page({
   params: Promise<{ shareId: string }>
 }) {
   const { shareId } = await params;
-  const { challenge, shareKeyDerivationParams } = await generateChallengeForShare(shareId);
+  const shareName = await prisma.share.findUnique({
+    where: {
+      id: shareId,
+    },
+    select: {
+      name: true,
+    },
+  });
 
-  if (!shareKeyDerivationParams) {
+  if (!shareName) {
     return <div>Share not found</div>;
   }
 
@@ -18,8 +24,7 @@ export default async function Page({
     <>
       <ViewShareScreen
         shareId={shareId}
-        shareKeyDerivationParams={shareKeyDerivationParams}
-        challenge={challenge}
+        name={shareName.name}
       />
     </>
   )
