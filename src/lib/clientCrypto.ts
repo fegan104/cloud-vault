@@ -46,6 +46,18 @@ export async function signChallenge(
   return uint8ToBase64(sig);
 }
 
+export async function signShareChallenge(
+  privateKey: Uint8Array,
+  challenge: string
+) {
+  const encoder = new TextEncoder();
+
+  // 1. derive master key (HMAC key)
+  const messageBytes = encoder.encode(challenge);
+  const sig = nacl.sign.detached(messageBytes, privateKey);
+  return uint8ToBase64(sig);
+}
+
 export function base64ToUint8Array(base64: string) {
   const binaryString = atob(base64); // Decode the Base64 string to a binary string
   const len = binaryString.length;
@@ -180,6 +192,7 @@ export async function deriveShareKey(
 ): Promise<{
   shareKey: CryptoKey;
   publicKey: string;
+  privateKey: string;
   metadata: {
     argon2MemorySize: number;
     argon2Iterations: number;
@@ -210,12 +223,12 @@ export async function deriveShareKey(
   );
 
   // Convert seed → Ed25519 keypair using TweetNaCl
-  const shareKeyBytes = await crypto.subtle.exportKey("raw", shareKey);
-  const keypair = nacl.sign.keyPair.fromSeed(new Uint8Array(shareKeyBytes));
+  const keypair = nacl.sign.keyPair.fromSeed(keyBytes);
 
   return {
     shareKey,
     publicKey: uint8ToBase64(keypair.publicKey),
+    privateKey: uint8ToBase64(keypair.secretKey),
     metadata: {
       argon2MemorySize: ARGON2_MEMORY_SIZE,
       argon2Iterations: ARGON2_ITERATIONS,
