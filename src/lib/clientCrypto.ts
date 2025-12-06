@@ -130,6 +130,34 @@ export async function decryptFile(
   return new Blob([decryptedBuffer]);
 }
 
+/**
+ * Unwraps a file key using the provided wrapping key (master key or share key).
+ * 
+ * @param wrappedFileKey The wrapped file key (base64 encoded)
+ * @param keyWrapIv The IV used to wrap the file key (base64 encoded)
+ * @param wrappingKey The key to unwrap the file key with (master key or share key)
+ * 
+ * @returns The unwrapped file key as a CryptoKey
+ */
+export async function unwrapFileKey(
+  wrappedFileKey: string,
+  keyWrapIv: string,
+  wrappingKey: CryptoKey
+): Promise<CryptoKey> {
+  const wrappedKeyBytes = base64ToUint8Array(wrappedFileKey);
+  const keyWrapIvBytes = base64ToUint8Array(keyWrapIv);
+
+  return crypto.subtle.unwrapKey(
+    "raw",
+    wrappedKeyBytes,
+    wrappingKey,
+    { name: "AES-GCM", iv: keyWrapIvBytes },
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["encrypt", "decrypt"]
+  );
+}
+
 export async function encryptFile(
   file: File,
   masterKey: CryptoKey,

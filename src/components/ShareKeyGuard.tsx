@@ -11,6 +11,7 @@ import { Share } from "@prisma/client";
 
 export type ShareKeyDerivationParams = {
   publicKey: string;
+  name: string;
   keyDerivationSalt: string;
   argon2MemorySize: number;
   argon2Iterations: number;
@@ -43,7 +44,6 @@ export default function ShareKeyGuard({
   const submitPassword = async () => {
     try {
       setIsLoading(true);
-      const shareKey = deriveShareKey(password, base64ToUint8Array(shareKeyDerivationParams.keyDerivationSalt));
       await onUnlock(password);
     } catch (e) {
       console.error(e);
@@ -64,7 +64,7 @@ export default function ShareKeyGuard({
                 <Key className="w-8 h-8 text-primary" />
               </div>
               <h2 className="text-[--font-headline-md] font-semibold text-on-surface mb-2">
-                Unlock Shared File
+                Unlock Shared File "{shareKeyDerivationParams.name}"
               </h2>
               <p className="text-[--font-body-md] text-on-surface-variant">
                 Enter the share password to decrypt this file

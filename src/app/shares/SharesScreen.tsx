@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import VaultLayout from "../vault/VaultLayout";
+import Scaffold from "../../components/Scaffold";
 import { Share } from "@prisma/client";
 import { Users, FileText } from "lucide-react";
 import { TonalButton } from "@/components/Buttons";
@@ -27,7 +27,7 @@ export default function SharesScreen({ shares }: SharesScreenProps) {
   );
 
   return (
-    <VaultLayout
+    <Scaffold
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
       searchPlaceholder="Search shares by name..."
@@ -72,7 +72,7 @@ export default function SharesScreen({ shares }: SharesScreenProps) {
           )}
         </div>
       </div>
-    </VaultLayout>
+    </Scaffold>
   );
 }
 

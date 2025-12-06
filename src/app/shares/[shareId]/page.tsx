@@ -11,6 +11,7 @@ export default async function Page({
   const shareKeyDerivationParams = await prisma.share.findUnique({
     where: { id: shareId },
     select: {
+      name: true,
       publicKey: true,
       keyDerivationSalt: true,
       argon2MemorySize: true,

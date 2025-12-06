@@ -26,7 +26,7 @@ export function VaultAppBar({ searchQuery = "", onSearchChange, searchPlaceholde
 
   return (
     <div className="sticky top-0 z-50 bg-background shadow-[--shadow-1]">
-      <div className="w-full max-w-6xl mx-auto px-5 py-4">
+      <div className="w-full mx-auto px-5 py-4">
         {/* Desktop layout - always visible */}
         <div className="hidden md:grid md:grid-cols-[1fr_auto_1fr] items-center gap-4">
           {/* Left section: Logo and title */}
@@ -38,16 +38,17 @@ export function VaultAppBar({ searchQuery = "", onSearchChange, searchPlaceholde
           </div>
 
           {/* Center section: Search bar (only if search is enabled) */}
-          {showSearch && (
-            <div className="w-full min-w-96 max-w-2xl">
+          <div className="w-full min-w-96 max-w-2xl">
+            {showSearch && (
+
               <TextInput
                 value={searchQuery}
                 onChange={onSearchChange}
                 placeholder={searchPlaceholder}
                 className="w-full"
               />
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Right section: Sign out button */}
           <div className="flex justify-end">

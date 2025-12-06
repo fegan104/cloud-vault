@@ -6,13 +6,13 @@ import { decryptFile, deriveShareKey, wrapShareKey, uint8ToBase64 } from "../../
 import { useState } from "react";
 import { EncryptedFile } from "@prisma/client";
 import { getDownloadUrl, uploadAction, deleteFile, renameFile } from "./actions";
-import { FileText, Trash2, FilePenLine, MoreVertical, Share2 } from "lucide-react";
-import CircularProgress from "@/components/CircularProgress";
+import { FileText } from "lucide-react";
 import { UploadButton } from "./UploadButton";
-import { TextButton, TonalButton } from "@/components/Buttons";
+import { TonalButton } from "@/components/Buttons";
 import { DeleteConfirmationModal, TextInputModal, CreateShareModal } from "@/components/Modals";
-import VaultLayout from "./VaultLayout";
+import Scaffold from "../../components/Scaffold";
 import { createShare } from "../../lib/share";
+import FileListItem from "@/components/FileListItem";
 
 type VaultScreenProps = {
   masterKeySalt: string;
@@ -159,7 +159,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
   };
 
   return (
-    <VaultLayout searchQuery={searchQuery} onSearchChange={setSearchQuery} searchPlaceholder="Search files by name...">
+    <Scaffold searchQuery={searchQuery} onSearchChange={setSearchQuery} searchPlaceholder="Search files by name...">
       <div className="overflow-hidden flex flex-col h-full">
         <DeleteConfirmationModal
           isOpen={fileToDelete !== null}
@@ -240,9 +240,9 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
                       <FileListItem
                         key={file.id}
                         file={file}
-                        downloadingId={downloadingId}
-                        deletingId={deletingId}
-                        renamingId={renamingId}
+                        isDownloading={downloadingId === file.id}
+                        isDeleting={deletingId === file.id}
+                        isRenaming={renamingId === file.id}
                         onDownload={handleDownload}
                         onDelete={handleDelete}
                         onRename={handleRename}
@@ -256,137 +256,6 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
           </div>
         </MasterKeyGuard>
       </div>
-    </VaultLayout>
-  );
-}
-
-
-function formatFileSize(bytes: number): string {
-  const kb = bytes / 1024;
-  if (kb < 1024) {
-    return `${kb.toFixed(2)} KB`;
-  }
-  const mb = kb / 1024;
-  if (mb < 1024) {
-    return `${mb.toFixed(2)} MB`;
-  }
-  const gb = mb / 1024;
-  return `${gb.toFixed(2)} GB`;
-}
-
-function FileListItem({ file, downloadingId, deletingId, renamingId, onDownload, onDelete, onRename, onShare }: {
-  file: EncryptedFile;
-  downloadingId: string | null;
-  deletingId: string | null;
-  renamingId: string | null;
-  onDownload: (file: EncryptedFile) => void;
-  onDelete: (file: EncryptedFile) => void;
-  onRename: (file: EncryptedFile) => void;
-  onShare: (file: EncryptedFile) => void;
-}) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const isDownloading = downloadingId === file.id;
-  const isDeleting = deletingId === file.id;
-  const isRenaming = renamingId === file.id;
-  const isBusy = isDownloading || isDeleting || isRenaming;
-
-  return (
-    <li
-      className="bg-surface-variant p-5 rounded-[8px] shadow-[--shadow-2] 
-               flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4
-               hover:shadow-[--shadow-3] transition-all duration-200"
-    >
-      <div className="flex items-center gap-4 min-w-0">
-        <div className="p-3 flex-shrink-0">
-          <FileText className="w-6 h-6 text-primary" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="font-semibold text-[--font-body-lg] text-on-surface mb-1 break-words">
-            {file.fileName}
-          </p>
-          <p className="text-[--font-body-sm] text-on-surface-variant">
-            {formatFileSize(file.fileSize)} • {new Date(file.createdAt).toLocaleDateString()}
-          </p>
-        </div>
-      </div>
-      <div className="flex gap-2 w-full sm:w-auto flex-shrink-0">
-        <TextButton
-          onClick={() => onDownload(file)}
-          disabled={isBusy}
-          className={`flex-1 sm:flex-initial ring-1 ring-primary 
-            ${isBusy ? 'opacity-50 cursor-wait' : ''}`}
-        >
-          {isDownloading ? (
-            <>
-              <CircularProgress size={18} />
-              <span>Decrypting...</span>
-            </>
-          ) : (
-            <>
-              <span>Download</span>
-            </>
-          )}
-        </TextButton>
-        <div className="relative">
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            disabled={isBusy}
-            className={`p-2 rounded-lg transition-all duration-200
-              text-on-secondary-container hover:bg-secondary-container/70 
-              ${isBusy ? 'opacity-50 cursor-wait' : ''}`}
-            aria-label="More actions"
-          >
-            {(isBusy) ? (
-              <CircularProgress size={20} />
-            ) : (
-              <MoreVertical className="w-5 h-5 text-on-surface" />
-            )}
-          </button>
-          {isMenuOpen && !isBusy && (
-            <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setIsMenuOpen(false)}
-              />
-              <div className="absolute right-0 mt-2 w-48 bg-surface rounded-lg shadow-[--shadow-4] z-20 overflow-hidden">
-                {/* Share button */}
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    onShare(file);
-                  }}
-                  className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-surface-variant transition-colors"
-                >
-                  <Share2 className="w-5 h-5 text-on-surface" />
-                  <span className="text-[--font-body-md] text-on-surface">Share</span>
-                </button>
-                {/* Rename button */}
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    onRename(file);
-                  }}
-                  className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-surface-variant transition-colors"
-                >
-                  <FilePenLine className="w-5 h-5 text-on-surface" />
-                  <span className="text-[--font-body-md] text-on-surface">Rename</span>
-                </button>
-                {/* Delete button */}
-                <button
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    onDelete(file);
-                  }}
-                  className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-error/10 transition-colors"
-                >
-                  <Trash2 className="w-5 h-5 text-error" />
-                  <span className="text-[--font-body-md] text-error">Delete</span>
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </li>
+    </Scaffold>
   );
 }

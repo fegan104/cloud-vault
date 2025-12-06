@@ -1,7 +1,7 @@
 import Navigation from "@/components/Navigation";
 import { VaultAppBar } from "@/components/VaultAppBar";
 
-type VaultLayoutProps = {
+type ScaffoldProps = {
   children: React.ReactNode;
   /** Optional search query for the app bar */
   searchQuery?: string;
@@ -11,7 +11,7 @@ type VaultLayoutProps = {
   searchPlaceholder?: string;
 };
 
-export default function VaultLayout({ children, searchQuery, onSearchChange, searchPlaceholder }: VaultLayoutProps) {
+export default function Scaffold({ children, searchQuery, onSearchChange, searchPlaceholder }: ScaffoldProps) {
   return (
     <div className="h-full flex flex-col">
       {/* Full-width app bar at top */}
