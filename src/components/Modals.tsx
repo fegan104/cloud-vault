@@ -1,7 +1,7 @@
 import { TextButton, TonalButton } from "./Buttons";
 import { Trash2, Text } from "lucide-react";
 import { ReactNode, useState } from "react";
-import { TextInput } from "./TextInput";
+import { TextInput, PasswordInput } from "./TextInput";
 
 // Base Modal component with shared backdrop and container
 function Modal({
@@ -142,6 +142,89 @@ export function TextInputModal({
           disabled={!inputValue.trim()}
         >
           {confirmLabel}
+        </TonalButton>
+      </div>
+    </Modal>
+  );
+}
+
+export function CreateShareModal({
+  isOpen,
+  fileName,
+  onConfirm,
+  onCancel,
+  isLoading = false,
+}: {
+  isOpen: boolean;
+  fileName: string;
+  onConfirm: (shareName: string, password: string) => void;
+  onCancel: () => void;
+  isLoading?: boolean;
+}) {
+  const [shareName, setShareName] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleConfirm = () => {
+    onConfirm(shareName, password);
+    setShareName("");
+    setPassword("");
+  };
+
+  const handleCancel = () => {
+    onCancel();
+    setShareName("");
+    setPassword("");
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && shareName.trim() && password.trim()) {
+      handleConfirm();
+    } else if (e.key === "Escape") {
+      handleCancel();
+    }
+  };
+
+  const isValid = shareName.trim() && password.trim();
+
+  return (
+    <Modal isOpen={isOpen} onBackdropClick={handleCancel}>
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary-container flex items-center justify-center">
+          <Text className="w-6 h-6 text-on-primary-container" />
+        </div>
+        <div className="flex-1">
+          <h2 className="text-[--font-title-lg] font-semibold text-on-surface mb-2">
+            Create Share Link
+          </h2>
+          <p className="text-[--font-body-md] text-on-surface-variant mb-4">
+            Create a password-protected share for &quot;{fileName}&quot;
+          </p>
+          <div className="flex flex-col gap-4">
+            <TextInput
+              label="Share Name"
+              value={shareName}
+              onChange={setShareName}
+              onKeyDown={handleKeyDown}
+              placeholder="Enter a name for this share"
+            />
+            <PasswordInput
+              label="Password"
+              value={password}
+              onChange={setPassword}
+              onKeyDown={handleKeyDown}
+              placeholder="Enter a password to protect this share"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-3 mt-6 justify-end">
+        <TextButton onClick={handleCancel} disabled={isLoading}>Cancel</TextButton>
+        <TonalButton
+          onClick={handleConfirm}
+          disabled={!isValid || isLoading}
+        >
+          {isLoading ? "Creating..." : "Create Share"}
         </TonalButton>
       </div>
     </Modal>

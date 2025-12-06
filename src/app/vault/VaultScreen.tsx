@@ -2,16 +2,17 @@
 
 import { useMasterKey } from "../../components/MasterKeyContext";
 import MasterKeyGuard from "../../components/MasterKeyGuard";
-import { decryptFile } from "../../lib/clientCrypto";
+import { decryptFile, deriveShareKey, wrapShareKey, uint8ToBase64 } from "../../lib/clientCrypto";
 import { useState } from "react";
 import { EncryptedFile } from "@prisma/client";
 import { getDownloadUrl, uploadAction, deleteFile, renameFile } from "./actions";
-import { FileText, Trash2, FilePenLine, MoreVertical } from "lucide-react";
+import { FileText, Trash2, FilePenLine, MoreVertical, Share2 } from "lucide-react";
 import CircularProgress from "@/components/CircularProgress";
 import { UploadButton } from "./UploadButton";
 import { TextButton, TonalButton } from "@/components/Buttons";
-import { DeleteConfirmationModal, TextInputModal } from "@/components/Modals";
+import { DeleteConfirmationModal, TextInputModal, CreateShareModal } from "@/components/Modals";
 import VaultLayout from "./VaultLayout";
+import { createShare } from "../../lib/share";
 
 type VaultScreenProps = {
   masterKeySalt: string;
@@ -26,6 +27,8 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
   const [fileToRename, setFileToRename] = useState<EncryptedFile | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [fileToShare, setFileToShare] = useState<EncryptedFile | null>(null);
+  const [isCreatingShare, setIsCreatingShare] = useState(false);
 
   const handleDownload = async (file: EncryptedFile) => {
     if (!masterKey) return;
@@ -109,6 +112,52 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
     }
   };
 
+  const handleShare = (file: EncryptedFile) => {
+    setFileToShare(file);
+  };
+
+  const confirmShare = async (shareName: string, password: string) => {
+    if (!fileToShare || !masterKey) return;
+
+    setIsCreatingShare(true);
+
+    try {
+      // 1. Generate a random salt for the share key derivation
+      const shareSaltBytes = crypto.getRandomValues(new Uint8Array(16));
+      const shareSaltB64 = uint8ToBase64(shareSaltBytes);
+
+      // 2. Derive the share key from the password
+      const { key: shareKey, metadata } = await deriveShareKey(password, shareSaltBytes);
+
+      // 3. Wrap the file key with the share key
+      const wrappedShareKey = await wrapShareKey(
+        fileToShare.wrappedFileKey,
+        fileToShare.keyWrapIv,
+        masterKey,
+        shareKey
+      );
+
+      // 4. Create the share record in the database
+      await createShare(
+        shareName,
+        fileToShare.id,
+        wrappedShareKey.wrappedFileKey,
+        wrappedShareKey.keyWrapIv,
+        shareSaltB64,
+        wrappedShareKey.publicKey,
+        metadata
+      );
+
+      setFileToShare(null);
+      alert("Share created successfully!");
+    } catch (error) {
+      console.error("Share creation failed:", error);
+      alert("Failed to create share.");
+    } finally {
+      setIsCreatingShare(false);
+    }
+  };
+
   return (
     <VaultLayout searchQuery={searchQuery} onSearchChange={setSearchQuery} searchPlaceholder="Search files by name...">
       <div className="overflow-hidden flex flex-col h-full">
@@ -135,6 +184,13 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
           confirmLabel="Rename"
           onConfirm={confirmRename}
           onCancel={() => setFileToRename(null)}
+        />
+        <CreateShareModal
+          isOpen={fileToShare !== null}
+          fileName={fileToShare?.fileName || ""}
+          onConfirm={confirmShare}
+          onCancel={() => setFileToShare(null)}
+          isLoading={isCreatingShare}
         />
         <MasterKeyGuard masterKeySalt={masterKeySalt}>
           <div className="overflow-y-auto md:ring-1 ring-on-surface rounded-2xl md:m-4" style={{ "scrollbarWidth": "none" }}>
@@ -190,6 +246,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
                         onDownload={handleDownload}
                         onDelete={handleDelete}
                         onRename={handleRename}
+                        onShare={handleShare}
                       />
                     ))}
                   </ul>
@@ -217,7 +274,7 @@ function formatFileSize(bytes: number): string {
   return `${gb.toFixed(2)} GB`;
 }
 
-function FileListItem({ file, downloadingId, deletingId, renamingId, onDownload, onDelete, onRename }: {
+function FileListItem({ file, downloadingId, deletingId, renamingId, onDownload, onDelete, onRename, onShare }: {
   file: EncryptedFile;
   downloadingId: string | null;
   deletingId: string | null;
@@ -225,6 +282,7 @@ function FileListItem({ file, downloadingId, deletingId, renamingId, onDownload,
   onDownload: (file: EncryptedFile) => void;
   onDelete: (file: EncryptedFile) => void;
   onRename: (file: EncryptedFile) => void;
+  onShare: (file: EncryptedFile) => void;
 }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isDownloading = downloadingId === file.id;
@@ -291,6 +349,17 @@ function FileListItem({ file, downloadingId, deletingId, renamingId, onDownload,
                 onClick={() => setIsMenuOpen(false)}
               />
               <div className="absolute right-0 mt-2 w-48 bg-surface rounded-lg shadow-[--shadow-4] z-20 overflow-hidden">
+                {/* Share button */}
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    onShare(file);
+                  }}
+                  className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-surface-variant transition-colors"
+                >
+                  <Share2 className="w-5 h-5 text-on-surface" />
+                  <span className="text-[--font-body-md] text-on-surface">Share</span>
+                </button>
                 {/* Rename button */}
                 <button
                   onClick={() => {
