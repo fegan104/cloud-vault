@@ -178,7 +178,8 @@ export async function deriveShareKey(
   sharePassword: string,
   shareSalt: Uint8Array
 ): Promise<{
-  key: CryptoKey;
+  shareKey: CryptoKey;
+  publicKey: string;
   metadata: {
     argon2MemorySize: number;
     argon2Iterations: number;
@@ -200,16 +201,21 @@ export async function deriveShareKey(
     keyHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
   );
 
-  const key = await crypto.subtle.importKey(
+  const shareKey = await crypto.subtle.importKey(
     "raw",
     keyBytes,
     { name: "AES-GCM", length: 256 },
-    true,
+    false,
     ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
   );
 
+  // Convert seed → Ed25519 keypair using TweetNaCl
+  const shareKeyBytes = await crypto.subtle.exportKey("raw", shareKey);
+  const keypair = nacl.sign.keyPair.fromSeed(new Uint8Array(shareKeyBytes));
+
   return {
-    key,
+    shareKey,
+    publicKey: uint8ToBase64(keypair.publicKey),
     metadata: {
       argon2MemorySize: ARGON2_MEMORY_SIZE,
       argon2Iterations: ARGON2_ITERATIONS,
@@ -237,7 +243,6 @@ export async function wrapShareKey(
 ): Promise<{
   wrappedFileKey: string;
   keyWrapIv: string;
-  publicKey: string;
 }> {
   // 1. Unwrap the file key using the master key
   const wrappedKeyBytes = base64ToUint8Array(wrappedFileKey);
@@ -264,14 +269,9 @@ export async function wrapShareKey(
     { name: "AES-GCM", iv: shareKeyWrapIv }
   );
 
-  // Convert seed → Ed25519 keypair using TweetNaCl
-  const shareKeyBytes = await crypto.subtle.exportKey("raw", shareKey);
-  const keypair = nacl.sign.keyPair.fromSeed(new Uint8Array(shareKeyBytes));
-
   return {
     wrappedFileKey: uint8ToBase64(new Uint8Array(rewrappedFileKey)),
     keyWrapIv: uint8ToBase64(shareKeyWrapIv),
-    publicKey: uint8ToBase64(keypair.publicKey),
   };
 }
 

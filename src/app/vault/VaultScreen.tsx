@@ -127,7 +127,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
       const shareSaltB64 = uint8ToBase64(shareSaltBytes);
 
       // 2. Derive the share key from the password
-      const { key: shareKey, metadata } = await deriveShareKey(password, shareSaltBytes);
+      const { shareKey, publicKey, metadata } = await deriveShareKey(password, shareSaltBytes);
 
       // 3. Wrap the file key with the share key
       const wrappedShareKey = await wrapShareKey(
@@ -144,7 +144,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
         wrappedShareKey.wrappedFileKey,
         wrappedShareKey.keyWrapIv,
         shareSaltB64,
-        wrappedShareKey.publicKey,
+        publicKey,
         metadata
       );
 
