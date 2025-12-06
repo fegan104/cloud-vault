@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Scaffold from "../../components/Scaffold";
 import { Share } from "@prisma/client";
-import { Users, FileText } from "lucide-react";
-import { TonalButton } from "@/components/Buttons";
+import { Users, FileText, Link as LinkIcon, Check } from "lucide-react";
+import { TextButton, TonalButton } from "@/components/Buttons";
 
 type ShareWithFile = Share & {
   file: {
@@ -90,6 +90,19 @@ function formatFileSize(bytes: number): string {
 }
 
 function ShareListItem({ share }: { share: ShareWithFile }) {
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopyLink = async () => {
+    const url = `${window.location.origin}/shares/${share.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy link:", err);
+    }
+  };
+
   return (
     <li
       className="bg-surface-variant p-5 rounded-[8px] shadow-[--shadow-2] 
@@ -113,6 +126,21 @@ function ShareListItem({ share }: { share: ShareWithFile }) {
             {new Date(share.createdAt).toLocaleDateString()}
           </p>
         </div>
+      </div>
+      <div className="flex-shrink-0">
+        <TextButton onClick={handleCopyLink} disabled={isCopied} className="ring-1 ring-primary">
+          {isCopied ? (
+            <>
+              <Check className="w-4 h-4 mr-2" />
+              Copied!
+            </>
+          ) : (
+            <>
+              <LinkIcon className="w-4 h-4 mr-2" />
+              Copy Link
+            </>
+          )}
+        </TextButton>
       </div>
     </li>
   );

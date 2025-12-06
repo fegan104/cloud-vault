@@ -1,4 +1,4 @@
-import { generateChallengeForSession } from "@/lib/challenge";
+import { generateChallengeForShare } from "@/lib/challenge";
 import { prisma } from "@/lib/db";
 import ViewShareScreen from "./ViewShareScreen";
 
@@ -8,20 +8,7 @@ export default async function Page({
   params: Promise<{ shareId: string }>
 }) {
   const { shareId } = await params;
-  const shareKeyDerivationParams = await prisma.share.findUnique({
-    where: { id: shareId },
-    select: {
-      name: true,
-      publicKey: true,
-      keyDerivationSalt: true,
-      argon2MemorySize: true,
-      argon2Iterations: true,
-      argon2Parallelism: true,
-      argon2HashLength: true,
-    }
-  });
-
-  const { challenge } = await generateChallengeForSession();
+  const { challenge, shareKeyDerivationParams } = await generateChallengeForShare(shareId);
 
   if (!shareKeyDerivationParams) {
     return <div>Share not found</div>;

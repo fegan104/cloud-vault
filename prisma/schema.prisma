@@ -15,7 +15,6 @@ model User {
   createdAt     DateTime @default(now())
 
   sessions       Session[]
-  challenges     Challenge[]
   encryptedFiles EncryptedFile[]
 
   @@map("users")
@@ -35,14 +34,10 @@ model Session {
 
 model Challenge {
   id        String   @id @default(uuid())
-  userId    String
   challenge String   @unique
   createdAt DateTime @default(now())
   expiresAt DateTime
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
   @@map("challenges")
 }
 
