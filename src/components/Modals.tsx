@@ -1,5 +1,5 @@
 import { TextButton, TonalButton } from "./Buttons";
-import { Trash2, Text } from "lucide-react";
+import { Trash2, Text, Link as LinkIcon, Check } from "lucide-react";
 import { ReactNode, useState } from "react";
 import { TextInput, PasswordInput } from "./TextInput";
 
@@ -157,23 +157,46 @@ export function CreateShareModal({
 }: {
   isOpen: boolean;
   fileName: string;
-  onConfirm: (shareName: string, password: string) => void;
+  onConfirm: (shareName: string, password: string) => Promise<string | void>;
   onCancel: () => void;
   isLoading?: boolean;
 }) {
   const [shareName, setShareName] = useState("");
   const [password, setPassword] = useState("");
+  const [createdShareId, setCreatedShareId] = useState<string | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
 
-  const handleConfirm = () => {
-    onConfirm(shareName, password);
-    setShareName("");
-    setPassword("");
+  const handleConfirm = async () => {
+    const shareId = await onConfirm(shareName, password);
+    if (shareId && typeof shareId === 'string') {
+      setCreatedShareId(shareId);
+    }
   };
 
   const handleCancel = () => {
     onCancel();
-    setShareName("");
-    setPassword("");
+    // Reset state after a short delay to allow closing animation if needed, 
+    // but here we just reset immediately as the modal unmounts/closes.
+    // Ideally we should wait for the modal to be closed before resetting if we want to preserve state during close animation.
+    // For now, simple reset is fine.
+    setTimeout(() => {
+      setShareName("");
+      setPassword("");
+      setCreatedShareId(null);
+      setIsCopied(false);
+    }, 200);
+  };
+
+  const handleCopyLink = async () => {
+    if (!createdShareId) return;
+    const url = `${window.location.origin}/shares/${createdShareId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy link:", err);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -188,45 +211,88 @@ export function CreateShareModal({
 
   return (
     <Modal isOpen={isOpen} onBackdropClick={handleCancel}>
-      <div className="flex items-start gap-4">
-        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary-container flex items-center justify-center">
-          <Text className="w-6 h-6 text-on-primary-container" />
-        </div>
-        <div className="flex-1">
-          <h2 className="text-[--font-title-lg] font-semibold text-on-surface mb-2">
-            Create Share Link
-          </h2>
-          <p className="text-[--font-body-md] text-on-surface-variant mb-4">
-            Create a password-protected share for &quot;{fileName}&quot;
-          </p>
-          <div className="flex flex-col gap-4">
-            <TextInput
-              label="Share Name"
-              value={shareName}
-              onChange={setShareName}
-              onKeyDown={handleKeyDown}
-              placeholder="Enter a name for this share"
-            />
-            <PasswordInput
-              label="Password"
-              value={password}
-              onChange={setPassword}
-              onKeyDown={handleKeyDown}
-              placeholder="Enter a password to protect this share"
-            />
+      {!createdShareId ? (
+        <>
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary-container flex items-center justify-center">
+              <Text className="w-6 h-6 text-on-primary-container" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-[--font-title-lg] font-semibold text-on-surface mb-2">
+                Create Share Link
+              </h2>
+              <p className="text-[--font-body-md] text-on-surface-variant mb-4">
+                Create a password-protected share for &quot;{fileName}&quot;
+              </p>
+              <div className="flex flex-col gap-4">
+                <TextInput
+                  label="Share Name"
+                  value={shareName}
+                  onChange={setShareName}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Enter a name for this share"
+                />
+                <PasswordInput
+                  label="Password"
+                  value={password}
+                  onChange={setPassword}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Enter a password to protect this share"
+                />
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      <div className="flex gap-3 mt-6 justify-end">
-        <TextButton onClick={handleCancel} disabled={isLoading}>Cancel</TextButton>
-        <TonalButton
-          onClick={handleConfirm}
-          disabled={!isValid || isLoading}
-        >
-          {isLoading ? "Creating..." : "Create Share"}
-        </TonalButton>
-      </div>
+          <div className="flex gap-3 mt-6 justify-end">
+            <TextButton onClick={handleCancel} disabled={isLoading}>Cancel</TextButton>
+            <TonalButton
+              onClick={handleConfirm}
+              disabled={!isValid || isLoading}
+            >
+              {isLoading ? "Creating..." : "Create Share"}
+            </TonalButton>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary-container flex items-center justify-center">
+              <Check className="w-6 h-6 text-on-primary-container" />
+            </div>
+            <div>
+              <h2 className="text-[--font-title-lg] font-semibold text-on-surface mb-1">
+                Share Created!
+              </h2>
+              <p className="text-[--font-body-md] text-on-surface-variant">
+                Your secure link is ready.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-4 bg-surface-variant rounded-lg mb-6 break-all font-mono text-sm text-on-surface-variant">
+            {`${window.location.origin}/shares/${createdShareId}`}
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <TonalButton onClick={handleCopyLink} className="w-full justify-center">
+              {isCopied ? (
+                <>
+                  <Check className="w-4 h-4 mr-2" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <LinkIcon className="w-4 h-4 mr-2" />
+                  Copy Link
+                </>
+              )}
+            </TonalButton>
+            <TextButton onClick={handleCancel} className="w-full justify-center">
+              Close
+            </TextButton>
+          </div>
+        </>
+      )}
     </Modal>
   );
 }

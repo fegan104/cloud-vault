@@ -32,44 +32,46 @@ export default function SharesScreen({ shares }: SharesScreenProps) {
       onSearchChange={setSearchQuery}
       searchPlaceholder="Search shares by name..."
     >
-      <div className="overflow-y-auto md:ring-1 ring-on-surface rounded-2xl md:m-4 h-full" style={{ scrollbarWidth: "none" }}>
-        <div className="w-full max-w-5xl mx-auto p-4 flex flex-col items-center">
-          <div className="w-full mb-8 text-center">
-            <h2 className="text-[--font-headline-lg] font-bold text-on-surface mb-3">
-              Your Shared Files
-            </h2>
-            <p className="text-[--font-body-md] text-on-surface-variant">
-              Manage your file shares
-            </p>
-          </div>
-
-          {filteredShares.length === 0 ? (
-            <div className="w-full max-w-3xl mt-12 text-center">
-              <div className="bg-surface rounded-[var(--radius-xl)] p-12 shadow-[--shadow-2]">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-variant mb-4">
-                  <Users className="w-8 h-8 text-on-surface-variant" />
-                </div>
-                <p className="text-[--font-body-lg] text-on-surface-variant">
-                  {searchQuery.trim()
-                    ? `No shares found matching "${searchQuery}".`
-                    : "No shares created yet. Share a file to get started."}
-                </p>
-                {searchQuery.trim() && (
-                  <div className="mt-6">
-                    <TonalButton onClick={() => setSearchQuery("")}>
-                      Clear Search
-                    </TonalButton>
-                  </div>
-                )}
-              </div>
+      <div className="overflow-hidden flex flex-col h-full">
+        <div className="flex-1 overflow-y-auto md:ring-1 ring-on-surface rounded-2xl md:m-4" style={{ scrollbarWidth: "none" }}>
+          <div className="w-full max-w-5xl mx-auto p-4 flex flex-col items-center">
+            <div className="w-full mb-8 text-center">
+              <h2 className="text-[--font-headline-lg] font-bold text-on-surface mb-3">
+                Your Shared Files
+              </h2>
+              <p className="text-[--font-body-md] text-on-surface-variant">
+                Manage your file shares
+              </p>
             </div>
-          ) : (
-            <ul className="w-full max-w-3xl space-y-3">
-              {filteredShares.map((share) => (
-                <ShareListItem key={share.id} share={share} />
-              ))}
-            </ul>
-          )}
+
+            {filteredShares.length === 0 ? (
+              <div className="w-full max-w-3xl mt-12 text-center">
+                <div className="bg-surface rounded-[var(--radius-xl)] p-12 shadow-[--shadow-2]">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-variant mb-4">
+                    <Users className="w-8 h-8 text-on-surface-variant" />
+                  </div>
+                  <p className="text-[--font-body-lg] text-on-surface-variant">
+                    {searchQuery.trim()
+                      ? `No shares found matching "${searchQuery}".`
+                      : "No shares created yet. Share a file to get started."}
+                  </p>
+                  {searchQuery.trim() && (
+                    <div className="mt-6">
+                      <TonalButton onClick={() => setSearchQuery("")}>
+                        Clear Search
+                      </TonalButton>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <ul className="w-full max-w-3xl space-y-3">
+                {filteredShares.map((share) => (
+                  <ShareListItem key={share.id} share={share} />
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
     </Scaffold>
@@ -118,7 +120,7 @@ function ShareListItem({ share }: { share: ShareWithFile }) {
             {share.name}
           </p>
           <div className="flex items-center gap-2 text-[--font-body-sm] text-on-surface-variant">
-            <FileText className="w-4 h-4" />
+            <FileText className="w-4 h-4 flex-shrink-0" />
             <span className="truncate">{share.file.fileName}</span>
           </div>
           <p className="text-[--font-body-sm] text-on-surface-variant mt-1">
@@ -127,8 +129,8 @@ function ShareListItem({ share }: { share: ShareWithFile }) {
           </p>
         </div>
       </div>
-      <div className="flex-shrink-0">
-        <TextButton onClick={handleCopyLink} disabled={isCopied} className="ring-1 ring-primary">
+      <div className="flex">
+        <TextButton onClick={handleCopyLink} disabled={isCopied} className="ring-1 ring-primary flex-1 sm:flex-initial">
           {isCopied ? (
             <>
               <Check className="w-4 h-4 mr-2" />
