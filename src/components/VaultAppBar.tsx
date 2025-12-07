@@ -4,15 +4,18 @@ import { TonalButton } from "./Buttons";
 import { signOut } from "../app/vault/actions";
 import { TextInput } from "./TextInput";
 import { useState } from "react";
+import Link from "next/link";
 
 type VaultAppBarProps = {
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
   /** Custom placeholder for search input */
   searchPlaceholder?: string;
+  /** whether to show the sign out button */
+  showSignOut?: boolean;
 };
 
-export function VaultAppBar({ searchQuery = "", onSearchChange, searchPlaceholder }: VaultAppBarProps) {
+export function VaultAppBar({ searchQuery = "", onSearchChange, searchPlaceholder, showSignOut = true }: VaultAppBarProps) {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const showSearch = onSearchChange !== undefined;
 
@@ -34,7 +37,9 @@ export function VaultAppBar({ searchQuery = "", onSearchChange, searchPlaceholde
             <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center">
               <FileText className="w-5 h-5 text-primary" />
             </div>
-            <h1 className="text-[--font-title-lg] font-semibold text-on-surface">Cloud Vault</h1>
+            <Link href="/">
+              <h1 className="text-[--font-title-lg] font-semibold text-on-surface">Cloud Vault</h1>
+            </Link>
           </div>
 
           {/* Center section: Search bar (only if search is enabled) */}
@@ -52,15 +57,17 @@ export function VaultAppBar({ searchQuery = "", onSearchChange, searchPlaceholde
 
           {/* Right section: Sign out button */}
           <div className="flex justify-end">
-            <form action={signOut}>
-              <TonalButton
-                type="submit"
-                className="flex items-center gap-2"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Sign Out</span>
-              </TonalButton>
-            </form>
+            {showSignOut && (
+              <form action={signOut}>
+                <TonalButton
+                  type="submit"
+                  className="flex items-center gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
+                </TonalButton>
+              </form>
+            )}
           </div>
         </div>
 
@@ -70,7 +77,9 @@ export function VaultAppBar({ searchQuery = "", onSearchChange, searchPlaceholde
             <>
               {/* Default mobile view */}
               <div className="flex items-center gap-3 flex-1">
-                <h1 className="text-[--font-title-lg] font-semibold text-on-surface">Cloud Vault</h1>
+                <Link href="/">
+                  <h1 className="text-[--font-title-lg] font-semibold text-on-surface">Cloud Vault</h1>
+                </Link>
               </div>
 
               {showSearch && (
@@ -83,14 +92,16 @@ export function VaultAppBar({ searchQuery = "", onSearchChange, searchPlaceholde
                 </button>
               )}
 
-              <form action={signOut}>
-                <TonalButton
-                  type="submit"
-                  className="flex items-center gap-2"
-                >
-                  <span>Sign Out</span>
-                </TonalButton>
-              </form>
+              {showSignOut && (
+                <form action={signOut}>
+                  <TonalButton
+                    type="submit"
+                    className="flex items-center gap-2"
+                  >
+                    <span>Sign Out</span>
+                  </TonalButton>
+                </form>
+              )}
             </>
           ) : (
             <>

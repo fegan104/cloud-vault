@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import ViewShareScreen from "./ViewShareScreen";
+import { VaultAppBar } from "@/components/VaultAppBar";
 
 export default async function Page({
   params,
@@ -22,6 +23,8 @@ export default async function Page({
 
   return (
     <>
+      {/* //TODO hide sign out button if not signed in */}
+      <VaultAppBar showSignOut={false} />
       <ViewShareScreen
         shareId={shareId}
         name={shareName.name}
