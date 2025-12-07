@@ -34,11 +34,13 @@ function Modal({
 export function DeleteConfirmationModal({
   isOpen,
   fileName,
+  title = "Delete File?",
   onConfirm,
   onCancel,
 }: {
   isOpen: boolean;
   fileName: string;
+  title?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -50,7 +52,7 @@ export function DeleteConfirmationModal({
         </div>
         <div className="flex-1">
           <h2 className="text-[--font-title-lg] font-semibold text-on-surface mb-2">
-            Delete File?
+            {title}
           </h2>
           <p className="text-[--font-body-md] text-on-surface-variant mb-1">
             Are you sure you want to delete:

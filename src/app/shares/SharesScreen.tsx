@@ -3,8 +3,11 @@
 import { useState } from "react";
 import Scaffold from "../../components/Scaffold";
 import { Share } from "@prisma/client";
-import { Users, FileText, Link as LinkIcon, Check } from "lucide-react";
-import { TextButton, TonalButton } from "@/components/Buttons";
+import { Users, FileText, Link as LinkIcon, Check, Trash2, MoreVertical } from "lucide-react";
+import { TonalButton } from "@/components/Buttons";
+import { deleteShare } from "@/lib/share";
+import { useRouter } from "next/navigation";
+import { DeleteConfirmationModal } from "@/components/Modals";
 
 type ShareWithFile = Share & {
   file: {
@@ -19,6 +22,21 @@ type SharesScreenProps = {
 
 export default function SharesScreen({ shares }: SharesScreenProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [shareToDelete, setShareToDelete] = useState<ShareWithFile | null>(null);
+  const router = useRouter();
+
+  const confirmDelete = async () => {
+    if (!shareToDelete) return;
+
+    try {
+      await deleteShare(shareToDelete.id);
+    } catch (error) {
+      console.error("Failed to delete share:", error);
+      alert("Failed to delete share");
+    } finally {
+      setShareToDelete(null);
+    }
+  };
 
   const filteredShares = shares.filter(
     (share) =>
@@ -32,6 +50,13 @@ export default function SharesScreen({ shares }: SharesScreenProps) {
       onSearchChange={setSearchQuery}
       searchPlaceholder="Search shares by name..."
     >
+      <DeleteConfirmationModal
+        isOpen={shareToDelete !== null}
+        fileName={shareToDelete?.name || ""}
+        title="Delete Share?"
+        onConfirm={confirmDelete}
+        onCancel={() => setShareToDelete(null)}
+      />
       <div className="overflow-hidden flex flex-col h-full">
         <div className="flex-1 overflow-y-auto md:ring-1 ring-on-surface rounded-2xl md:m-4" style={{ scrollbarWidth: "none" }}>
           <div className="w-full max-w-5xl mx-auto p-4 flex flex-col items-center">
@@ -67,7 +92,11 @@ export default function SharesScreen({ shares }: SharesScreenProps) {
             ) : (
               <ul className="w-full max-w-3xl space-y-3">
                 {filteredShares.map((share) => (
-                  <ShareListItem key={share.id} share={share} />
+                  <ShareListItem
+                    key={share.id}
+                    share={share}
+                    onDelete={() => setShareToDelete(share)}
+                  />
                 ))}
               </ul>
             )}
@@ -91,8 +120,9 @@ function formatFileSize(bytes: number): string {
   return `${gb.toFixed(2)} GB`;
 }
 
-function ShareListItem({ share }: { share: ShareWithFile }) {
+function ShareListItem({ share, onDelete }: { share: ShareWithFile; onDelete: () => void }) {
   const [isCopied, setIsCopied] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleCopyLink = async () => {
     const url = `${window.location.origin}/shares/${share.id}`;
@@ -100,9 +130,15 @@ function ShareListItem({ share }: { share: ShareWithFile }) {
       await navigator.clipboard.writeText(url);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
+      setIsMenuOpen(false);
     } catch (err) {
       console.error("Failed to copy link:", err);
     }
+  };
+
+  const handleDelete = () => {
+    setIsMenuOpen(false);
+    onDelete();
   };
 
   return (
@@ -129,20 +165,47 @@ function ShareListItem({ share }: { share: ShareWithFile }) {
           </p>
         </div>
       </div>
-      <div className="flex">
-        <TextButton onClick={handleCopyLink} disabled={isCopied} className="ring-1 ring-primary flex-1 sm:flex-initial">
-          {isCopied ? (
+      <div className="flex gap-2 w-full sm:w-auto flex-shrink-0 justify-end">
+        <div className="relative">
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="p-2 rounded-lg transition-all duration-200
+                text-on-secondary-container hover:bg-secondary-container/70"
+            aria-label="More actions"
+          >
+            <MoreVertical className="w-5 h-5 text-on-surface" />
+          </button>
+          {isMenuOpen && (
             <>
-              <Check className="w-4 h-4 mr-2" />
-              Copied!
-            </>
-          ) : (
-            <>
-              <LinkIcon className="w-4 h-4 mr-2" />
-              Copy Link
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setIsMenuOpen(false)}
+              />
+              <div className="absolute right-0 mt-2 w-48 bg-surface rounded-lg shadow-[--shadow-4] z-20 overflow-hidden">
+                <button
+                  onClick={handleCopyLink}
+                  className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-surface-variant transition-colors"
+                >
+                  {isCopied ? (
+                    <Check className="w-5 h-5 text-primary" />
+                  ) : (
+                    <LinkIcon className="w-5 h-5 text-on-surface" />
+                  )}
+                  <span className="text-[--font-body-md] text-on-surface">
+                    {isCopied ? "Copied!" : "Copy Link"}
+                  </span>
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-error/10 transition-colors"
+                >
+                  <Trash2 className="w-5 h-5 text-error" />
+                  <span className="text-[--font-body-md] text-error">Delete</span>
+                </button>
+              </div>
             </>
           )}
-        </TextButton>
+        </div>
       </div>
     </li>
   );
