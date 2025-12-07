@@ -46,6 +46,18 @@ export async function signChallenge(
   return uint8ToBase64(sig);
 }
 
+export async function signShareChallenge(
+  privateKey: Uint8Array,
+  challenge: string
+) {
+  const encoder = new TextEncoder();
+
+  // 1. derive master key (HMAC key)
+  const messageBytes = encoder.encode(challenge);
+  const sig = nacl.sign.detached(messageBytes, privateKey);
+  return uint8ToBase64(sig);
+}
+
 export function base64ToUint8Array(base64: string) {
   const binaryString = atob(base64); // Decode the Base64 string to a binary string
   const len = binaryString.length;
@@ -118,6 +130,34 @@ export async function decryptFile(
   return new Blob([decryptedBuffer]);
 }
 
+/**
+ * Unwraps a file key using the provided wrapping key (master key or share key).
+ * 
+ * @param wrappedFileKey The wrapped file key (base64 encoded)
+ * @param keyWrapIv The IV used to wrap the file key (base64 encoded)
+ * @param wrappingKey The key to unwrap the file key with (master key or share key)
+ * 
+ * @returns The unwrapped file key as a CryptoKey
+ */
+export async function unwrapFileKey(
+  wrappedFileKey: string,
+  keyWrapIv: string,
+  wrappingKey: CryptoKey
+): Promise<CryptoKey> {
+  const wrappedKeyBytes = base64ToUint8Array(wrappedFileKey);
+  const keyWrapIvBytes = base64ToUint8Array(keyWrapIv);
+
+  return crypto.subtle.unwrapKey(
+    "raw",
+    wrappedKeyBytes,
+    wrappingKey,
+    { name: "AES-GCM", iv: keyWrapIvBytes },
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["encrypt", "decrypt"]
+  );
+}
+
 export async function encryptFile(
   file: File,
   masterKey: CryptoKey,
@@ -170,7 +210,113 @@ export async function encryptFile(
   };
 }
 
-function uint8ToBase64(u8: Uint8Array): string {
+
+/**
+ * Derives a new CryptoKey from a password and salt using argon2id
+ */
+export async function deriveShareKey(
+  sharePassword: string,
+  shareSalt: Uint8Array
+): Promise<{
+  shareKey: CryptoKey;
+  publicKey: string;
+  privateKey: string;
+  metadata: {
+    argon2MemorySize: number;
+    argon2Iterations: number;
+    argon2Parallelism: number;
+    argon2HashLength: number;
+  };
+}> {
+  const keyHex = await argon2id({
+    password: sharePassword,
+    salt: shareSalt,
+    parallelism: ARGON2_PARALLELISM,
+    iterations: ARGON2_ITERATIONS,
+    memorySize: ARGON2_MEMORY_SIZE,
+    hashLength: ARGON2_HASH_LENGTH,
+    outputType: "hex",
+  });
+
+  const keyBytes = new Uint8Array(
+    keyHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
+  );
+
+  const shareKey = await crypto.subtle.importKey(
+    "raw",
+    keyBytes,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
+  );
+
+  // Convert seed → Ed25519 keypair using TweetNaCl
+  const keypair = nacl.sign.keyPair.fromSeed(keyBytes);
+
+  return {
+    shareKey,
+    publicKey: uint8ToBase64(keypair.publicKey),
+    privateKey: uint8ToBase64(keypair.secretKey),
+    metadata: {
+      argon2MemorySize: ARGON2_MEMORY_SIZE,
+      argon2Iterations: ARGON2_ITERATIONS,
+      argon2Parallelism: ARGON2_PARALLELISM,
+      argon2HashLength: ARGON2_HASH_LENGTH,
+    },
+  };
+}
+
+/**
+ * Unwraps a file key with a master key, wraps the file key with the new share key.
+ * 
+ * @param wrappedFileKey The wrapped file key to unwrap (base64 encoded)
+ * @param keyWrapIv The IV used to wrap the file key (base64 encoded)
+ * @param masterKey The master key to unwrap the file key with
+ * @param shareKey The share key to wrap the file key with
+ * 
+ * @returns The file key wrapped with the share key, and the metadata used for the share key wrapping
+ */
+export async function wrapShareKey(
+  wrappedFileKey: string,
+  keyWrapIv: string,
+  masterKey: CryptoKey,
+  shareKey: CryptoKey
+): Promise<{
+  wrappedFileKey: string;
+  keyWrapIv: string;
+}> {
+  // 1. Unwrap the file key using the master key
+  const wrappedKeyBytes = base64ToUint8Array(wrappedFileKey);
+  const keyWrapIvBytes = base64ToUint8Array(keyWrapIv);
+
+  const fileKey = await crypto.subtle.unwrapKey(
+    "raw",
+    wrappedKeyBytes,
+    masterKey,
+    { name: "AES-GCM", iv: keyWrapIvBytes },
+    { name: "AES-GCM", length: 256 },
+    true,
+    ["encrypt", "decrypt"]
+  );
+
+  // 2. Generate a new IV for wrapping with the share key
+  const shareKeyWrapIv = crypto.getRandomValues(new Uint8Array(12));
+
+  // 3. Wrap the file key with the share key
+  const rewrappedFileKey = await crypto.subtle.wrapKey(
+    "raw",
+    fileKey,
+    shareKey,
+    { name: "AES-GCM", iv: shareKeyWrapIv }
+  );
+
+  return {
+    wrappedFileKey: uint8ToBase64(new Uint8Array(rewrappedFileKey)),
+    keyWrapIv: uint8ToBase64(shareKeyWrapIv),
+  };
+}
+
+export function uint8ToBase64(u8: Uint8Array): string {
   // Convert bytes → binary string → base64
   let binary = "";
   for (let i = 0; i < u8.length; i++) {

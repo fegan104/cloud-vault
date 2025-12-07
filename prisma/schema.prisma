@@ -15,7 +15,6 @@ model User {
   createdAt     DateTime @default(now())
 
   sessions       Session[]
-  challenges     Challenge[]
   encryptedFiles EncryptedFile[]
 
   @@map("users")
@@ -35,37 +34,57 @@ model Session {
 
 model Challenge {
   id        String   @id @default(uuid())
-  userId    String
   challenge String   @unique
   createdAt DateTime @default(now())
   expiresAt DateTime
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
   @@map("challenges")
 }
 
 model EncryptedFile {
-  id                      String   @id @default(uuid())
-  userId                  String
-  fileName                String
-  fileSize                Int
-  storagePath             String
-  fileIv                  String
-  fileAlgorithm           String
-  wrappedFileKey          String
-  keyWrapIv               String
-  keyDerivationSalt       String
+  id                String @id @default(uuid())
+  userId            String
+  fileName          String
+  fileSize          Int
+  storagePath       String
+  fileIv            String
+  fileAlgorithm     String
+  wrappedFileKey    String
+  keyWrapIv         String
+  keyDerivationSalt String
 
-  argon2MemorySize        Int
-  argon2Iterations        Int
-  argon2Parallelism       Int
-  argon2HashLength        Int
-  createdAt               DateTime @default(now())
+  argon2MemorySize  Int
+  argon2Iterations  Int
+  argon2Parallelism Int
+  argon2HashLength  Int
+  createdAt         DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shares Share[]
 
   @@index([userId])
   @@map("encrypted_files")
+}
+
+model Share {
+  id String @id @default(uuid())
+
+  fileId    String
+  name      String
+  publicKey String
+
+  wrappedFileKey    String
+  keyWrapIv         String
+  keyDerivationSalt String
+
+  argon2MemorySize  Int
+  argon2Iterations  Int
+  argon2Parallelism Int
+  argon2HashLength  Int
+  createdAt         DateTime @default(now())
+
+  file EncryptedFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@index([fileId])
+  @@map("shares")
 }
