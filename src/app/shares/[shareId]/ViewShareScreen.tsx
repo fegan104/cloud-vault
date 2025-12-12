@@ -1,11 +1,12 @@
 "use client";
 
-import ShareKeyGuard, { ShareKeyDerivationParams } from "@/components/ShareKeyGuard";
+import ShareKeyGuard from "@/components/ShareKeyGuard";
 import FileListItem from "@/components/FileListItem";
 import { generateChallengeForShare, verifyChallengeForShare } from "@/lib/challenge";
-import { base64ToUint8Array, decryptFile, deriveShareKey, signShareChallenge, unwrapFileKey } from "@/lib/clientCrypto";
+import { base64ToUint8Array, decryptFile, deriveShareKey, signShareChallenge } from "@/lib/clientCrypto";
 import { useState } from "react";
-import { getShareById, getShareDownloadUrl, ShareWithFile } from "./actions";
+import { getShareDownloadUrl } from "./actions";
+import { getShareById, ShareWithFile } from "@/lib/share";
 
 export default function ViewShareScreen({ shareId, name }: { shareId: string, name: string }) {
 
@@ -13,6 +14,10 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
   const [share, setShare] = useState<ShareWithFile | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
+  /**
+   * Handles the unlock process for a share.
+   * @param password The password used to unlock the share.
+   */
   const handleUnlock = async (password: string) => {
     const { challenge, shareKeyDerivationParams } = await generateChallengeForShare(shareId);
     const encodedSalt = base64ToUint8Array(shareKeyDerivationParams.keyDerivationSalt);
@@ -27,6 +32,9 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
     setShare(await getShareById(shareId));
   };
 
+  /**
+   * Handles a download request for a share.
+   */
   const handleDownload = async () => {
     if (!shareKey || !share) return;
     setDownloadingId(share.file.id);

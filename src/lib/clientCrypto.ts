@@ -7,6 +7,14 @@ const ARGON2_ITERATIONS = 4;
 const ARGON2_PARALLELISM = 1;
 const ARGON2_HASH_LENGTH = 32;
 
+export function generateSalt() {
+  return crypto.getRandomValues(new Uint8Array(16));
+}
+
+export function generateIv() {
+  return crypto.getRandomValues(new Uint8Array(12));
+}
+
 export async function deriveKeypair(password: string, salt: Uint8Array<ArrayBuffer>) {
   const seedHex = await argon2id({
     password,
@@ -173,7 +181,7 @@ export async function encryptFile(
   );
 
   // 2. Encrypt the file with the file key
-  const fileIv = window.crypto.getRandomValues(new Uint8Array(12));
+  const fileIv = generateIv();
   const encryptedContent = await window.crypto.subtle.encrypt(
     { name: 'AES-GCM', iv: fileIv },
     fileKey,
@@ -181,7 +189,7 @@ export async function encryptFile(
   );
 
   // 3. Wrap the file key with the master key
-  const keyWrapIv = window.crypto.getRandomValues(new Uint8Array(12));
+  const keyWrapIv = generateIv();
   const wrappedFileKey = await window.crypto.subtle.wrapKey(
     "raw",
     fileKey,
@@ -300,7 +308,7 @@ export async function wrapShareKey(
   );
 
   // 2. Generate a new IV for wrapping with the share key
-  const shareKeyWrapIv = crypto.getRandomValues(new Uint8Array(12));
+  const shareKeyWrapIv = generateIv();
 
   // 3. Wrap the file key with the share key
   const rewrappedFileKey = await crypto.subtle.wrapKey(

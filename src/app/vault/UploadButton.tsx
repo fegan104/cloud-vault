@@ -115,6 +115,13 @@ export function UploadButton({ masterKeySalt, onEncrypted }: {
   );
 };
 
+/**
+ * Uploads a file to cloud storage with progress tracking.
+ * @param uploadUrl The signed upload URL to send the file to.
+ * @param fileBlob The file to upload.
+ * @param onProgress A callback function to track upload progress with a percentage.
+ * @returns A promise that resolves when the upload is complete.
+ */
 function uploadFileWithProgress(
   uploadUrl: string,
   fileBlob: Blob,

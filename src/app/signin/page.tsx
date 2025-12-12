@@ -10,22 +10,34 @@ import Link from 'next/link';
 import { TextInput, PasswordInput } from '@/components/TextInput';
 import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
+import CircularProgress from '@/components/CircularProgress';
 
-export default function LoginForm() {
+export default function Page() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { setMasterKey } = useMasterKey()
 
-  async function handleRequestChallenge(e: React.FormEvent) {
-    e.preventDefault();
+  /**
+   * Handles the request for a challenge to verify the user's identity.
+   * @param event The form event.
+   */
+  async function handleRequestChallenge(event: React.FormEvent) {
+    event.preventDefault();
     setIsLoading(true);
     setError(null);
 
+    // 1. Request a challenge from the server
     const { challenge, masterKeySalt } = await generateChallenge(email);
+
+    // 2. Sign the challenge with the user's master password
     const signature = await signChallenge(password, masterKeySalt, challenge)
+
+    // 3. Verify the challenge with the server
     const verified = await verifyChallenge(email, challenge, signature);
+
+    // 4. Derive the master key from the password and salt
     const saltBytes = base64ToUint8Array(masterKeySalt)
     const masterKey = await deriveMasterKey(password, saltBytes)
     setMasterKey(masterKey)
@@ -88,6 +100,7 @@ export default function LoginForm() {
                 disabled={isLoading || !email || !password}
                 className="w-full py-3"
               >
+                {isLoading ? <CircularProgress size={20} /> : null}
                 {isLoading ? 'Signing in...' : 'Sign In'}
               </TonalButton>
             </form>

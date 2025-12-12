@@ -18,3 +18,16 @@ const app = getApps().length
 
 export const adminAuth = getAuth(app);
 export const storage = getStorage(app).bucket();
+
+/**
+ * Generates a signed download URL for a file in Firebase Storage.
+ * @param storagePath The path to the file in storage.
+ * @returns A promise that resolves to the signed download URL.
+ */
+export async function getSignedDownloadUrl(storagePath: string): Promise<string> {
+  const [url] = await storage.file(storagePath).getSignedUrl({
+    action: 'read',
+    expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+  });
+  return url;
+}

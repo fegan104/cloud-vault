@@ -40,7 +40,10 @@ export default function ShareKeyGuard({
     setError(null);
   };
 
-  const submitPassword = async () => {
+  /**
+   * Handles the submission of the password to unlock the share.
+   */
+  const handleSubmitPassword = async () => {
     try {
       setIsLoading(true);
       await onUnlock(password);
@@ -80,7 +83,7 @@ export default function ShareKeyGuard({
                 name="share-password-input"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    submitPassword();
+                    handleSubmitPassword();
                   }
                 }}
                 error={error}
@@ -93,7 +96,7 @@ export default function ShareKeyGuard({
               )}
 
               <TonalButton
-                onClick={submitPassword}
+                onClick={handleSubmitPassword}
                 disabled={isLoading}
                 className="w-full py-3 px-6"
               >

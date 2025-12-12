@@ -3,6 +3,11 @@
 import { revalidatePath } from "next/cache"
 import { prisma } from "./db"
 import { getSessionToken } from "./getSessionToken"
+import { EncryptedFile, Share } from "@prisma/client";
+
+export type ShareWithFile = {
+  file: EncryptedFile;
+} & Share;
 
 export async function getSharesForUser() {
   const sessionToken = await getSessionToken()
@@ -40,6 +45,22 @@ export async function getSharesForUser() {
   if (!session) return []
 
   return session.user.encryptedFiles.map((encryptedFile) => encryptedFile.shares).flat()
+}
+
+/**
+ * Get a share by its ID.
+ * @param shareId The uniqueID of the share to get.
+ * @returns The share with its associated file or null if not found.
+ */
+export async function getShareById(shareId: string): Promise<ShareWithFile | null> {
+  return await prisma.share.findUnique({
+    where: {
+      id: shareId,
+    },
+    include: {
+      file: true,
+    },
+  }) as ShareWithFile;
 }
 
 export async function createShare(

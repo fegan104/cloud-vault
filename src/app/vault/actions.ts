@@ -1,6 +1,6 @@
 "use server";
 
-import { storage } from "../../lib/firebaseAdmin";
+import { storage, getSignedDownloadUrl } from "../../lib/firebaseAdmin";
 import { prisma } from "../../lib/db";
 import { getSessionToken } from "../../lib/getSessionToken";
 import { cookies } from "next/headers";
@@ -8,6 +8,10 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getUser } from "../../lib/getUser";
 
+/**
+ * Generates a URL for uploading a file to cloud storage.
+ * @returns An object containing the upload URL and storage path.
+ */
 export async function getUploadUrl() {
   const currentUser = await getUser();
   if (!currentUser) throw new Error("User not authenticated");
@@ -30,7 +34,15 @@ export async function getUploadUrl() {
   };
 }
 
-export async function uploadAction(
+/**
+ * Uploads a file to cloud storage.
+ * @param fileName The name of the file.
+ * @param storagePath The path where the file will be stored. 
+ * It must be of the form `uploads/{userId}/{uuid}.enc`.
+ * @param fileSize The size of the file in bytes.
+ * @param metadata The metadata for the file.
+ */
+export async function uploadFile(
   fileName: string,
   storagePath: string,
   fileSize: number,
@@ -81,7 +93,12 @@ export async function uploadAction(
   revalidatePath("/vault");
 }
 
-export async function getDownloadUrl(fileId: string) {
+/**
+ * Gets a download URL for a file by its ID.
+ * @param fileId The unique ID of the file.
+ * @returns The download URL.
+ */
+export async function getDownloadUrlByFileId(fileId: string) {
   const sessionToken = await getSessionToken();
   if (!sessionToken) {
     throw new Error("Unauthorized");
@@ -113,15 +130,13 @@ export async function getDownloadUrl(fileId: string) {
     throw new Error("File not found");
   }
 
-  // Generate a signed URL valid for 15 minutes
-  const [url] = await storage.file(fileRecord.storagePath).getSignedUrl({
-    action: 'read',
-    expires: Date.now() + 15 * 60 * 1000,
-  });
-
-  return url;
+  return await getSignedDownloadUrl(fileRecord.storagePath);
 }
 
+/**
+ * Deletes a file by its ID.
+ * @param fileId The unique ID of the file.
+ */
 export async function deleteFile(fileId: string) {
   const currentUser = await getUser();
   if (!currentUser) throw new Error("User not authenticated");
@@ -153,6 +168,10 @@ export async function deleteFile(fileId: string) {
   revalidatePath("/vault");
 }
 
+/**
+ * Signs out the user. This deletes the session cookie and removes 
+ * the session from the database. Then redirects to the home page.
+ */
 export async function signOut() {
   const requestCookies = await cookies();
   const sessionToken = requestCookies.get("session")?.value;
@@ -161,6 +180,11 @@ export async function signOut() {
   redirect("/");
 }
 
+/**
+ * Renames a file by its ID.
+ * @param fileId The unique ID of the file.
+ * @param newFileName The new name for the file.
+ */
 export async function renameFile(fileId: string, newFileName: string) {
   const sessionToken = await getSessionToken();
   if (!sessionToken) {

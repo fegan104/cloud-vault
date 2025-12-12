@@ -1,43 +1,18 @@
 "use server"
 
-import { prisma } from "@/lib/db"
-import { storage } from "@/lib/firebaseAdmin";
-import { EncryptedFile, Share } from "@prisma/client";
+import { getShareById } from "@/lib/share";
+import { getSignedDownloadUrl } from "@/lib/firebaseAdmin";
 
-export type ShareWithFile = {
-  file: EncryptedFile;
-} & Share;
-
-export async function getShareById(shareId: string): Promise<ShareWithFile> {
-  return await prisma.share.findUnique({
-    where: {
-      id: shareId,
-    },
-    include: {
-      file: true,
-    },
-  }) as ShareWithFile;
-}
-
+/**
+ * Get a signed URL for a share that can be used to download the file.
+ * @param shareId The uniqueID of the share to get.
+ * @returns The download URL for the share. */
 export async function getShareDownloadUrl(shareId: string): Promise<string> {
-  const share = await prisma.share.findUnique({
-    where: {
-      id: shareId,
-    },
-    include: {
-      file: true,
-    },
-  });
+  const share = await getShareById(shareId);
 
   if (!share || !share.file) {
     throw new Error("Share or file not found");
   }
 
-  // Generate a signed URL valid for 15 minutes
-  const [url] = await storage.file(share.file.storagePath).getSignedUrl({
-    action: 'read',
-    expires: Date.now() + 15 * 60 * 1000,
-  });
-
-  return url;
+  return await getSignedDownloadUrl(share.file.storagePath);
 }

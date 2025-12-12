@@ -1,7 +1,7 @@
 'use client';
 
 import { createUser } from '../../lib/createUser';
-import { deriveKeypair, deriveMasterKey } from '../../lib/clientCrypto';
+import { deriveKeypair, deriveMasterKey, generateSalt, uint8ToBase64 } from '../../lib/clientCrypto';
 import { useState } from 'react';
 import { useMasterKey } from '../../components/MasterKeyContext';
 import { redirect } from 'next/navigation';
@@ -11,7 +11,7 @@ import { TextInput, PasswordInput } from '@/components/TextInput';
 import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
 
-export default function SignUpForm() {
+export default function Page() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -19,8 +19,12 @@ export default function SignUpForm() {
   const [error, setError] = useState<string | null>(null);
   const { setMasterKey } = useMasterKey()
 
-  async function handleSignUp(e: React.FormEvent) {
-    e.preventDefault();
+  /**
+   * Handles the sign up process by creating a new user on the server and storing the master key in memory client-side.
+   * @param event The form event.
+   */
+  async function handleSignUp(event: React.FormEvent) {
+    event.preventDefault();
     setIsLoading(true);
     setError(null);
 
@@ -32,12 +36,12 @@ export default function SignUpForm() {
     }
 
     // 1) Generate salt
-    const saltBytes = crypto.getRandomValues(new Uint8Array(16));
-    const salt = btoa(String.fromCharCode(...saltBytes));
+    const saltBytes = generateSalt();
+    const salt = uint8ToBase64(saltBytes);
 
     // 2) Generate Ed25519 key pair
     const { publicKey } = await deriveKeypair(password, saltBytes)
-    const publicKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(publicKey)));
+    const publicKeyBase64 = uint8ToBase64(publicKey);
 
     // 3) Send to your server (via RSC action) to create the user
     await createUser({ email, salt, publicKey: publicKeyBase64 });

@@ -26,13 +26,19 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
     setError(null);
   };
 
-  const submitPassword = async () => {
+  /**
+   * Handles the submission of the password to verify the master key.
+   */
+  const handleSubmitPassword = async () => {
     try {
       setIsLoading(true);
+      // 1. Request a challenge from the server
       const { challenge } = await generateChallengeForSession();
+      // 2. Sign the challenge with the password
       const signature = await signChallenge(password, masterKeySalt, challenge);
+      // 3. Verify the challenge with the signature
       const verified = await verifyChallengeForSession(challenge, signature);
-
+      // 4. If verified, derive the master key and set it in the context
       if (verified) {
         const masterKeySaltBytes = base64ToUint8Array(masterKeySalt);
         const newMasterKey = await deriveMasterKey(password, masterKeySaltBytes);
@@ -76,7 +82,7 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
                 name="password-input"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    submitPassword();
+                    handleSubmitPassword();
                   }
                 }}
                 error={error}
@@ -89,7 +95,7 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
               )}
 
               <TonalButton
-                onClick={submitPassword}
+                onClick={handleSubmitPassword}
                 disabled={isLoading}
                 className="w-full py-3 px-6"
               >

@@ -2,10 +2,10 @@
 
 import { useMasterKey } from "../../components/MasterKeyContext";
 import MasterKeyGuard from "../../components/MasterKeyGuard";
-import { decryptFile, deriveShareKey, wrapShareKey, uint8ToBase64 } from "../../lib/clientCrypto";
+import { decryptFile, deriveShareKey, wrapShareKey, uint8ToBase64, generateSalt } from "../../lib/clientCrypto";
 import { useState } from "react";
 import { EncryptedFile } from "@prisma/client";
-import { getDownloadUrl, uploadAction, deleteFile, renameFile } from "./actions";
+import { getDownloadUrlByFileId, uploadFile, deleteFile, renameFile } from "./actions";
 import { FileText } from "lucide-react";
 import { UploadButton } from "./UploadButton";
 import { TonalButton } from "@/components/Buttons";
@@ -30,13 +30,24 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
   const [fileToShare, setFileToShare] = useState<EncryptedFile | null>(null);
   const [isCreatingShare, setIsCreatingShare] = useState(false);
 
+  /**
+   * Filters the files based on the search query.
+   */
+  const filteredFiles = files.filter(file =>
+    file.fileName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  /**
+   * Handles the download of a file.
+   * @param file The file to download.
+   */
   const handleDownload = async (file: EncryptedFile) => {
     if (!masterKey) return;
     setDownloadingId(file.id);
 
     try {
       // 1. Get a signed URL for the file
-      const downloadUrl = await getDownloadUrl(file.id);
+      const downloadUrl = await getDownloadUrlByFileId(file.id);
 
       // 2. Fetch the encrypted file
       const response = await fetch(downloadUrl);
@@ -67,10 +78,17 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
     }
   };
 
+  /**
+   * Prompts the user to confirm the deletion of a file.
+   * @param file The file to delete.
+   */
   const handleDelete = async (file: EncryptedFile) => {
     setFileToDelete(file);
   };
 
+  /**
+   * This function is called when the user confirms the deletion of a file.
+   */
   const confirmDelete = async () => {
     if (!fileToDelete) return;
 
@@ -87,10 +105,18 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
     }
   };
 
+  /**
+   * Prompts the user to confirm the renaming of a file.
+   * @param file The file to rename.
+   */
   const handleRename = (file: EncryptedFile) => {
     setFileToRename(file);
   };
 
+  /**
+   * This function is called when the user confirms the renaming of a file.
+   * @param newBaseName The new base name for the file.
+   */
   const confirmRename = async (newBaseName: string) => {
     if (!fileToRename || !newBaseName.trim()) return;
 
@@ -112,10 +138,19 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
     }
   };
 
+  /**
+   * Prompts the user to confirm the sharing of a file.
+   * @param file The file to share.
+   */
   const handleShare = (file: EncryptedFile) => {
     setFileToShare(file);
   };
 
+  /**
+   * This function is called when the user confirms the sharing of a file.
+   * @param shareName The name of the share.
+   * @param password The password for the share.
+   */
   const confirmShare = async (shareName: string, password: string) => {
     if (!fileToShare || !masterKey) return;
 
@@ -123,7 +158,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
 
     try {
       // 1. Generate a random salt for the share key derivation
-      const shareSaltBytes = crypto.getRandomValues(new Uint8Array(16));
+      const shareSaltBytes = generateSalt();
       const shareSaltB64 = uint8ToBase64(shareSaltBytes);
 
       // 2. Derive the share key from the password
@@ -156,33 +191,38 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
     }
   };
 
+  /**
+   * @returns The name of the file to rename, without the extension.
+   */
+  const displayName = (file: EncryptedFile | null) => {
+    if (!file) return "";
+    const lastDotIndex = file.fileName.lastIndexOf('.');
+    return lastDotIndex > 0
+      ? file.fileName.substring(0, lastDotIndex)
+      : file.fileName;
+  }
+
   return (
     <Scaffold searchQuery={searchQuery} onSearchChange={setSearchQuery} searchPlaceholder="Search files by name...">
       <div className="overflow-hidden flex flex-col h-full">
+
         <DeleteConfirmationModal
           isOpen={fileToDelete !== null}
           fileName={fileToDelete?.fileName || ""}
           onConfirm={confirmDelete}
           onCancel={() => setFileToDelete(null)}
         />
+
         <TextInputModal
           isOpen={fileToRename !== null}
           title="Rename File"
           description="Enter a new name for this file:"
-          placeholder={
-            fileToRename
-              ? (() => {
-                const lastDotIndex = fileToRename.fileName.lastIndexOf('.');
-                return lastDotIndex > 0
-                  ? fileToRename.fileName.substring(0, lastDotIndex)
-                  : fileToRename.fileName;
-              })()
-              : ""
-          }
+          placeholder={displayName(fileToRename)}
           confirmLabel="Rename"
           onConfirm={confirmRename}
           onCancel={() => setFileToRename(null)}
         />
+
         <CreateShareModal
           isOpen={fileToShare !== null}
           fileName={fileToShare?.fileName || ""}
@@ -190,6 +230,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
           onCancel={() => setFileToShare(null)}
           isLoading={isCreatingShare}
         />
+
         <MasterKeyGuard masterKeySalt={masterKeySalt}>
           <div className="flex-1 overflow-y-auto md:ring-1 ring-on-surface rounded-2xl md:m-4" style={{ "scrollbarWidth": "none" }}>
             <div className="w-full max-w-5xl mx-auto p-4 flex flex-col items-center">
@@ -202,58 +243,61 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
                 </p>
               </div>
 
+              {/* Upload Button */}
               <div className="w-full max-w-3xl mb-6">
-                <UploadButton masterKeySalt={masterKeySalt} onEncrypted={uploadAction} />
+                <UploadButton masterKeySalt={masterKeySalt} onEncrypted={uploadFile} />
               </div>
 
-              {(() => {
-                const filteredFiles = files.filter(file =>
-                  file.fileName.toLowerCase().includes(searchQuery.toLowerCase())
-                );
-
-                return filteredFiles.length === 0 ? (
-                  <div className="w-full max-w-3xl mt-12 text-center">
-                    <div className="bg-surface rounded-[var(--radius-xl)] p-12 shadow-[--shadow-2]">
-                      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-variant mb-4">
-                        <FileText className="w-8 h-8 text-on-surface-variant" />
-                      </div>
-                      <p className="text-[--font-body-lg] text-on-surface-variant">
-                        {searchQuery.trim()
-                          ? `No files found matching "${searchQuery}".`
-                          : "No files uploaded yet. Upload your first file to get started."
-                        }
-                      </p>
-                      {searchQuery.trim() && (
-                        <div className="mt-6">
-                          <TonalButton onClick={() => setSearchQuery("")}>
-                            Clear Search
-                          </TonalButton>
-                        </div>
-                      )}
-                    </div>
+              {/* File List */}
+              {filteredFiles.length === 0 ? (
+                <EmptyState searchQuery={searchQuery}>
+                  <div className="mt-6">
+                    <TonalButton onClick={() => setSearchQuery("")}>
+                      Clear Search
+                    </TonalButton>
                   </div>
-                ) : (
-                  <ul className="w-full max-w-3xl space-y-3">
-                    {filteredFiles.map((file) => (
-                      <FileListItem
-                        key={file.id}
-                        file={file}
-                        isDownloading={downloadingId === file.id}
-                        isDeleting={deletingId === file.id}
-                        isRenaming={renamingId === file.id}
-                        onDownload={handleDownload}
-                        onDelete={handleDelete}
-                        onRename={handleRename}
-                        onShare={handleShare}
-                      />
-                    ))}
-                  </ul>
-                );
-              })()}
+                </EmptyState>
+
+              ) : (
+                <ul className="w-full max-w-3xl space-y-3">
+                  {filteredFiles.map((file) => (
+                    <FileListItem
+                      key={file.id}
+                      file={file}
+                      isDownloading={downloadingId === file.id}
+                      isDeleting={deletingId === file.id}
+                      isRenaming={renamingId === file.id}
+                      onDownload={handleDownload}
+                      onDelete={handleDelete}
+                      onRename={handleRename}
+                      onShare={handleShare}
+                    />
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         </MasterKeyGuard>
       </div>
     </Scaffold>
+  );
+}
+
+function EmptyState({ searchQuery, children }: { searchQuery: string; children: React.ReactNode }) {
+  return (
+    <div className="w-full max-w-3xl mt-12 text-center">
+      <div className="bg-surface rounded-[var(--radius-xl)] p-12 shadow-[--shadow-2]">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-variant mb-4">
+          <FileText className="w-8 h-8 text-on-surface-variant" />
+        </div>
+        <p className="text-[--font-body-lg] text-on-surface-variant">
+          {searchQuery.trim()
+            ? `No files found matching "${searchQuery}".`
+            : "No files uploaded yet. Upload your first file to get started."
+          }
+        </p>
+        {searchQuery.trim() && children}
+      </div>
+    </div>
   );
 }

@@ -23,7 +23,6 @@ export default async function Page({
 
   return (
     <>
-      {/* //TODO hide sign out button if not signed in */}
       <VaultAppBar showSignOut={false} />
       <ViewShareScreen
         shareId={shareId}

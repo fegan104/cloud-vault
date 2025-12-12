@@ -18,6 +18,10 @@ export function MasterKeyProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Hook to access the master key which is held only in memory.
+ * @returns The master key.
+ */
 export function useMasterKey() {
   const ctx = useContext(MasterKeyContext);
   if (!ctx) throw new Error('useMasterKey must be used within MasterKeyProvider');
