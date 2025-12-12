@@ -114,10 +114,10 @@ export default function FileListItem<T extends FileListItemData>({
             ${isBusy ? 'opacity-50 cursor-wait' : ''}`}
         >
           {isDownloading ? (
-            <>
-              <CircularProgress size={18} />
-              <span>Downloading... {downloadProgress}%</span>
-            </>
+            <div className="flex items-center gap-2">
+              <span>Downloading</span>
+              <CircularProgress size={18} progress={downloadProgress} />
+            </div>
           ) : (
             <>
               <span>Download</span>
@@ -134,11 +134,7 @@ export default function FileListItem<T extends FileListItemData>({
                 ${isBusy ? 'opacity-50 cursor-wait' : ''}`}
               aria-label="More actions"
             >
-              {(isBusy) ? (
-                <CircularProgress size={20} />
-              ) : (
-                <MoreVertical className="w-5 h-5 text-on-surface" />
-              )}
+              <MoreVertical className="w-5 h-5 text-on-surface" />
             </button>
             {isMenuOpen && !isBusy && (
               <>
