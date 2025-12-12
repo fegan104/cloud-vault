@@ -3,8 +3,6 @@ import { generateChallenge, verifyChallenge } from "@/lib/challenge";
 import { generateSalt, uint8ToBase64 } from "@/lib/clientCrypto";
 import { prisma } from "@/lib/db";
 import { createSession } from "@/lib/session";
-import crypto from 'crypto';
-import { cookies } from 'next/headers';
 
 /**
  * Generates a challenge for a user.
@@ -63,7 +61,7 @@ export async function verifySignInChallenge(
   }
 
   // signature valid now we can create a session
-  createSession(user.id);
+  await createSession(user.id);
 
   return true
 }

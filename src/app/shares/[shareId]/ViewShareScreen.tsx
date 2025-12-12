@@ -1,7 +1,7 @@
 "use client";
 
 import ShareKeyGuard from "@/components/ShareKeyGuard";
-import FileListItem from "@/components/FileListItem";
+import FileListItem, { downloadFileWithProgress } from "@/components/FileListItem";
 import { base64ToUint8Array, decryptFile, deriveShareKey, signShareChallenge } from "@/lib/clientCrypto";
 import { useState } from "react";
 import { generateChallengeForShare, getShareDownloadUrl, verifyChallengeForShare } from "./actions";
@@ -12,6 +12,7 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
   const [shareKey, setShareKey] = useState<CryptoKey | null>(null);
   const [share, setShare] = useState<ShareWithFile | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<number>(0);
 
   /**
    * Handles the unlock process for a share.
@@ -44,9 +45,7 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
       const downloadUrl = await getShareDownloadUrl(shareId);
 
       // 2. Fetch the encrypted file
-      const response = await fetch(downloadUrl);
-      if (!response.ok) throw new Error("Failed to fetch file");
-      const encryptedBlob = await response.blob();
+      const encryptedBlob = await downloadFileWithProgress(downloadUrl, setDownloadProgress);
 
       // 3. Decrypt the file using the share key
       const decryptedBlob = await decryptFile(encryptedBlob, shareKey, {
@@ -69,6 +68,7 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
       alert("Failed to download and decrypt file.");
     } finally {
       setDownloadingId(null);
+      setDownloadProgress(0);
     }
   };
 
@@ -80,6 +80,7 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
       <ShareScreen
         share={share}
         isDownloading={downloadingId === share?.file.id}
+        downloadProgress={downloadProgress}
         onDownload={handleDownload}
       />
     </ShareKeyGuard>
@@ -89,10 +90,12 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
 function ShareScreen({
   share,
   isDownloading,
+  downloadProgress,
   onDownload
 }: {
   share: ShareWithFile | null;
   isDownloading: boolean;
+  downloadProgress: number;
   onDownload: () => void;
 }) {
   if (!share) return null;
@@ -112,6 +115,7 @@ function ShareScreen({
         <FileListItem
           file={share.file}
           isDownloading={isDownloading}
+          downloadProgress={downloadProgress}
           onDownload={onDownload}
         />
       </ul>

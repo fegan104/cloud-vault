@@ -5,6 +5,41 @@ import { FileText, Trash2, FilePenLine, MoreVertical, Share2 } from "lucide-reac
 import CircularProgress from "@/components/CircularProgress";
 import { TextButton } from "@/components/Buttons";
 
+/**
+ * Downloads a file from a URL with progress tracking.
+ * @param url The URL to download the file from.
+ * @param onProgress A callback function to track download progress with a percentage.
+ * @returns A promise that resolves with the file blob when the download is complete.
+ */
+export function downloadFileWithProgress(
+  url: string,
+  onProgress: (progress: number) => void
+): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url);
+    xhr.responseType = 'blob';
+
+    xhr.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = Math.round((event.loaded / event.total) * 100);
+        onProgress(percentComplete);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(xhr.response);
+      } else {
+        reject(new Error(`Download failed: ${xhr.statusText}`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error during download'));
+    xhr.send();
+  });
+}
+
 export function formatFileSize(bytes: number): string {
   const kb = bytes / 1024;
   if (kb < 1024) {
@@ -28,6 +63,7 @@ export type FileListItemData = {
 export type FileListItemProps<T extends FileListItemData> = {
   file: T;
   isDownloading?: boolean;
+  downloadProgress?: number;
   isDeleting?: boolean;
   isRenaming?: boolean;
   onDownload: (file: T) => void;
@@ -39,6 +75,7 @@ export type FileListItemProps<T extends FileListItemData> = {
 export default function FileListItem<T extends FileListItemData>({
   file,
   isDownloading = false,
+  downloadProgress = 0,
   isDeleting = false,
   isRenaming = false,
   onDownload,
@@ -79,7 +116,7 @@ export default function FileListItem<T extends FileListItemData>({
           {isDownloading ? (
             <>
               <CircularProgress size={18} />
-              <span>Downloading...</span>
+              <span>Downloading... {downloadProgress}%</span>
             </>
           ) : (
             <>

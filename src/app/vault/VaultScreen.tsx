@@ -12,7 +12,7 @@ import { TonalButton } from "@/components/Buttons";
 import { DeleteConfirmationModal, TextInputModal, CreateShareModal } from "@/components/Modals";
 import Scaffold from "../../components/Scaffold";
 import { createShare } from "../../lib/share";
-import FileListItem from "@/components/FileListItem";
+import FileListItem, { downloadFileWithProgress } from "@/components/FileListItem";
 
 type VaultScreenProps = {
   masterKeySalt: string;
@@ -22,6 +22,7 @@ type VaultScreenProps = {
 export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) {
   const { masterKey } = useMasterKey();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<number>(0);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [fileToDelete, setFileToDelete] = useState<EncryptedFile | null>(null);
   const [fileToRename, setFileToRename] = useState<EncryptedFile | null>(null);
@@ -50,9 +51,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
       const downloadUrl = await getDownloadUrlByFileId(file.id);
 
       // 2. Fetch the encrypted file
-      const response = await fetch(downloadUrl);
-      if (!response.ok) throw new Error("Failed to fetch file");
-      const encryptedBlob = await response.blob();
+      const encryptedBlob = await downloadFileWithProgress(downloadUrl, setDownloadProgress);
 
       // 3. Decrypt the file
       const decryptedBlob = await decryptFile(encryptedBlob, masterKey, {
@@ -75,6 +74,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
       alert("Failed to download and decrypt file.");
     } finally {
       setDownloadingId(null);
+      setDownloadProgress(0);
     }
   };
 
@@ -265,6 +265,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
                       key={file.id}
                       file={file}
                       isDownloading={downloadingId === file.id}
+                      downloadProgress={downloadProgress}
                       isDeleting={deletingId === file.id}
                       isRenaming={renamingId === file.id}
                       onDownload={handleDownload}
