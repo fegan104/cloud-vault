@@ -1,7 +1,7 @@
 import { prisma } from "../../lib/db";
 import { redirect } from "next/navigation";
 import VaultScreen from "./VaultScreen";
-import { getSessionToken, deleteSessionToken } from "../../lib/getSessionToken";
+import { getSessionToken, deleteSessionToken } from "../../lib/session";
 
 export default async function FileVault() {
   const sessionToken = await getSessionToken()

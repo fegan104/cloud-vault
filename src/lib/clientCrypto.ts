@@ -15,6 +15,13 @@ export function generateIv() {
   return crypto.getRandomValues(new Uint8Array(12));
 }
 
+/**
+ * Derives a stable public/private keypair from a password and salt using argon2id. 
+ * TODO maybe make a diffferent function that takes th emaster key as input
+ * @param password - the password to derive the keypair from
+ * @param salt - the salt to use for the keypair derivation
+ * @returns an object containing the public and private key
+ */
 export async function deriveKeypair(password: string, salt: Uint8Array<ArrayBuffer>) {
   const seedHex = await argon2id({
     password,
@@ -31,7 +38,6 @@ export async function deriveKeypair(password: string, salt: Uint8Array<ArrayBuff
     seedHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
   );
 
-  // Convert seed → Ed25519 keypair using TweetNaCl
   const keypair = nacl.sign.keyPair.fromSeed(seed);
 
   return {
@@ -40,6 +46,13 @@ export async function deriveKeypair(password: string, salt: Uint8Array<ArrayBuff
   };
 }
 
+/**
+ * Signs a challenge using the client's private key
+ * @param password - the password to derive the keypair from
+ * @param masterKeySaltB64 - the salt to use for the keypair derivation
+ * @param challenge - the challenge to sign
+ * @returns the signature
+ */
 export async function signChallenge(
   password: string,
   masterKeySaltB64: string,
@@ -47,35 +60,29 @@ export async function signChallenge(
 ) {
   const encoder = new TextEncoder();
 
-  // 1. derive master key (HMAC key)
-  const keyPairs = await deriveKeypair(password, base64ToUint8Array(masterKeySaltB64))
+  // derive the private key using the master password and salt
+  const { privateKey } = await deriveKeypair(password, base64ToUint8Array(masterKeySaltB64))
   const messageBytes = encoder.encode(challenge);
-  const sig = nacl.sign.detached(messageBytes, keyPairs.privateKey);
+  const sig = nacl.sign.detached(messageBytes, privateKey);
   return uint8ToBase64(sig);
 }
 
+/**
+ * Signs a challenge using the client's private key
+ * @param privateKey - the private key to sign the challenge with
+ * @param challenge - the challenge to sign
+ * @returns the signature
+ */
 export async function signShareChallenge(
   privateKey: Uint8Array,
   challenge: string
 ) {
   const encoder = new TextEncoder();
 
-  // 1. derive master key (HMAC key)
+  // sign the challenge using the private key
   const messageBytes = encoder.encode(challenge);
   const sig = nacl.sign.detached(messageBytes, privateKey);
   return uint8ToBase64(sig);
-}
-
-export function base64ToUint8Array(base64: string) {
-  const binaryString = atob(base64); // Decode the Base64 string to a binary string
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len); // Create a new Uint8Array with the same length
-
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i); // Populate the Uint8Array with byte values
-  }
-
-  return bytes;
 }
 
 export async function deriveMasterKey(password: string, salt: Uint8Array) {
@@ -221,6 +228,10 @@ export async function encryptFile(
 
 /**
  * Derives a new CryptoKey from a password and salt using argon2id
+ * @param sharePassword - the password to derive the key from
+ * @param shareSalt - the salt to use for the key derivation
+ * @returns an object containing the share key used for unwrapping 
+ * shared file keys, public key, private key, and key derivation metadata
  */
 export async function deriveShareKey(
   sharePassword: string,
@@ -331,4 +342,16 @@ export function uint8ToBase64(u8: Uint8Array): string {
     binary += String.fromCharCode(u8[i]);
   }
   return btoa(binary);
+}
+
+export function base64ToUint8Array(base64: string) {
+  const binaryString = atob(base64); // Decode the Base64 string to a binary string
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len); // Create a new Uint8Array with the same length
+
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i); // Populate the Uint8Array with byte values
+  }
+
+  return bytes;
 }

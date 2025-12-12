@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { prisma } from "./db"
-import { getSessionToken } from "./getSessionToken"
+import { getSessionToken } from "./session"
 import { EncryptedFile, Share } from "@prisma/client";
 
 export type ShareWithFile = {

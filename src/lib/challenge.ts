@@ -3,8 +3,13 @@ import { prisma } from './db';
 import crypto from 'crypto';
 import { cookies } from 'next/headers';
 import nacl from "tweetnacl";
-import { getUser } from './getUser';
+import { getUser } from './user';
 
+/**
+ * Generates a challenge for a user.
+ * @param emailAddress - the user's email address
+ * @returns an object containing the challenge and the user's master key salt
+ */
 export async function generateChallenge(emailAddress: string) {
   const challengeBytes = crypto.randomBytes(32);
   const challenge = challengeBytes.toString("base64");
@@ -33,6 +38,12 @@ export async function generateChallenge(emailAddress: string) {
 
   return { challenge: record.challenge, masterKeySalt: user.masterKeySalt }; // send this to client
 }
+
+/**
+ * Generates a challenge for granting access to a share.
+ * @param shareId - the share's unique ID
+ * @returns an object containing the challenge and the share's key derivation parameters
+ */
 export async function generateChallengeForShare(shareId: string) {
   const challengeBytes = crypto.randomBytes(32);
   const challenge = challengeBytes.toString("base64");
@@ -62,17 +73,13 @@ export async function generateChallengeForShare(shareId: string) {
     },
   });
 
-  return { challenge: record.challenge, shareKeyDerivationParams }; // send this to client
+  return { challenge: record.challenge, shareKeyDerivationParams };
 }
 
-function addMinutes(minutes: number) {
-  return new Date(Date.now() + minutes * 60_000);
-}
-
-function base64ToUint8Array(b64: string): Uint8Array {
-  return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-}
-
+/**
+ * Generates a challenge if the user is authenticated.
+ * @returns an object containing the challenge
+ */
 export async function generateChallengeForSession() {
   const user = await getUser();
   if (!user) {
@@ -93,6 +100,12 @@ export async function generateChallengeForSession() {
   return { challenge: record.challenge };
 }
 
+/**
+ * Verifies a challenge for an authenticated user.
+ * @param challengeFromClient - the challenge string that was signed
+ * @param clientSignedChallenge - base64-encoded signature produced by client
+ * @returns boolean - true if signature verifies, false otherwise
+ */
 export async function verifyChallengeForSession(
   challengeFromClient: string,
   clientSignedChallenge: string
@@ -267,4 +280,12 @@ export async function verifyChallenge(
   // 7. Return success + userId
   //
   return true
+}
+
+function addMinutes(minutes: number) {
+  return new Date(Date.now() + minutes * 60_000);
+}
+
+function base64ToUint8Array(b64: string): Uint8Array {
+  return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getSessionToken } from './lib/getSessionToken'
+import { getSessionToken } from './lib/session'
 
 export async function proxy(request: NextRequest) {
   const session = await getSessionToken()
@@ -20,6 +20,8 @@ export async function proxy(request: NextRequest) {
   } else {
     if (request.nextUrl.pathname === '/vault') {
       return NextResponse.redirect(new URL('/signin', request.url))
+    } else if (request.nextUrl.pathname === '/shares') {
+      return NextResponse.redirect(new URL('/signin', request.url))
     }
   }
 
@@ -31,6 +33,7 @@ export const config = {
     '/',
     '/vault',
     '/signin',
-    '/signup'
+    '/signup',
+    '/shares'
   ]
 }

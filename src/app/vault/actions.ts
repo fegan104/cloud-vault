@@ -2,11 +2,11 @@
 
 import { storage, getSignedDownloadUrl } from "../../lib/firebaseAdmin";
 import { prisma } from "../../lib/db";
-import { getSessionToken } from "../../lib/getSessionToken";
+import { getSessionToken } from "../../lib/session";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getUser } from "../../lib/getUser";
+import { getUser } from "../../lib/user";
 
 /**
  * Generates a URL for uploading a file to cloud storage.
