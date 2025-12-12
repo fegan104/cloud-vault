@@ -2,10 +2,9 @@
 
 import ShareKeyGuard from "@/components/ShareKeyGuard";
 import FileListItem from "@/components/FileListItem";
-import { generateChallengeForShare, verifyChallengeForShare } from "@/lib/challenge";
 import { base64ToUint8Array, decryptFile, deriveShareKey, signShareChallenge } from "@/lib/clientCrypto";
 import { useState } from "react";
-import { getShareDownloadUrl } from "./actions";
+import { generateChallengeForShare, getShareDownloadUrl, verifyChallengeForShare } from "./actions";
 import { getShareById, ShareWithFile } from "@/lib/share";
 
 export default function ViewShareScreen({ shareId, name }: { shareId: string, name: string }) {
@@ -23,6 +22,7 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
     const encodedSalt = base64ToUint8Array(shareKeyDerivationParams.keyDerivationSalt);
     const { shareKey, privateKey } = await deriveShareKey(password, encodedSalt);
     setShareKey(shareKey);
+
     const encodedPrivateKey = base64ToUint8Array(privateKey);
     const signedChallenge = await signShareChallenge(encodedPrivateKey, challenge);
     const verified = await verifyChallengeForShare(shareId, challenge, signedChallenge);

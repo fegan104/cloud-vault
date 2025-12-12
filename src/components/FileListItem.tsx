@@ -5,7 +5,7 @@ import { FileText, Trash2, FilePenLine, MoreVertical, Share2 } from "lucide-reac
 import CircularProgress from "@/components/CircularProgress";
 import { TextButton } from "@/components/Buttons";
 
-function formatFileSize(bytes: number): string {
+export function formatFileSize(bytes: number): string {
   const kb = bytes / 1024;
   if (kb < 1024) {
     return `${kb.toFixed(2)} KB`;
@@ -79,7 +79,7 @@ export default function FileListItem<T extends FileListItemData>({
           {isDownloading ? (
             <>
               <CircularProgress size={18} />
-              <span>Decrypting...</span>
+              <span>Downloading...</span>
             </>
           ) : (
             <>

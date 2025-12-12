@@ -1,6 +1,5 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
 import { prisma } from "./db"
 import { getSessionToken } from "./session"
 import { EncryptedFile, Share } from "@prisma/client";
@@ -93,42 +92,4 @@ export async function createShare(
   })
 
   return share
-}
-
-export async function deleteShare(shareId: string) {
-  const sessionToken = await getSessionToken()
-  if (!sessionToken) throw new Error("Unauthorized")
-
-  // Ensure the user owns the share through the chain:
-  // session -> user -> encryptedFiles -> shares
-  // We can do this by deleting with a where clause that verifies ownership,
-  // but Prisma's nested delete where is tricky for many-to-many deep relations.
-  // Instead, let's just fetch it first to verify ownership, or use a deleteMany which returns count.
-
-  // Option 1: findFirst to check ownership then delete
-  const share = await prisma.share.findFirst({
-    where: {
-      id: shareId,
-      file: {
-        user: {
-          sessions: {
-            some: {
-              sessionToken
-            }
-          }
-        }
-      }
-    }
-  })
-
-  if (!share) {
-    throw new Error("Share not found or unauthorized")
-  }
-
-  await prisma.share.delete({
-    where: {
-      id: shareId
-    }
-  })
-  revalidatePath("/shares")
 }

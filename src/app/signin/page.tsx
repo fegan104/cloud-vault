@@ -1,6 +1,5 @@
 'use client';
-import { generateChallenge } from '../../lib/challenge';
-import { verifyChallenge } from '../../lib/challenge';
+import { requestSignInChallenge, verifySignInChallenge } from '../../app/signin/actions';
 import { useMasterKey } from '../../components/MasterKeyContext';
 import { base64ToUint8Array, deriveMasterKey, signChallenge } from '../../lib/clientCrypto';
 import { redirect } from 'next/navigation';
@@ -29,13 +28,13 @@ export default function Page() {
     setError(null);
 
     // 1. Request a challenge from the server
-    const { challenge, masterKeySalt } = await generateChallenge(email);
+    const { challenge, masterKeySalt } = await requestSignInChallenge(email);
 
     // 2. Sign the challenge with the user's master password
     const signature = await signChallenge(password, masterKeySalt, challenge)
 
     // 3. Verify the challenge with the server
-    const verified = await verifyChallenge(email, challenge, signature);
+    const verified = await verifySignInChallenge(email, challenge, signature);
 
     // 4. Derive the master key from the password and salt
     const saltBytes = base64ToUint8Array(masterKeySalt)

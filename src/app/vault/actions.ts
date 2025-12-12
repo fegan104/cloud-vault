@@ -1,12 +1,13 @@
 "use server";
 
-import { storage, getSignedDownloadUrl } from "../../lib/firebaseAdmin";
+import { getSignedDownloadUrl, getSignedUploadUrl, deleteFileFromCloudStorage, doesFileExistInCloudStorage } from "../../lib/firebaseAdmin";
 import { prisma } from "../../lib/db";
 import { getSessionToken } from "../../lib/session";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getUser } from "../../lib/user";
+import { verifyChallenge } from "@/lib/challenge";
 
 /**
  * Generates a URL for uploading a file to cloud storage.
@@ -21,12 +22,7 @@ export async function getUploadUrl() {
   const storagePath = `uploads/${currentUser.id}/${uuid}.enc`;
 
   // Generate a signed URL valid for 15 minutes
-  const [uploadUrl] = await storage.file(storagePath).getSignedUrl({
-    version: 'v4',
-    action: 'write',
-    expires: Date.now() + 15 * 60 * 1000, // 15 minutes
-    contentType: 'application/octet-stream',
-  });
+  const uploadUrl = await getSignedUploadUrl(storagePath);
 
   return {
     uploadUrl,
@@ -35,14 +31,15 @@ export async function getUploadUrl() {
 }
 
 /**
- * Uploads a file to cloud storage.
+ * Saves the details of an encrypted file to the database. The client should handle uploading the file to
+ * cloud storage and call this function when that succeeds.
  * @param fileName The name of the file.
  * @param storagePath The path where the file will be stored. 
  * It must be of the form `uploads/{userId}/{uuid}.enc`.
  * @param fileSize The size of the file in bytes.
  * @param metadata The metadata for the file.
  */
-export async function uploadFile(
+export async function saveEncryptedFileDetails(
   fileName: string,
   storagePath: string,
   fileSize: number,
@@ -67,8 +64,7 @@ export async function uploadFile(
   }
 
   // Verify the file exists at the storage path
-  const fileRef = storage.file(storagePath);
-  const [exists] = await fileRef.exists();
+  const exists = await doesFileExistInCloudStorage(storagePath);
   if (!exists) {
     throw new Error("File not found at storage path");
   }
@@ -154,11 +150,7 @@ export async function deleteFile(fileId: string) {
   }
 
   // Delete from Firebase Storage
-  const fileRef = storage.file(fileRecord.storagePath);
-  const [exists] = await fileRef.exists();
-  if (exists) {
-    await fileRef.delete();
-  }
+  await deleteFileFromCloudStorage(fileRecord.storagePath);
 
   // Delete from database
   await prisma.encryptedFile.delete({
@@ -225,4 +217,22 @@ export async function renameFile(fileId: string, newFileName: string) {
   });
 
   revalidatePath("/vault");
+}
+
+/**
+ * Verifies a challenge for an authenticated user.
+ * @param challengeFromClient - the challenge string that was signed
+ * @param clientSignedChallenge - base64-encoded signature produced by client
+ * @returns boolean - true if signature verifies, false otherwise
+ */
+export async function verifyChallengeForSession(
+  challengeFromClient: string,
+  clientSignedChallenge: string
+): Promise<boolean> {
+  const user = await getUser();
+  if (!user) {
+    return false;
+  }
+
+  return await verifyChallenge(user.publicKey, challengeFromClient, clientSignedChallenge);
 }

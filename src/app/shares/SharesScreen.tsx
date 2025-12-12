@@ -5,9 +5,9 @@ import Scaffold from "../../components/Scaffold";
 import { Share } from "@prisma/client";
 import { Users, FileText, Link as LinkIcon, Check, Trash2, MoreVertical } from "lucide-react";
 import { TonalButton } from "@/components/Buttons";
-import { deleteShare } from "@/lib/share";
-import { useRouter } from "next/navigation";
 import { DeleteConfirmationModal } from "@/components/Modals";
+import { deleteShare } from "./actions";
+import { formatFileSize } from "@/components/FileListItem";
 
 type ShareWithFile = Share & {
   file: {
@@ -23,7 +23,6 @@ type SharesScreenProps = {
 export default function SharesScreen({ shares }: SharesScreenProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [shareToDelete, setShareToDelete] = useState<ShareWithFile | null>(null);
-  const router = useRouter();
 
   const confirmDelete = async () => {
     if (!shareToDelete) return;
@@ -105,19 +104,6 @@ export default function SharesScreen({ shares }: SharesScreenProps) {
       </div>
     </Scaffold>
   );
-}
-
-function formatFileSize(bytes: number): string {
-  const kb = bytes / 1024;
-  if (kb < 1024) {
-    return `${kb.toFixed(2)} KB`;
-  }
-  const mb = kb / 1024;
-  if (mb < 1024) {
-    return `${mb.toFixed(2)} MB`;
-  }
-  const gb = mb / 1024;
-  return `${gb.toFixed(2)} GB`;
 }
 
 function ShareListItem({ share, onDelete }: { share: ShareWithFile; onDelete: () => void }) {

@@ -16,8 +16,7 @@ const app = getApps().length
     storageBucket: "web-encryption-7ac01.firebasestorage.app"
   });
 
-export const adminAuth = getAuth(app);
-export const storage = getStorage(app).bucket();
+const storage = getStorage(app).bucket();
 
 /**
  * Generates a signed download URL for a file in Firebase Storage.
@@ -30,4 +29,28 @@ export async function getSignedDownloadUrl(storagePath: string): Promise<string>
     expires: Date.now() + 15 * 60 * 1000, // 15 minutes
   });
   return url;
+}
+
+export async function getSignedUploadUrl(storagePath: string): Promise<string> {
+  const [url] = await storage.file(storagePath).getSignedUrl({
+    version: 'v4',
+    action: 'write',
+    expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+    contentType: 'application/octet-stream',
+  });
+  return url;
+}
+
+export async function deleteFileFromCloudStorage(storagePath: string): Promise<void> {
+  const fileRef = storage.file(storagePath);
+  const [exists] = await fileRef.exists();
+  if (exists) {
+    await fileRef.delete();
+  }
+}
+
+export async function doesFileExistInCloudStorage(storagePath: string): Promise<boolean> {
+  const fileRef = storage.file(storagePath);
+  const [exists] = await fileRef.exists();
+  return exists;
 }

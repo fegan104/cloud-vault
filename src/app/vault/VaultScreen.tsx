@@ -1,11 +1,11 @@
 "use client";
 
 import { useMasterKey } from "../../components/MasterKeyContext";
-import MasterKeyGuard from "../../components/MasterKeyGuard";
+import MasterKeyGuard from "./MasterKeyGuard";
 import { decryptFile, deriveShareKey, wrapShareKey, uint8ToBase64, generateSalt } from "../../lib/clientCrypto";
 import { useState } from "react";
 import { EncryptedFile } from "@prisma/client";
-import { getDownloadUrlByFileId, uploadFile, deleteFile, renameFile } from "./actions";
+import { getDownloadUrlByFileId, saveEncryptedFileDetails, deleteFile, renameFile } from "./actions";
 import { FileText } from "lucide-react";
 import { UploadButton } from "./UploadButton";
 import { TonalButton } from "@/components/Buttons";
@@ -245,7 +245,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
 
               {/* Upload Button */}
               <div className="w-full max-w-3xl mb-6">
-                <UploadButton masterKeySalt={masterKeySalt} onEncrypted={uploadFile} />
+                <UploadButton masterKeySalt={masterKeySalt} onEncrypted={saveEncryptedFileDetails} />
               </div>
 
               {/* File List */}
