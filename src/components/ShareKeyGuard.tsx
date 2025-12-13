@@ -48,7 +48,6 @@ export default function ShareKeyGuard({
       setIsLoading(true);
       await onUnlock(password);
     } catch (e) {
-      console.error(e);
       setError(e instanceof Error ? e.message : "An error occurred during verification");
     } finally {
       setIsLoading(false);
@@ -86,7 +85,6 @@ export default function ShareKeyGuard({
                     handleSubmitPassword();
                   }
                 }}
-                error={error}
               />
 
               {error && (

@@ -1,3 +1,4 @@
+"use server";
 import { EncryptedFile, Share } from "@prisma/client";
 import { prisma } from "@/lib/db";
 

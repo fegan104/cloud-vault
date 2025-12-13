@@ -14,6 +14,7 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
   const [share, setShare] = useState<ShareWithFile | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
+  const [error, setError] = useState<string | null>(null);
 
   /**
    * Handles the unlock process for a share.
@@ -28,10 +29,11 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
     const encodedPrivateKey = base64ToUint8Array(privateKey);
     const signedChallenge = await signShareChallenge(encodedPrivateKey, challenge);
     const verified = await verifyChallengeForShare(shareId, challenge, signedChallenge);
-    if (!verified) {
-      throw new Error("Challenge verification failed");
+    if (verified) {
+      setShare(await getShareById(shareId));
+    } else {
+      throw new Error("Incorrect password");
     }
-    setShare(await getShareById(shareId));
   };
 
   /**
@@ -40,6 +42,7 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
   const handleDownload = async () => {
     if (!shareKey || !share) return;
     setDownloadingId(share.file.id);
+    setError(null);
 
     try {
       // 1. Get a signed URL for the file
@@ -66,7 +69,7 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Download failed:", error);
-      alert("Failed to download and decrypt file.");
+      setError("Failed to download and decrypt file.");
     } finally {
       setDownloadingId(null);
       setDownloadProgress(0);
@@ -83,6 +86,7 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
         isDownloading={downloadingId === share?.file.id}
         downloadProgress={downloadProgress}
         onDownload={handleDownload}
+        error={error}
       />
     </ShareKeyGuard>
   )
@@ -92,12 +96,14 @@ function ShareScreen({
   share,
   isDownloading,
   downloadProgress,
-  onDownload
+  onDownload,
+  error
 }: {
   share: ShareWithFile | null;
   isDownloading: boolean;
   downloadProgress: number;
   onDownload: () => void;
+  error: string | null;
 }) {
   if (!share) return null;
 
@@ -108,11 +114,16 @@ function ShareScreen({
           {share.name}
         </h2>
         <p className="text-[--font-body-md] text-on-surface-variant">
-          Shared with you
+          Has been shared with you
         </p>
       </div>
 
       <ul className="w-full max-w-3xl space-y-3">
+        {error && (
+          <div className="p-3 rounded-[var(--radius-md)] bg-error-container mb-4">
+            <p className="text-[--font-body-sm] text-on-error-container">{error}</p>
+          </div>
+        )}
         <FileListItem
           file={share.file}
           isDownloading={isDownloading}

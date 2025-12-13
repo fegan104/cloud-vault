@@ -1,6 +1,6 @@
-import { prisma } from "@/lib/db";
 import ViewShareScreen from "./ViewShareScreen";
 import { VaultAppBar } from "@/components/VaultAppBar";
+import { getShareName } from "@/lib/share/getShareName";
 
 export default async function ViewSharePage({
   params,
@@ -8,14 +8,7 @@ export default async function ViewSharePage({
   params: Promise<{ shareId: string }>
 }) {
   const { shareId } = await params;
-  const shareName = await prisma.share.findUnique({
-    where: {
-      id: shareId,
-    },
-    select: {
-      name: true,
-    },
-  });
+  const shareName = await getShareName(shareId);
 
   if (!shareName) {
     return <div>Share not found</div>;
@@ -26,7 +19,7 @@ export default async function ViewSharePage({
       <VaultAppBar showSignOut={false} />
       <ViewShareScreen
         shareId={shareId}
-        name={shareName.name}
+        name={shareName}
       />
     </>
   )
