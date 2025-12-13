@@ -1,6 +1,5 @@
 "use client";
 
-import { generateChallenge } from "../../lib/challenge";
 import { useMasterKey } from "../../components/MasterKeyContext";
 import { base64ToUint8Array, deriveMasterKey, signChallenge } from "../../lib/clientCrypto";
 import { useState } from "react";
@@ -9,7 +8,7 @@ import { Key } from "lucide-react";
 import { PasswordInput } from "@/components/TextInput";
 import { TonalButton } from "@/components/Buttons";
 import { Card } from "../../components/Card";
-import { verifyChallengeForSession } from "./actions";
+import { verifyChallengeForSession, generateChallengeForSession } from "./actions";
 
 type MasterKeyGuardProps = {
   masterKeySalt: string;
@@ -34,7 +33,7 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
     try {
       setIsLoading(true);
       // 1. Request a challenge from the server
-      const { challenge } = await generateChallenge();
+      const { challenge } = await generateChallengeForSession();
       // 2. Sign the challenge with the password
       const signature = await signChallenge(password, masterKeySalt, challenge);
       // 3. Verify the challenge with the signature

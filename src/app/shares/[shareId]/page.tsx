@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import ViewShareScreen from "./ViewShareScreen";
 import { VaultAppBar } from "@/components/VaultAppBar";
 
-export default async function Page({
+export default async function ViewSharePage({
   params,
 }: {
   params: Promise<{ shareId: string }>

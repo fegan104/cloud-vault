@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Key } from "lucide-react";
 
-export default function Home() {
+export default function HomePage() {
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, var(--color-primary-container) 0%, var(--color-secondary-container) 100%)' }}>
       <main className="flex min-h-screen w-full max-w-5xl mx-auto flex-col items-center justify-center py-16 px-6">

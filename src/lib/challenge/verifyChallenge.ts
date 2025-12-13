@@ -1,28 +1,6 @@
-"use server"
-import { prisma } from './db';
-import crypto from 'crypto';
+import { base64ToUint8Array } from '../arrayHelpers';
+import { prisma } from '../db';
 import nacl from "tweetnacl";
-import { getUser } from './user';
-
-/**
- * Inserts a challenge into the database that is valid for the next 5 minutes.
- * @returns an object containing the challenge
- */
-export async function generateChallenge() {
-  const challengeBytes = crypto.randomBytes(32);
-  const challenge = challengeBytes.toString("base64");
-
-  // Store it in the database
-  const record = await prisma.challenge.create({
-    data: {
-      challenge,
-      expiresAt: addMinutes(5),
-    },
-  });
-
-  return { challenge: record.challenge };
-}
-
 
 /**
  * Verify a client's signed challenge.
@@ -71,12 +49,4 @@ export async function verifyChallenge(
   });
 
   return true
-}
-
-function addMinutes(minutes: number) {
-  return new Date(Date.now() + minutes * 60_000);
-}
-
-function base64ToUint8Array(b64: string): Uint8Array {
-  return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
 }

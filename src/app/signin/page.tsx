@@ -11,7 +11,7 @@ import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
 import CircularProgress from '@/components/CircularProgress';
 
-export default function Page() {
+export default function SignInPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);

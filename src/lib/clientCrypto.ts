@@ -1,4 +1,3 @@
-"use client"
 import nacl from "tweetnacl";
 import { argon2id } from "hash-wasm";
 

@@ -1,10 +1,10 @@
 "use server"
 
-import { getShareById } from "@/lib/share";
+import { getShareById } from "@/lib/share/getShareById";
 import { getSignedDownloadUrl } from "@/lib/firebaseAdmin";
 import { prisma } from "@/lib/db";
-import crypto from "crypto";
-import { generateChallenge, verifyChallenge } from "@/lib/challenge";
+import { generateChallenge } from "@/lib/challenge/generateChallenge";
+import { verifyChallenge } from "@/lib/challenge/verifyChallenge";
 
 /**
  * Get a signed URL for a share that can be used to download the file.
@@ -26,9 +26,6 @@ export async function getShareDownloadUrl(shareId: string): Promise<string> {
  * @returns an object containing the challenge and the share's key derivation parameters
  */
 export async function generateChallengeForShare(shareId: string) {
-  const challengeBytes = crypto.randomBytes(32);
-  const challenge = challengeBytes.toString("base64");
-
   const shareKeyDerivationParams = await prisma.share.findUnique({
     where: { id: shareId },
     select: {

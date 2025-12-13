@@ -11,7 +11,7 @@ import { TextInput, PasswordInput } from '@/components/TextInput';
 import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
 
-export default function Page() {
+export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

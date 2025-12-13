@@ -1,13 +1,14 @@
 "use server";
 
-import { getSignedDownloadUrl, getSignedUploadUrl, deleteFileFromCloudStorage, doesFileExistInCloudStorage } from "../../lib/firebaseAdmin";
-import { prisma } from "../../lib/db";
-import { getSessionToken } from "../../lib/session";
+import { getSignedDownloadUrl, getSignedUploadUrl, deleteFileFromCloudStorage, doesFileExistInCloudStorage } from "@/lib/firebaseAdmin";
+import { prisma } from "@/lib/db";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getUser } from "../../lib/user";
-import { verifyChallenge } from "@/lib/challenge";
+import { getUser } from "@/lib/user/getUser";
+import { generateChallenge } from "@/lib/challenge/generateChallenge";
+import { getSessionToken } from "@/lib/session/getSessionToken";
+import { verifyChallenge } from "@/lib/challenge/verifyChallenge";
 
 /**
  * Generates a URL for uploading a file to cloud storage.
@@ -235,4 +236,16 @@ export async function verifyChallengeForSession(
   }
 
   return await verifyChallenge(user.publicKey, challengeFromClient, clientSignedChallenge);
+}
+
+/**
+ * Generates a challenge for an authenticated user.
+ * @returns the challenge string
+ */
+export async function generateChallengeForSession() {
+  const user = await getUser();
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+  return await generateChallenge();
 }

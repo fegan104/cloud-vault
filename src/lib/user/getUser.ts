@@ -1,5 +1,5 @@
-import { getSessionToken } from "./session";
-import { prisma } from "./db";
+import { getSessionToken } from "@/lib/session/getSessionToken";
+import { prisma } from "@/lib/db";
 import { User } from "@prisma/client";
 
 

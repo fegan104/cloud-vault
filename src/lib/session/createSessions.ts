@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import crypto from "crypto";
-import { prisma } from "./db";
+import { prisma } from "@/lib/db";
 
 /**
  * Create a session for a user by inserting a session into the database and setting a cookie.
@@ -21,20 +21,4 @@ export async function createSession(userId: string) {
     expires: expiresAt,
     path: "/"
   });
-}
-
-/**
- * Get the session token from the cookie.
- * @returns The session token or null if not found.
- */
-export async function getSessionToken() {
-  const sessionToken = (await cookies()).get("session")?.value;
-  return sessionToken || null;
-}
-
-/**
- * Deletes the session cookie.
- */
-export async function deleteSessionToken() {
-  (await cookies()).delete("session")
 }

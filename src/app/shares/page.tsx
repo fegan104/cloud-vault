@@ -1,4 +1,4 @@
-import { getSharesForUser } from "@/lib/share";
+import { getSharesForUser } from "@/lib/share/getSharesForUser";
 import SharesScreen from "./SharesScreen";
 
 export default async function SharesPage() {
