@@ -37,14 +37,14 @@ export default function SignInPage() {
     // 3. Verify the challenge with the server
     const verified = await verifySignInChallenge(email, challenge, signature);
 
-    // 4. Derive the master key from the password and salt
-    const saltBytes = base64ToUint8Array(masterKeySalt)
-    const masterKey = await deriveMasterKey(password, saltBytes)
-    setMasterKey(masterKey)
-    setIsLoading(false);
     if (verified) {
+      // 4. Derive the master key from the password and salt
+      const saltBytes = base64ToUint8Array(masterKeySalt)
+      const masterKey = await deriveMasterKey(password, saltBytes)
+      setMasterKey(masterKey)
       redirect("/vault")
     } else {
+      setIsLoading(false);
       setError('Invalid email or password')
     }
   }

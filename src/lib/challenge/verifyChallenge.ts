@@ -40,13 +40,10 @@ export async function verifyChallenge(
     publicKeyBytes
   );
 
-
-  if (!verified) throw new Error("Invalid signature");
-
   //Consume challenge so it cannot be reused
   await prisma.challenge.delete({
     where: { challenge: challengeFromClient }
   });
 
-  return true
+  return verified
 }

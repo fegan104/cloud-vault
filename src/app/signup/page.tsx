@@ -11,6 +11,7 @@ import { TextInput, PasswordInput } from '@/components/TextInput';
 import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
 import { uint8ToBase64 } from '@/lib/arrayHelpers';
+import CircularProgress from '@/components/CircularProgress';
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
@@ -40,14 +41,18 @@ export default function SignUpPage() {
     const saltBytes = generateSalt();
     const salt = uint8ToBase64(saltBytes);
 
-    // 2) Generate Ed25519 key pair
+    // 2) Generate public key
     const { publicKey } = await deriveKeypair(password, saltBytes)
     const publicKeyBase64 = uint8ToBase64(publicKey);
 
-    // 3) Send to your server (via RSC action) to create the user
-    await createUser({ email, salt, publicKey: publicKeyBase64 });
-
-    // 4) Keep privateKey client-side for signing login challenges
+    // 3) Create user account on server
+    const user = await createUser({ email, salt, publicKey: publicKeyBase64 });
+    if (!user) {
+      setError('Failed to create user, that email may already be in use.');
+      setIsLoading(false);
+      return;
+    }
+    // 4) Derive master key locally and store in memory
     const masterKey = await deriveMasterKey(password, saltBytes)
     setMasterKey(masterKey)
     redirect('/vault')
@@ -116,6 +121,7 @@ export default function SignUpPage() {
                 disabled={isLoading || !email || !password || !confirmPassword || password !== confirmPassword}
                 className="w-full py-3"
               >
+                {isLoading ? <CircularProgress size={20} /> : null}
                 {isLoading ? 'Creating account...' : 'Sign Up'}
               </TonalButton>
             </form>
