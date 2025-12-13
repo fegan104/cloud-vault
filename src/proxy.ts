@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getSessionToken } from './lib/session'
+import { getSessionToken } from './lib/session/getSessionToken'
 
 export async function proxy(request: NextRequest) {
   const session = await getSessionToken()

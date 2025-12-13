@@ -1,43 +1,39 @@
 import nacl from "tweetnacl";
 import { argon2id } from "hash-wasm";
+import { base64ToUint8Array, uint8ToBase64 } from "./arrayHelpers";
 
 const ARGON2_MEMORY_SIZE = 131_072; // 128 MB
 const ARGON2_ITERATIONS = 4;
 const ARGON2_PARALLELISM = 1;
 const ARGON2_HASH_LENGTH = 32;
 
+/**
+ * When you derive a new key from a password you need to add some uniqueness to
+ * prevent precomputed "rainbow table" attacks. This funciton generates a random
+ * salt for use in the key derivation process.
+ */
 export function generateSalt() {
   return crypto.getRandomValues(new Uint8Array(16));
 }
 
+/**
+ * When using AES-GCM you need to generate a unique number-used-once (nonce). This is 
+ * a "initialization vector" (IV) for each encryption operation. This allows us to 
+ * reuse the same master key for identical files and still produce different ciphertexts.
+ */
 export function generateIv() {
   return crypto.getRandomValues(new Uint8Array(12));
 }
 
 /**
  * Derives a stable public/private keypair from a password and salt using argon2id. 
- * TODO maybe make a diffferent function that takes th emaster key as input
  * @param password - the password to derive the keypair from
  * @param salt - the salt to use for the keypair derivation
  * @returns an object containing the public and private key
  */
 export async function deriveKeypair(password: string, salt: Uint8Array<ArrayBuffer>) {
-  const seedHex = await argon2id({
-    password,
-    salt,
-    parallelism: ARGON2_PARALLELISM,
-    iterations: ARGON2_ITERATIONS,
-    memorySize: ARGON2_MEMORY_SIZE,
-    hashLength: ARGON2_HASH_LENGTH,
-    outputType: "hex",
-  });
-
-  // Convert hex string to Uint8Array
-  const seed = new Uint8Array(
-    seedHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
-  );
-
-  const keypair = nacl.sign.keyPair.fromSeed(seed);
+  const keyBits = await deriveKeyBits(password, salt);
+  const keypair = nacl.sign.keyPair.fromSeed(keyBits);
 
   return {
     publicKey: keypair.publicKey,
@@ -84,47 +80,47 @@ export async function signShareChallenge(
   return uint8ToBase64(sig);
 }
 
-export async function deriveMasterKey(password: string, salt: Uint8Array) {
-  const keyHex = await argon2id({
-    password,
-    salt,
-    parallelism: ARGON2_PARALLELISM,
-    iterations: ARGON2_ITERATIONS,
-    memorySize: ARGON2_MEMORY_SIZE,
-    hashLength: ARGON2_HASH_LENGTH,
-    outputType: "hex",
-  });
-
-  const keyBytes = new Uint8Array(
-    keyHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
-  );
+/**
+ * Derives a master key from a password and salt using argon2id
+ * @param masterPassword - the password to derive the key from
+ * @param masterKeySalt - the salt to use for the key derivation
+ * @returns the master key imported into the CryptoKey interface of the Web Crypto API.
+ */
+export async function deriveMasterKey(masterPassword: string, masterKeySalt: Uint8Array) {
+  const keyBits = await deriveKeyBits(masterPassword, masterKeySalt);
 
   return crypto.subtle.importKey(
     "raw",
-    keyBytes,
+    keyBits,
     { name: "AES-GCM", length: 256 },
     false,
     ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
   );
 }
 
+/**
+ * Decrypts a file using the master key and metadata
+ * @param encryptedBlob The encrypted file to decrypt
+ * @param unwrappingKey The crypto key to decrypt the `metadata.wrappedFileKey` with
+ * @param metadata The metadata to use for the decryption
+ * @returns The decrypted file
+ */
 export async function decryptFile(
   encryptedBlob: Blob,
-  masterKey: CryptoKey,
+  unwrappingKey: CryptoKey,
   metadata: {
     fileIv: string;
     wrappedFileKey: string;
     keyWrapIv: string;
   }
 ): Promise<Blob> {
-  // 1. Unwrap the file key using the master key
+  // 1. Unwrap the file key using the unwrapping key
   const wrappedKeyBytes = base64ToUint8Array(metadata.wrappedFileKey);
   const keyWrapIvBytes = base64ToUint8Array(metadata.keyWrapIv);
-
   const fileKey = await crypto.subtle.unwrapKey(
     "raw",
     wrappedKeyBytes,
-    masterKey,
+    unwrappingKey,
     { name: "AES-GCM", iv: keyWrapIvBytes },
     { name: "AES-GCM", length: 256 },
     true,
@@ -134,7 +130,6 @@ export async function decryptFile(
   // 2. Decrypt the file content
   const fileIvBytes = base64ToUint8Array(metadata.fileIv);
   const encryptedBuffer = await encryptedBlob.arrayBuffer();
-
   const decryptedBuffer = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv: fileIvBytes },
     fileKey,
@@ -142,34 +137,6 @@ export async function decryptFile(
   );
 
   return new Blob([decryptedBuffer]);
-}
-
-/**
- * Unwraps a file key using the provided wrapping key (master key or share key).
- * 
- * @param wrappedFileKey The wrapped file key (base64 encoded)
- * @param keyWrapIv The IV used to wrap the file key (base64 encoded)
- * @param wrappingKey The key to unwrap the file key with (master key or share key)
- * 
- * @returns The unwrapped file key as a CryptoKey
- */
-export async function unwrapFileKey(
-  wrappedFileKey: string,
-  keyWrapIv: string,
-  wrappingKey: CryptoKey
-): Promise<CryptoKey> {
-  const wrappedKeyBytes = base64ToUint8Array(wrappedFileKey);
-  const keyWrapIvBytes = base64ToUint8Array(keyWrapIv);
-
-  return crypto.subtle.unwrapKey(
-    "raw",
-    wrappedKeyBytes,
-    wrappingKey,
-    { name: "AES-GCM", iv: keyWrapIvBytes },
-    { name: "AES-GCM", length: 256 },
-    true,
-    ["encrypt", "decrypt"]
-  );
 }
 
 export async function encryptFile(
@@ -180,7 +147,7 @@ export async function encryptFile(
   const fileBuffer = await file.arrayBuffer();
 
   // 1. Generate a random file key
-  const fileKey = await window.crypto.subtle.generateKey(
+  const fileKey = await crypto.subtle.generateKey(
     { name: 'AES-GCM', length: 256 },
     true,
     ['encrypt', 'decrypt']
@@ -188,7 +155,7 @@ export async function encryptFile(
 
   // 2. Encrypt the file with the file key
   const fileIv = generateIv();
-  const encryptedContent = await window.crypto.subtle.encrypt(
+  const encryptedContent = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv: fileIv },
     fileKey,
     fileBuffer
@@ -196,7 +163,7 @@ export async function encryptFile(
 
   // 3. Wrap the file key with the master key
   const keyWrapIv = generateIv();
-  const wrappedFileKey = await window.crypto.subtle.wrapKey(
+  const wrappedFileKey = await crypto.subtle.wrapKey(
     "raw",
     fileKey,
     masterKey,
@@ -334,23 +301,28 @@ export async function wrapShareKey(
   };
 }
 
-export function uint8ToBase64(u8: Uint8Array): string {
-  // Convert bytes → binary string → base64
-  let binary = "";
-  for (let i = 0; i < u8.length; i++) {
-    binary += String.fromCharCode(u8[i]);
-  }
-  return btoa(binary);
-}
+/**
+ * Derives a cryptographic key from a password and salt using argon2id
+ * 
+ * @param password The password to derive the key from
+ * @param salt The salt to use for the key derivation
+ * 
+ * @returns The derived key as a Uint8Array
+ */
+async function deriveKeyBits(password: string, salt: Uint8Array) {
+  const keyHex = await argon2id({
+    password: password,
+    salt: salt,
+    parallelism: ARGON2_PARALLELISM,
+    iterations: ARGON2_ITERATIONS,
+    memorySize: ARGON2_MEMORY_SIZE,
+    hashLength: ARGON2_HASH_LENGTH,
+    outputType: "hex",
+  });
 
-export function base64ToUint8Array(base64: string) {
-  const binaryString = atob(base64); // Decode the Base64 string to a binary string
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len); // Create a new Uint8Array with the same length
+  const keyBytes = new Uint8Array(
+    keyHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
+  );
 
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i); // Populate the Uint8Array with byte values
-  }
-
-  return bytes;
+  return keyBytes;
 }

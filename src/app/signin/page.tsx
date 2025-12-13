@@ -1,7 +1,7 @@
 'use client';
 import { requestSignInChallenge, verifySignInChallenge } from '../../app/signin/actions';
 import { useMasterKey } from '../../components/MasterKeyContext';
-import { base64ToUint8Array, deriveMasterKey, signChallenge } from '../../lib/clientCrypto';
+import { deriveMasterKey, signChallenge } from '../../lib/clientCrypto';
 import { redirect } from 'next/navigation';
 import { useState } from 'react';
 import { LogIn } from 'lucide-react';
@@ -10,6 +10,7 @@ import { TextInput, PasswordInput } from '@/components/TextInput';
 import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
 import CircularProgress from '@/components/CircularProgress';
+import { base64ToUint8Array } from '@/lib/arrayHelpers';
 
 export default function SignInPage() {
   const [email, setEmail] = useState('');

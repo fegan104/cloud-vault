@@ -1,7 +1,7 @@
 'use client';
 
 import { createUser } from './actions';
-import { deriveKeypair, deriveMasterKey, generateSalt, uint8ToBase64 } from '../../lib/clientCrypto';
+import { deriveKeypair, deriveMasterKey, generateSalt } from '../../lib/clientCrypto';
 import { useState } from 'react';
 import { useMasterKey } from '../../components/MasterKeyContext';
 import { redirect } from 'next/navigation';
@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { TextInput, PasswordInput } from '@/components/TextInput';
 import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
+import { uint8ToBase64 } from '@/lib/arrayHelpers';
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');

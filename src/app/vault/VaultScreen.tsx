@@ -2,7 +2,7 @@
 
 import { useMasterKey } from "../../components/MasterKeyContext";
 import MasterKeyGuard from "./MasterKeyGuard";
-import { decryptFile, deriveShareKey, wrapShareKey, uint8ToBase64, generateSalt } from "../../lib/clientCrypto";
+import { decryptFile, deriveShareKey, wrapShareKey, generateSalt } from "../../lib/clientCrypto";
 import { useState } from "react";
 import { EncryptedFile } from "@prisma/client";
 import { getDownloadUrlByFileId, saveEncryptedFileDetails, deleteFile, renameFile } from "./actions";
@@ -11,8 +11,9 @@ import { UploadButton } from "./UploadButton";
 import { TonalButton } from "@/components/Buttons";
 import { DeleteConfirmationModal, TextInputModal, CreateShareModal } from "@/components/Modals";
 import Scaffold from "../../components/Scaffold";
-import { createShare } from "../../lib/share";
+import { createShare } from "@/lib/share/createShare";
 import FileListItem, { downloadFileWithProgress } from "@/components/FileListItem";
+import { uint8ToBase64 } from "@/lib/arrayHelpers";
 
 type VaultScreenProps = {
   masterKeySalt: string;

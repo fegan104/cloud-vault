@@ -1,7 +1,8 @@
 "use server";
+import { uint8ToBase64 } from "@/lib/arrayHelpers";
 import { generateChallenge } from "@/lib/challenge/generateChallenge";
 import { verifyChallenge } from "@/lib/challenge/verifyChallenge";
-import { generateSalt, uint8ToBase64 } from "@/lib/clientCrypto";
+import { generateSalt } from "@/lib/clientCrypto";
 import { prisma } from "@/lib/db";
 import { createSession } from "@/lib/session/createSessions";
 

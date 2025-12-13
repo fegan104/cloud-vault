@@ -2,10 +2,11 @@
 
 import ShareKeyGuard from "@/components/ShareKeyGuard";
 import FileListItem, { downloadFileWithProgress } from "@/components/FileListItem";
-import { base64ToUint8Array, decryptFile, deriveShareKey, signShareChallenge } from "@/lib/clientCrypto";
+import { decryptFile, deriveShareKey, signShareChallenge } from "@/lib/clientCrypto";
 import { useState } from "react";
 import { generateChallengeForShare, getShareDownloadUrl, verifyChallengeForShare } from "./actions";
-import { getShareById, ShareWithFile } from "@/lib/share";
+import { getShareById, ShareWithFile } from "@/lib/share/getShareById";
+import { base64ToUint8Array } from "@/lib/arrayHelpers";
 
 export default function ViewShareScreen({ shareId, name }: { shareId: string, name: string }) {
 
