@@ -1,4 +1,4 @@
-import { prisma } from "../db";
+import { prisma } from "@/lib/db";
 
 export async function getShareName(shareId: string) {
   const share = await prisma.share.findUnique({
