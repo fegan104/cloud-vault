@@ -60,21 +60,21 @@ export default function SharesScreen({ shares }: SharesScreenProps) {
         <div className="flex-1 overflow-y-auto md:ring-1 ring-on-surface rounded-2xl md:m-4" style={{ scrollbarWidth: "none" }}>
           <div className="w-full max-w-5xl mx-auto p-4 flex flex-col items-center">
             <div className="w-full mb-8 text-center">
-              <h2 className="text-[--font-headline-lg] font-bold text-on-surface mb-3">
+              <h2 className="font-bold text-on-surface mb-3">
                 Your Shared Files
               </h2>
-              <p className="text-[--font-body-md] text-on-surface-variant">
+              <p className="text-on-surface-variant">
                 Manage your file shares
               </p>
             </div>
 
             {filteredShares.length === 0 ? (
               <div className="w-full max-w-3xl mt-12 text-center">
-                <div className="bg-surface rounded-[var(--radius-xl)] p-12 shadow-[--shadow-2]">
+                <div className="bg-surface p-12 shadow-[--shadow-2]">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-variant mb-4">
                     <Users className="w-8 h-8 text-on-surface-variant" />
                   </div>
-                  <p className="text-[--font-body-lg] text-on-surface-variant">
+                  <p className="text-on-surface-variant">
                     {searchQuery.trim()
                       ? `No shares found matching "${searchQuery}".`
                       : "No shares created yet. Share a file to get started."}
@@ -129,15 +129,15 @@ function ShareListItem({ share, onDelete }: { share: ShareWithFile; onDelete: ()
 
   return (
     <li
-      className="bg-surface-variant p-5 rounded-[8px] shadow-[--shadow-2] 
+      className="bg-surface-variant p-5 rounded-sm shadow-[--shadow-2] 
                flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4
                hover:shadow-[--shadow-3] transition-all duration-200"
     >
-      <div className="flex items-center gap-4 min-w-0">
+      <div className="flex items-center gap-4 w-full">
         <div className="p-3 flex-shrink-0">
           <Users className="w-6 h-6 text-primary" />
         </div>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-full">
           <p className="font-semibold text-[--font-body-lg] text-on-surface mb-1 break-words">
             {share.name}
           </p>
@@ -150,47 +150,50 @@ function ShareListItem({ share, onDelete }: { share: ShareWithFile; onDelete: ()
             {new Date(share.createdAt).toLocaleDateString()}
           </p>
         </div>
-      </div>
-      <div className="flex gap-2 w-full sm:w-auto flex-shrink-0 justify-end">
-        <div className="relative">
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-2 rounded-lg transition-all duration-200
+
+        <div className="p-3 shrink-0 md:flex-1">
+          <div className="flex gap-2 w-full justify-end">
+            <div className="relative">
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="p-2 rounded-lg transition-all duration-200
                 text-on-secondary-container hover:bg-secondary-container/70"
-            aria-label="More actions"
-          >
-            <MoreVertical className="w-5 h-5 text-on-surface" />
-          </button>
-          {isMenuOpen && (
-            <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setIsMenuOpen(false)}
-              />
-              <div className="absolute right-0 mt-2 w-48 bg-surface rounded-lg shadow-[--shadow-4] z-20 overflow-hidden">
-                <button
-                  onClick={handleCopyLink}
-                  className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-surface-variant transition-colors"
-                >
-                  {isCopied ? (
-                    <Check className="w-5 h-5 text-primary" />
-                  ) : (
-                    <LinkIcon className="w-5 h-5 text-on-surface" />
-                  )}
-                  <span className="text-[--font-body-md] text-on-surface">
-                    {isCopied ? "Copied!" : "Copy Link"}
-                  </span>
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-error/10 transition-colors"
-                >
-                  <Trash2 className="w-5 h-5 text-error" />
-                  <span className="text-[--font-body-md] text-error">Delete</span>
-                </button>
-              </div>
-            </>
-          )}
+                aria-label="More actions"
+              >
+                <MoreVertical className="w-5 h-5 text-on-surface" />
+              </button>
+              {isMenuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setIsMenuOpen(false)}
+                  />
+                  <div className="absolute right-0 mt-2 w-48 bg-surface rounded-lg shadow-[--shadow-4] z-20 overflow-hidden">
+                    <button
+                      onClick={handleCopyLink}
+                      className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-surface-variant transition-colors"
+                    >
+                      {isCopied ? (
+                        <Check className="w-5 h-5 text-primary" />
+                      ) : (
+                        <LinkIcon className="w-5 h-5 text-on-surface" />
+                      )}
+                      <span className="text-[--font-body-md] text-on-surface">
+                        {isCopied ? "Copied!" : "Copy Link"}
+                      </span>
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-error/10 transition-colors"
+                    >
+                      <Trash2 className="w-5 h-5 text-error" />
+                      <span className="text-[--font-body-md] text-error">Delete</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </li>

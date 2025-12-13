@@ -1,8 +1,13 @@
 import { cookies } from "next/headers";
+import { prisma } from "@/lib/db";
 
 /**
- * Deletes the session cookie.
+ * Deletes the session cookie and the session from the database.
  */
 export async function deleteSessionToken() {
-  (await cookies()).delete("session")
+  const requestCookies = await cookies();
+  const sessionToken = requestCookies.get("session")?.value;
+  requestCookies.delete("session")
+  if (!sessionToken) return;
+  await prisma.session.delete({ where: { sessionToken } })
 }
