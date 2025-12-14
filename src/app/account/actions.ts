@@ -61,7 +61,9 @@ export async function getAllEncryptedFilesKeyDerivationParams(): Promise<{ id: s
 // Updates the encrypted file key derivation params in the database
 // This should be done in a transaction
 export async function updateEncryptedFilesKeyDerivationParams(
-  updates: { id: string; wrappedFileKey: string; keyWrapIv: string }[]
+  updates: { id: string; wrappedFileKey: string; keyWrapIv: string }[],
+  publicKey: string,
+  masterKeySalt: string
 ) {
   const user = await getUser();
   if (!user) {
@@ -69,8 +71,9 @@ export async function updateEncryptedFilesKeyDerivationParams(
   }
 
   await prisma.$transaction(
-    updates.map((update) =>
-      prisma.encryptedFile.updateMany({
+    [...updates.map((update) =>
+      // Update each encrypted file
+      prisma.encryptedFile.update({
         where: {
           id: update.id,
           userId: user.id, // Ensure user owns the file
@@ -80,27 +83,18 @@ export async function updateEncryptedFilesKeyDerivationParams(
           keyWrapIv: update.keyWrapIv,
         },
       })
-    )
+    ),
+    // Update user account details
+    prisma.user.update({
+      where: {
+        id: user.id
+      },
+      data: {
+        publicKey: publicKey,
+        masterKeySalt: masterKeySalt
+      }
+    })]
   );
-
-  return true;
-}
-
-export async function updateUserPublicKeyAndSalt(publicKey: string, masterKeySalt: string) {
-  const user = await getUser();
-  if (!user) {
-    throw new Error("Unauthorized");
-  }
-
-  await prisma.user.update({
-    where: {
-      id: user.id
-    },
-    data: {
-      publicKey: publicKey,
-      masterKeySalt: masterKeySalt
-    }
-  });
 
   return true;
 }

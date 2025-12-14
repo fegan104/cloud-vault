@@ -1,13 +1,13 @@
 "use client";
 import { User } from "@prisma/client";
-import { signOut, updateEmail, getAllEncryptedFilesKeyDerivationParams, updateEncryptedFilesKeyDerivationParams, updateUserPublicKeyAndSalt } from "./actions";
+import { signOut, updateEmail, getAllEncryptedFilesKeyDerivationParams, updateEncryptedFilesKeyDerivationParams } from "./actions";
 import { Card } from "@/components/Card";
 import { TonalButton } from "@/components/Buttons";
 import { PasswordInput, TextInput } from "@/components/TextInput";
 import { useState } from "react";
 import { Mail, Lock, LogOut, Check } from "lucide-react";
 import { useMasterKey } from "@/components/MasterKeyContext";
-import { deriveKeypair, deriveMasterKey, generateIv, generateSalt } from "@/lib/clientCrypto";
+import { deriveKeypair, deriveMasterKey, generateIv, generateSalt, wrapShareKey } from "@/lib/clientCrypto";
 import { base64ToUint8Array, uint8ToBase64 } from "@/lib/arrayHelpers";
 import CircularProgress from "@/components/CircularProgress";
 import { TopAppBar } from "@/components/TopAppBar";
@@ -44,35 +44,23 @@ export default function AccountScreen({ user }: { user: User }) {
 
       // decrypt all wrappedFileKeys and rewrap with new master key
       const updates = await Promise.all(files.map(async (file) => {
-        const fileKey = await crypto.subtle.unwrapKey(
-          "raw",
-          base64ToUint8Array(file.wrappedFileKey),
+        const { wrappedFileKey: newWrappedFileKey, keyWrapIv: newKeyWrapIv } = await wrapShareKey(
+          file.wrappedFileKey,
+          file.keyWrapIv,
           currentMasterKey,
-          { name: "AES-GCM", iv: base64ToUint8Array(file.keyWrapIv) },
-          { name: "AES-GCM", length: 256 },
-          true,
-          ["encrypt", "decrypt"]
-        );
-
-        const newKeyWrapIv = generateIv();
-        const newWrappedFileKey = await crypto.subtle.wrapKey(
-          "raw",
-          fileKey,
           newMasterKey,
-          { name: "AES-GCM", iv: newKeyWrapIv }
-        );
+        )
 
         return {
           id: file.id,
-          wrappedFileKey: uint8ToBase64(new Uint8Array(newWrappedFileKey)),
-          keyWrapIv: uint8ToBase64(newKeyWrapIv),
+          wrappedFileKey: newWrappedFileKey,
+          keyWrapIv: newKeyWrapIv,
         };
       }));
 
       // update all encrypted file key derivation data in database transactionally
-      await updateEncryptedFilesKeyDerivationParams(updates);
       const { publicKey } = await deriveKeypair(newPassword, newMasterKeySalt);
-      await updateUserPublicKeyAndSalt(uint8ToBase64(publicKey), uint8ToBase64(newMasterKeySalt));
+      await updateEncryptedFilesKeyDerivationParams(updates, uint8ToBase64(publicKey), uint8ToBase64(newMasterKeySalt));
 
       // update master key with master key context
       setMasterKey(newMasterKey);

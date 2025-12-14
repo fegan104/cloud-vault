@@ -259,9 +259,10 @@ export async function deriveShareKey(
  * @param masterKey The master key to unwrap the file key with
  * @param shareKey The share key to wrap the file key with
  * 
- * @returns The file key wrapped with the share key, and the metadata used for the share key wrapping
+ * @returns The file key wrapped with the share key, and the metadata used 
+ * for the share key wrapping both encoded in base64
  */
-export async function wrapShareKey(
+export async function wrapShareKey(//todo rename to be more general
   wrappedFileKey: string,
   keyWrapIv: string,
   masterKey: CryptoKey,
