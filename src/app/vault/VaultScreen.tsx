@@ -290,7 +290,7 @@ function EmptyState({ searchQuery, children }: { searchQuery: string; children: 
     <div className="w-full max-w-3xl mt-12 text-center">
       <div className="bg-surface rounded-[var(--radius-xl)] p-12 shadow-[--shadow-2]">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-variant mb-4">
-          <FileText className="w-8 h-8 text-on-surface-variant" />
+          <FileText className="w-8 h-8 text-primary" />
         </div>
         <p className="text-[--font-body-lg] text-on-surface-variant">
           {searchQuery.trim()
