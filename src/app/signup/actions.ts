@@ -19,7 +19,7 @@ export async function createUser({ email, salt, publicKey }: {
     });
 
     // Create session for newly created user
-    createSession(user.id);
+    await createSession(user.id);
 
     return user;
   } catch (error) {

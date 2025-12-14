@@ -16,15 +16,14 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
   const [email, setEmail] = useState(currentEmail);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const { setMasterKey } = useMasterKey()
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
   };
-
-  const [currentPassword, setCurrentPassword] = useState(''); // Current Password
-  const [newPassword, setNewPassword] = useState(''); // New Password (and Confirm New Password due to JSX bug)
-  const [confirmNewPassword, setConfirmNewPassword] = useState(''); // New Password (and Confirm New Password due to JSX bug)
-  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmNewPassword) return;
@@ -81,7 +80,7 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
 
   return (
     <div className="flex flex-col overflow-hidden size-full items-center bg-background">
-      <div className="flex flex-col w-full">
+      <div className="flex flex-col w-full pt-1.5">
         <TopAppBar />
       </div>
       <div className="flex flex-col gap-1 w-full max-w-2xl p-4">
