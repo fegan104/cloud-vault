@@ -7,7 +7,7 @@ import { PasswordInput, TextInput } from "@/components/TextInput";
 import { useState } from "react";
 import { Mail, Lock, LogOut, Check } from "lucide-react";
 import { useMasterKey } from "@/components/MasterKeyContext";
-import { deriveKeypair, deriveMasterKey, generateIv, generateSalt, wrapShareKey } from "@/lib/clientCrypto";
+import { deriveKeypair, deriveMasterKey, generateIv, generateSalt, rewrapKey } from "@/lib/clientCrypto";
 import { base64ToUint8Array, uint8ToBase64 } from "@/lib/arrayHelpers";
 import CircularProgress from "@/components/CircularProgress";
 import { TopAppBar } from "@/components/TopAppBar";
@@ -44,12 +44,12 @@ export default function AccountScreen({ user }: { user: User }) {
 
       // decrypt all wrappedFileKeys and rewrap with new master key
       const updates = await Promise.all(files.map(async (file) => {
-        const { wrappedFileKey: newWrappedFileKey, keyWrapIv: newKeyWrapIv } = await wrapShareKey(
-          file.wrappedFileKey,
-          file.keyWrapIv,
-          currentMasterKey,
-          newMasterKey,
-        )
+        const { wrappedKey: newWrappedFileKey, wrappedKeyIv: newKeyWrapIv } = await rewrapKey({
+          wrappedKey: file.wrappedFileKey,
+          wrappedKeyIv: file.keyWrapIv,
+          unwrappingKey: currentMasterKey,
+          wrappingKey: newMasterKey,
+        });
 
         return {
           id: file.id,

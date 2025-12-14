@@ -254,51 +254,56 @@ export async function deriveShareKey(
 /**
  * Unwraps a file key with a master key, wraps the file key with the new share key.
  * 
- * @param wrappedFileKey The wrapped file key to unwrap (base64 encoded)
- * @param keyWrapIv The IV used to wrap the file key (base64 encoded)
- * @param masterKey The master key to unwrap the file key with
- * @param shareKey The share key to wrap the file key with
+ * @param wrappedKey The wrapped file key to be rewrapped (base64 encoded)
+ * @param wrappedKeyIv The IV that was used to wrap [wrappedKey] (base64 encoded)
+ * @param unwrappingKey The key that will be used to unwrap [wrappedKey]
+ * @param wrappingKey The new key that will be used to wrap [wrappedKey]
  * 
- * @returns The file key wrapped with the share key, and the metadata used 
- * for the share key wrapping both encoded in base64
+ * @returns The file key wrapped with the new key, and the metadata used 
+ * for the new key wrapping both encoded in base64
  */
-export async function wrapShareKey(//todo rename to be more general
-  wrappedFileKey: string,
-  keyWrapIv: string,
-  masterKey: CryptoKey,
-  shareKey: CryptoKey
-): Promise<{
-  wrappedFileKey: string;
-  keyWrapIv: string;
+export async function rewrapKey({
+  wrappedKey,
+  wrappedKeyIv,
+  unwrappingKey,
+  wrappingKey,
+}: {
+  wrappedKey: string,
+  wrappedKeyIv: string,
+  unwrappingKey: CryptoKey,
+  wrappingKey: CryptoKey
+}): Promise<{
+  wrappedKey: string;
+  wrappedKeyIv: string;
 }> {
   // 1. Unwrap the file key using the master key
-  const wrappedKeyBytes = base64ToUint8Array(wrappedFileKey);
-  const keyWrapIvBytes = base64ToUint8Array(keyWrapIv);
+  const wrappedKeyBytes = base64ToUint8Array(wrappedKey);
+  const wrappedKeyIvBytes = base64ToUint8Array(wrappedKeyIv);
 
-  const fileKey = await crypto.subtle.unwrapKey(
+  const key = await crypto.subtle.unwrapKey(
     "raw",
     wrappedKeyBytes,
-    masterKey,
-    { name: "AES-GCM", iv: keyWrapIvBytes },
+    unwrappingKey,
+    { name: "AES-GCM", iv: wrappedKeyIvBytes },
     { name: "AES-GCM", length: 256 },
     true,
     ["encrypt", "decrypt"]
   );
 
   // 2. Generate a new IV for wrapping with the share key
-  const shareKeyWrapIv = generateIv();
+  const newKeyWrapIv = generateIv();
 
   // 3. Wrap the file key with the share key
-  const rewrappedFileKey = await crypto.subtle.wrapKey(
+  const rewrappedKey = await crypto.subtle.wrapKey(
     "raw",
-    fileKey,
-    shareKey,
-    { name: "AES-GCM", iv: shareKeyWrapIv }
+    key,
+    wrappingKey,
+    { name: "AES-GCM", iv: newKeyWrapIv }
   );
 
   return {
-    wrappedFileKey: uint8ToBase64(new Uint8Array(rewrappedFileKey)),
-    keyWrapIv: uint8ToBase64(shareKeyWrapIv),
+    wrappedKey: uint8ToBase64(new Uint8Array(rewrappedKey)),
+    wrappedKeyIv: uint8ToBase64(newKeyWrapIv),
   };
 }
 

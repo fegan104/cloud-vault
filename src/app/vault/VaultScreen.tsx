@@ -2,7 +2,7 @@
 
 import { useMasterKey } from "../../components/MasterKeyContext";
 import MasterKeyGuard from "./MasterKeyGuard";
-import { decryptFile, deriveShareKey, wrapShareKey, generateSalt } from "../../lib/clientCrypto";
+import { decryptFile, deriveShareKey, rewrapKey, generateSalt } from "../../lib/clientCrypto";
 import { useState } from "react";
 import { EncryptedFile } from "@prisma/client";
 import { getDownloadUrlByFileId, saveEncryptedFileDetails, deleteFile, renameFile } from "./actions";
@@ -166,19 +166,19 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
       const { shareKey, publicKey, metadata } = await deriveShareKey(password, shareSaltBytes);
 
       // 3. Wrap the file key with the share key
-      const wrappedShareKey = await wrapShareKey(
-        fileToShare.wrappedFileKey,
-        fileToShare.keyWrapIv,
-        masterKey,
-        shareKey
-      );
+      const { wrappedKey: wrappedShareKey, wrappedKeyIv: wrappedShareKeyIv } = await rewrapKey({
+        wrappedKey: fileToShare.wrappedFileKey,
+        wrappedKeyIv: fileToShare.keyWrapIv,
+        unwrappingKey: masterKey,
+        wrappingKey: shareKey,
+      });
 
       // 4. Create the share record in the database
       const share = await createShare(
         shareName,
         fileToShare.id,
-        wrappedShareKey.wrappedFileKey,
-        wrappedShareKey.keyWrapIv,
+        wrappedShareKey,
+        wrappedShareKeyIv,
         shareSaltB64,
         publicKey,
         metadata
