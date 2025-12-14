@@ -50,10 +50,10 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex md:items-center justify-center px-4 pt-8 bg-background">
       <div className="w-full flex justify-center">
         {/* Card Container */}
-        <Card className="w-full md:w-[512px] p-8 space-y-4">
+        <Card className="w-full md:w-[512px] p-8 space-y-4 h-min">
           <div>
             {/* Header */}
             <div className="text-center mb-8">
