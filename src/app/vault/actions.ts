@@ -162,18 +162,6 @@ export async function deleteFile(fileId: string) {
 }
 
 /**
- * Signs out the user. This deletes the session cookie and removes 
- * the session from the database. Then redirects to the home page.
- */
-export async function signOut() {
-  const requestCookies = await cookies();
-  const sessionToken = requestCookies.get("session")?.value;
-  await prisma.session.delete({ where: { sessionToken } })
-  requestCookies.delete("session");
-  redirect("/");
-}
-
-/**
  * Renames a file by its ID.
  * @param fileId The unique ID of the file.
  * @param newFileName The new name for the file.

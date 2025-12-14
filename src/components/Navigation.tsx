@@ -54,7 +54,7 @@ export default function Navigation() {
 
       {/* Desktop Navigation Rail */}
       <nav
-        className="hidden sm:flex flex-shrink-0
+        className="hidden sm:flex shrink-0
           w-20 h-full bg-background
           flex-col items-center pt-6 gap-3"
       >

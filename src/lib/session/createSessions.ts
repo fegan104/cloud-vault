@@ -1,3 +1,4 @@
+"use server";
 import { cookies } from "next/headers";
 import crypto from "crypto";
 import { prisma } from "@/lib/db";

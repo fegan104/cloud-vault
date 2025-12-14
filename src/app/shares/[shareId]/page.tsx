@@ -1,5 +1,5 @@
 import ViewShareScreen from "./ViewShareScreen";
-import { VaultAppBar } from "@/components/VaultAppBar";
+import { TopAppBar } from "@/components/TopAppBar";
 import { getShareName } from "@/lib/share/getShareName";
 
 export default async function ViewSharePage({
@@ -16,7 +16,7 @@ export default async function ViewSharePage({
 
   return (
     <>
-      <VaultAppBar showSignOut={false} />
+      <TopAppBar />
       <ViewShareScreen
         shareId={shareId}
         name={shareName}
