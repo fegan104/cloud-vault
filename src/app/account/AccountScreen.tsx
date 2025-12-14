@@ -95,7 +95,7 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
 
   return (
     <div className="flex flex-col overflow-hidden size-full items-center bg-background">
-      <div className="flex flex-col w-full pt-1.5">
+      <div className="flex flex-col w-full pt-1.5 md:pt-0">
         <TopAppBar />
       </div>
       <div className="flex flex-col gap-1 w-full max-w-2xl p-4">

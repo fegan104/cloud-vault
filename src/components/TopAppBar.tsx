@@ -27,7 +27,7 @@ export function TopAppBar({ searchQuery = "", onSearchChange, searchPlaceholder,
 
   return (
     <div className="sticky top-0 z-50 bg-background shadow-[--shadow-1]">
-      <div className="w-full mx-auto px-5 pt-4 pb-2">
+      <div className="w-full mx-auto px-5 py-4">
         {/* Desktop layout - always visible */}
         <div className="hidden md:grid md:grid-cols-[1fr_auto_1fr] items-center gap-4">
           {/* Left section: Logo and title */}
