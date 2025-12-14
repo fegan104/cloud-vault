@@ -20,15 +20,30 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const toggleSection = (section: string) => {
+    setError(null);
     setExpandedSection(expandedSection === section ? null : section);
+  };
+
+  const handleChangeEmail = async () => {
+    if (!email) return;
+
+    try {
+      await updateEmail(email);
+      setExpandedSection(null);
+    } catch (err) {
+      console.error("Failed to update email:", err);
+      setError("Failed to update email. Please try again.");
+    }
   };
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmNewPassword) return;
 
     setIsUpdatingPassword(true);
+    setError(null);
     try {
       // derive current master key
       const salt = base64ToUint8Array(masterKeySalt);
@@ -72,7 +87,7 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
 
     } catch (err) {
       console.error("Failed to change password:", err);
-      // TODO: Handle error (e.g. wrong current password causing unwrap failure)
+      setError("Failed to change password. Please check your current password.");
     } finally {
       setIsUpdatingPassword(false);
     }
@@ -104,10 +119,7 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
 
           {expandedSection === 'email' && (
             <div className="px-6 pb-6 border-t border-gray-100 mt-2 pt-4">
-              <form action={async () => {
-                await updateEmail(email);
-                setExpandedSection(null);
-              }}>
+              <form action={handleChangeEmail}>
                 <div className="flex flex-col md:flex-row md:items-end gap-2">
                   <TextInput
                     label="New Email Address"
@@ -154,6 +166,7 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
                 value={confirmNewPassword}
                 onChange={setConfirmNewPassword}
               />
+
               <TonalButton
                 onClick={handleChangePassword}
                 className="btn-neutral w-full mt-2"
@@ -179,6 +192,13 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
             </form>
           </div>
         </Card>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mt-2 p-3 rounded-md bg-error-container">
+            <p className="text-on-error-container">{error}</p>
+          </div>
+        )}
       </div>
     </div>
   );
