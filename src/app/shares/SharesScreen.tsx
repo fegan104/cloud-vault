@@ -137,7 +137,7 @@ function ShareListItem({ share, onDelete }: { share: ShareWithFile; onDelete: ()
         <div className="p-3 flex-shrink-0">
           <Users className="w-6 h-6 text-primary" />
         </div>
-        <div className="min-w-0 flex-full">
+        <div className="min-w-0 flex-1">
           <p className="font-semibold text-[--font-body-lg] text-on-surface mb-1 break-words">
             {share.name}
           </p>
@@ -151,12 +151,12 @@ function ShareListItem({ share, onDelete }: { share: ShareWithFile; onDelete: ()
           </p>
         </div>
 
-        <div className="p-3 shrink-0 md:flex-1">
-          <div className="flex gap-2 w-full justify-end">
+        <div className="p-3 shrink-0">
+          <div className="flex gap-2 justify-end">
             <div className="relative">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-2 rounded-lg transition-all duration-200
+                className="rounded-lg transition-all duration-200
                 text-on-secondary-container hover:bg-secondary-container/70"
                 aria-label="More actions"
               >
