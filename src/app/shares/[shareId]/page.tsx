@@ -16,7 +16,7 @@ export default async function ViewSharePage({
 
   return (
     <>
-      <TopAppBar showSignOut={false} />
+      <TopAppBar />
       <ViewShareScreen
         shareId={shareId}
         name={shareName}

@@ -1,23 +1,102 @@
 "use client";
 import { User } from "@prisma/client";
-import { signOut, updateEmail } from "./actions";
+import { signOut, updateEmail, getAllEncryptedFilesKeyDerivationParams, updateEncryptedFilesKeyDerivationParams, updateUserPublicKeyAndSalt } from "./actions";
 import { Card } from "@/components/Card";
 import { TonalButton } from "@/components/Buttons";
 import { PasswordInput, TextInput } from "@/components/TextInput";
 import { useState } from "react";
 import { Mail, Lock, LogOut, Check } from "lucide-react";
+import { useMasterKey } from "@/components/MasterKeyContext";
+import { deriveKeypair, deriveMasterKey, generateIv, generateSalt } from "@/lib/clientCrypto";
+import { base64ToUint8Array, uint8ToBase64 } from "@/lib/arrayHelpers";
+import CircularProgress from "@/components/CircularProgress";
+import { TopAppBar } from "@/components/TopAppBar";
 
 export default function AccountScreen({ user }: { user: User }) {
   const [email, setEmail] = useState(user.email);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const { setMasterKey } = useMasterKey()
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
   };
 
+  const [currentPassword, setCurrentPassword] = useState(''); // Current Password
+  const [newPassword, setNewPassword] = useState(''); // New Password (and Confirm New Password due to JSX bug)
+  const [confirmNewPassword, setConfirmNewPassword] = useState(''); // New Password (and Confirm New Password due to JSX bug)
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmNewPassword) return;
+
+    setIsUpdatingPassword(true);
+    try {
+      // derive current master key
+      const salt = base64ToUint8Array(user.masterKeySalt);
+      const currentMasterKey = await deriveMasterKey(currentPassword, salt);
+
+      // derive new master key
+      const newMasterKeySalt = generateSalt();
+      const newMasterKey = await deriveMasterKey(newPassword, newMasterKeySalt);
+
+      // fetch all encrypted file key derivation data
+      const files = await getAllEncryptedFilesKeyDerivationParams();
+
+      // decrypt all wrappedFileKeys and rewrap with new master key
+      const updates = await Promise.all(files.map(async (file) => {
+        const fileKey = await crypto.subtle.unwrapKey(
+          "raw",
+          base64ToUint8Array(file.wrappedFileKey),
+          currentMasterKey,
+          { name: "AES-GCM", iv: base64ToUint8Array(file.keyWrapIv) },
+          { name: "AES-GCM", length: 256 },
+          true,
+          ["encrypt", "decrypt"]
+        );
+
+        const newKeyWrapIv = generateIv();
+        const newWrappedFileKey = await crypto.subtle.wrapKey(
+          "raw",
+          fileKey,
+          newMasterKey,
+          { name: "AES-GCM", iv: newKeyWrapIv }
+        );
+
+        return {
+          id: file.id,
+          wrappedFileKey: uint8ToBase64(new Uint8Array(newWrappedFileKey)),
+          keyWrapIv: uint8ToBase64(newKeyWrapIv),
+        };
+      }));
+
+      // update all encrypted file key derivation data in database transactionally
+      await updateEncryptedFilesKeyDerivationParams(updates);
+      const { publicKey } = await deriveKeypair(newPassword, newMasterKeySalt);
+      await updateUserPublicKeyAndSalt(uint8ToBase64(publicKey), uint8ToBase64(newMasterKeySalt));
+
+      // update master key with master key context
+      setMasterKey(newMasterKey);
+
+      // Reset form
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setExpandedSection(null);
+
+    } catch (err) {
+      console.error("Failed to change password:", err);
+      // TODO: Handle error (e.g. wrong current password causing unwrap failure)
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  }
+
   return (
-    <div className="flex flex-col gap-4 overflow-hidden h-full items-center bg-background p-4">
-      <div className="flex flex-col gap-1 w-full max-w-2xl">
+    <div className="flex flex-col overflow-hidden size-full items-center bg-background">
+      <div className="flex flex-col w-full">
+        <TopAppBar />
+      </div>
+      <div className="flex flex-col gap-1 w-full max-w-2xl p-4">
 
         <h2 className="text-2xl font-bold mb-4 w-full text-center">Account</h2>
 
@@ -42,7 +121,7 @@ export default function AccountScreen({ user }: { user: User }) {
                 await updateEmail(email);
                 setExpandedSection(null);
               }}>
-                <div className="flex items-end gap-2">
+                <div className="flex flex-col md:flex-row md:items-end gap-2">
                   <TextInput
                     label="New Email Address"
                     type="email"
@@ -72,21 +151,30 @@ export default function AccountScreen({ user }: { user: User }) {
           </div>
 
           {expandedSection === 'password' && (
-            <div className="px-6 pb-6 border-t border-gray-100 mt-2 pt-4 opacity-50" title="Coming soon">
-              <div className="flex flex-col gap-2 pointer-events-none">
-                <PasswordInput
-                  label="Current Password"
-                  value=""
-                  onChange={() => { }}
-                />
-                <PasswordInput
-                  label="New Password"
-                  value=""
-                  onChange={() => { }}
-                />
-                <TonalButton disabled className="btn-neutral w-full mt-2">Update Master Password</TonalButton>
-              </div>
-              <p className="text-xs mt-2 text-center">This feature is currently disabled.</p>
+            <div className="flex flex-col gap-2 px-6 pb-6 border-t border-gray-100 mt-2 pt-4">
+              <PasswordInput
+                label="Current Password"
+                value={currentPassword}
+                onChange={setCurrentPassword}
+              />
+              <PasswordInput
+                label="New Password"
+                value={newPassword}
+                onChange={setNewPassword}
+              />
+              <PasswordInput
+                label="Confirm New Password"
+                value={confirmNewPassword}
+                onChange={setConfirmNewPassword}
+              />
+              <TonalButton
+                onClick={handleChangePassword}
+                className="btn-neutral w-full mt-2"
+                disabled={isUpdatingPassword}
+              >
+                {isUpdatingPassword ? <CircularProgress size={20} /> : null}
+                {isUpdatingPassword ? 'Updating...' : "Update Master Password"}
+              </TonalButton>
             </div>
           )}
         </Card>

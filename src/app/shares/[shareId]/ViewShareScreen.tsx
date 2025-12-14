@@ -108,7 +108,7 @@ function ShareScreen({
   if (!share) return null;
 
   return (
-    <div className="w-full max-w-5xl mx-auto p-4 flex flex-col items-center">
+    <div className="size-full p-4 flex flex-col items-center bg-background">
       <div className="w-full mb-8 text-center">
         <h2 className="text-[--font-headline-lg] font-bold text-on-surface mb-3">
           {share.name}

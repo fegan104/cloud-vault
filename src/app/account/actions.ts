@@ -2,6 +2,8 @@
 
 import { deleteSessionToken } from "@/lib/session/deleteSessionsToken";
 import { redirect } from "next/navigation";
+import { getUser } from "@/lib/user/getUser";
+import { prisma } from "@/lib/db";
 
 /**
  * Signs out the user. This deletes the session cookie and removes 
@@ -18,20 +20,87 @@ export async function signOut() {
  * @returns true if the update was successful, false otherwise.
  */
 export async function updateEmail(email: string): Promise<boolean> {
+  const user = await getUser();
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  await prisma.user.update({
+    where: {
+      id: user.id
+    },
+    data: {
+      email: email
+    }
+  });
+
   return true;
 }
 
-// export async function getAllEncryptedFilesKeyDerivationParams() {
+// Returns the necessary data to decrypt and re-encrypt the file keys
+export async function getAllEncryptedFilesKeyDerivationParams(): Promise<{ id: string; wrappedFileKey: string; keyWrapIv: string; }[]> {
+  const user = await getUser();
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
 
-// }
+  const files = await prisma.encryptedFile.findMany({
+    where: {
+      userId: user.id
+    },
+    select: {
+      id: true,
+      wrappedFileKey: true,
+      keyWrapIv: true,
+    }
+  });
 
-// export async function updateEncryptedFilesKeyDerivationParams() {
+  return files;
+}
 
-// }
+// Updates the encrypted file key derivation params in the database
+// This should be done in a transaction
+export async function updateEncryptedFilesKeyDerivationParams(
+  updates: { id: string; wrappedFileKey: string; keyWrapIv: string }[]
+) {
+  const user = await getUser();
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
 
-// export async function updateMasterPassword(oldMasterKey: CryptoKey, newPassword: string) {
-// //get all encrypted files key derivation params
-// //decrypt file wrap key with old master key
-// //encrypt them with new master key
-// //update file 's key derivation params in the db
-// }
+  await prisma.$transaction(
+    updates.map((update) =>
+      prisma.encryptedFile.updateMany({
+        where: {
+          id: update.id,
+          userId: user.id, // Ensure user owns the file
+        },
+        data: {
+          wrappedFileKey: update.wrappedFileKey,
+          keyWrapIv: update.keyWrapIv,
+        },
+      })
+    )
+  );
+
+  return true;
+}
+
+export async function updateUserPublicKeyAndSalt(publicKey: string, masterKeySalt: string) {
+  const user = await getUser();
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  await prisma.user.update({
+    where: {
+      id: user.id
+    },
+    data: {
+      publicKey: publicKey,
+      masterKeySalt: masterKeySalt
+    }
+  });
+
+  return true;
+}
