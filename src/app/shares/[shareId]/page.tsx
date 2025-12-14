@@ -16,7 +16,9 @@ export default async function ViewSharePage({
 
   return (
     <>
-      <TopAppBar />
+      <div className="flex flex-col w-full pt-1.5 md:pt-0">
+        <TopAppBar />
+      </div>
       <ViewShareScreen
         shareId={shareId}
         name={shareName}
