@@ -58,7 +58,7 @@ export default function SignInPage() {
             {/* Header */}
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-container mb-4">
-                <LogIn className="w-8 h-8 text-on-primary-container" />
+                <LogIn className="w-8 h-8 text-primary" />
               </div>
               <h1 className="text-[--font-headline-md] font-semibold text-on-surface mb-2">
                 Welcome Back

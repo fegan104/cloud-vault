@@ -67,7 +67,7 @@ export default function SignUpPage() {
             {/* Header */}
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-secondary-container mb-4">
-                <UserPlus className="w-8 h-8 text-on-secondary-container" />
+                <UserPlus className="w-8 h-8 text-primary" />
               </div>
               <h1 className="text-[--font-headline-md] font-semibold text-on-surface mb-2">
                 Create Account

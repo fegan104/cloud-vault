@@ -22,6 +22,8 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL('/signin', request.url))
     } else if (request.nextUrl.pathname === '/shares') {
       return NextResponse.redirect(new URL('/signin', request.url))
+    } else if (request.nextUrl.pathname === '/account') {
+      return NextResponse.redirect(new URL('/signin', request.url))
     }
   }
 
@@ -34,6 +36,7 @@ export const config = {
     '/vault',
     '/signin',
     '/signup',
-    '/shares'
+    '/shares',
+    '/account'
   ]
 }
