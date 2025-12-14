@@ -7,5 +7,5 @@ export default async function AccountPage() {
   if (!user) {
     redirect("/");
   }
-  return <AccountScreen user={user} />;
+  return <AccountScreen currentEmail={user.email} masterKeySalt={user.masterKeySalt} />;
 }

@@ -4,6 +4,7 @@ import { deleteSessionToken } from "@/lib/session/deleteSessionsToken";
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/user/getUser";
 import { prisma } from "@/lib/db";
+import { revalidatePath } from "next/cache";
 
 /**
  * Signs out the user. This deletes the session cookie and removes 
@@ -33,6 +34,8 @@ export async function updateEmail(email: string): Promise<boolean> {
       email: email
     }
   });
+
+  revalidatePath("/account");
 
   return true;
 }
@@ -95,6 +98,8 @@ export async function updateEncryptedFilesKeyDerivationParams(
       }
     })]
   );
+
+  revalidatePath("/account");
 
   return true;
 }

@@ -12,8 +12,8 @@ import { base64ToUint8Array, uint8ToBase64 } from "@/lib/arrayHelpers";
 import CircularProgress from "@/components/CircularProgress";
 import { TopAppBar } from "@/components/TopAppBar";
 
-export default function AccountScreen({ user }: { user: User }) {
-  const [email, setEmail] = useState(user.email);
+export default function AccountScreen({ currentEmail, masterKeySalt }: { currentEmail: string, masterKeySalt: string }) {
+  const [email, setEmail] = useState(currentEmail);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const { setMasterKey } = useMasterKey()
 
@@ -32,7 +32,7 @@ export default function AccountScreen({ user }: { user: User }) {
     setIsUpdatingPassword(true);
     try {
       // derive current master key
-      const salt = base64ToUint8Array(user.masterKeySalt);
+      const salt = base64ToUint8Array(masterKeySalt);
       const currentMasterKey = await deriveMasterKey(currentPassword, salt);
 
       // derive new master key
@@ -98,7 +98,7 @@ export default function AccountScreen({ user }: { user: User }) {
               <Mail className="w-6 h-6 text-gray-600" />
               <div className="flex-1">
                 <h3 className="text-lg font-medium">Update Account Email</h3>
-                <p className="text-sm text-gray-600">{user.email}</p>
+                <p className="text-sm text-gray-600">{email}</p>
               </div>
             </div>
           </div>
