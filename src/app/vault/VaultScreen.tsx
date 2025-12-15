@@ -14,6 +14,7 @@ import Scaffold from "../../components/Scaffold";
 import { createShare } from "@/lib/share/createShare";
 import FileListItem, { downloadFileWithProgress } from "@/components/FileListItem";
 import { uint8ToBase64 } from "@/lib/arrayHelpers";
+import { saveFileToDevice } from "@/components/saveFileToDevice";
 
 type VaultScreenProps = {
   masterKeySalt: string;
@@ -62,14 +63,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
       });
 
       // 4. Trigger download
-      const url = URL.createObjectURL(decryptedBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = file.fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      saveFileToDevice(decryptedBlob, file.fileName);
     } catch (error) {
       console.error("Download failed:", error);
       alert("Failed to download and decrypt file.");

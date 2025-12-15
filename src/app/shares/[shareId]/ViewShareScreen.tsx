@@ -7,6 +7,7 @@ import { useState } from "react";
 import { generateChallengeForShare, getShareDownloadUrl, verifyChallengeForShare } from "./actions";
 import { getShareById, ShareWithFile } from "@/lib/share/getShareById";
 import { base64ToUint8Array } from "@/lib/arrayHelpers";
+import { saveFileToDevice } from "@/components/saveFileToDevice";
 
 export default function ViewShareScreen({ shareId, name }: { shareId: string, name: string }) {
 
@@ -59,14 +60,7 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
       })
 
       // 4. Trigger download
-      const url = URL.createObjectURL(decryptedBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = share.file.fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      saveFileToDevice(decryptedBlob, share.file.fileName);
     } catch (error) {
       console.error("Download failed:", error);
       setError("Failed to download and decrypt file.");
