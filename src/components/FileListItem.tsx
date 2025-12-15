@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FileText, Trash2, FilePenLine, MoreVertical, Share2 } from "lucide-react";
 import CircularProgress from "@/components/CircularProgress";
 import { TextButton } from "@/components/Buttons";
+import { useIsSupportedBrowser } from "./useIsSupportedBrowser";
 
 /**
  * Downloads a file from a URL with progress tracking.
@@ -86,6 +87,7 @@ export default function FileListItem<T extends FileListItemData>({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isBusy = isDownloading || isDeleting || isRenaming;
   const hasMenuItems = onDelete || onRename || onShare;
+  const isSupportedBrowser = useIsSupportedBrowser();
 
   return (
     <li
@@ -106,12 +108,13 @@ export default function FileListItem<T extends FileListItemData>({
           </p>
         </div>
       </div>
-      <div className="flex gap-2 w-full sm:w-auto flex-shrink-0">
+      {isSupportedBrowser ? null : <UnsupportedBrowserMessage />}
+      <div className="flex gap-2 w-full sm:w-auto">
         <TextButton
           onClick={() => onDownload(file)}
-          disabled={isBusy}
+          disabled={isBusy || !isSupportedBrowser}
           className={`flex-1 sm:flex-initial ring-1 ring-primary 
-            ${isBusy ? 'opacity-50 cursor-wait' : ''}`}
+              ${isBusy ? 'opacity-50 cursor-wait' : ''}`}
         >
           {isDownloading ? (
             <div className="flex items-center gap-2">
@@ -189,5 +192,13 @@ export default function FileListItem<T extends FileListItemData>({
         )}
       </div>
     </li>
+  );
+}
+
+function UnsupportedBrowserMessage() {
+  return (
+    <div className="bg-error-container p-4 rounded-sm">
+      <p className="text-on-error-container">For security reasons, downloads are only available in supported browsers. Please open this page in your browser to download the file.</p>
+    </div>
   );
 }
