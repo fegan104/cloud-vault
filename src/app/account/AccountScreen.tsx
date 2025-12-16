@@ -5,10 +5,10 @@ import { Card } from "@/components/Card";
 import { TonalButton } from "@/components/Buttons";
 import { PasswordInput, TextInput } from "@/components/TextInput";
 import { useState } from "react";
-import { Mail, Lock, LogOut, Check } from "lucide-react";
+import { Mail, Lock, LogOut } from "lucide-react";
 import { useMasterKey } from "@/components/MasterKeyContext";
-import { deriveKeypair, deriveMasterKey, generateIv, generateSalt, rewrapKey } from "@/lib/clientCrypto";
-import { base64ToUint8Array, uint8ToBase64 } from "@/lib/arrayHelpers";
+import { deriveKeypair, deriveMasterKey, generateSalt, rewrapKey } from "@/lib/util/clientCrypto";
+import { base64ToUint8Array, uint8ToBase64 } from "@/lib/util/arrayHelpers";
 import CircularProgress from "@/components/CircularProgress";
 import { TopAppBar } from "@/components/TopAppBar";
 
