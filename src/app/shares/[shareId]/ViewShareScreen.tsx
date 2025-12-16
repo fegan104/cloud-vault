@@ -1,13 +1,14 @@
 "use client";
 
 import ShareKeyGuard from "@/components/ShareKeyGuard";
-import FileListItem, { downloadFileWithProgress } from "@/components/FileListItem";
-import { decryptFile, deriveShareKey, signShareChallenge } from "@/lib/clientCrypto";
+import FileListItem from "@/components/FileListItem";
+import { downloadFileWithProgress } from "@/lib/util/downloadFileWithProgress";
+import { decryptFile, deriveShareKey, signShareChallenge } from "@/lib/util/clientCrypto";
 import { useState } from "react";
 import { generateChallengeForShare, getShareDownloadUrl, verifyChallengeForShare } from "./actions";
 import { getShareById, ShareWithFile } from "@/lib/share/getShareById";
-import { base64ToUint8Array } from "@/lib/arrayHelpers";
-import { saveFileToDevice } from "@/components/saveFileToDevice";
+import { base64ToUint8Array } from "@/lib/util/arrayHelpers";
+import { saveFileToDevice } from "@/lib/util/saveFileToDevice";
 
 export default function ViewShareScreen({ shareId, name }: { shareId: string, name: string }) {
 

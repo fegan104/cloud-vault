@@ -1,4 +1,4 @@
-import { base64ToUint8Array } from '../arrayHelpers';
+import { base64ToUint8Array } from '../util/arrayHelpers';
 import { prisma } from '../db';
 import nacl from "tweetnacl";
 

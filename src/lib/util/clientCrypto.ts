@@ -25,6 +25,7 @@ export function generateIv() {
   return crypto.getRandomValues(new Uint8Array(12));
 }
 
+
 /**
  * Derives a stable public/private keypair from a password and salt using argon2id. 
  * @param password - the password to derive the keypair from
@@ -105,7 +106,7 @@ export async function deriveMasterKey(masterPassword: string, masterKeySalt: Uin
  * @param metadata The metadata to use for the decryption
  * @returns The decrypted file
  */
-export async function decryptFile(
+export function decryptFile(
   encryptedBlob: Blob,
   unwrappingKey: CryptoKey,
   metadata: {
@@ -114,81 +115,62 @@ export async function decryptFile(
     keyWrapIv: string;
   }
 ): Promise<Blob> {
-  // 1. Unwrap the file key using the unwrapping key
-  const wrappedKeyBytes = base64ToUint8Array(metadata.wrappedFileKey);
-  const keyWrapIvBytes = base64ToUint8Array(metadata.keyWrapIv);
-  const fileKey = await crypto.subtle.unwrapKey(
-    "raw",
-    wrappedKeyBytes,
-    unwrappingKey,
-    { name: "AES-GCM", iv: keyWrapIvBytes },
-    { name: "AES-GCM", length: 256 },
-    true,
-    ["encrypt", "decrypt"]
-  );
-
-  // 2. Decrypt the file content
-  const fileIvBytes = base64ToUint8Array(metadata.fileIv);
-  const encryptedBuffer = await encryptedBlob.arrayBuffer();
-  const decryptedBuffer = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: fileIvBytes },
-    fileKey,
-    encryptedBuffer
-  );
-
-  return new Blob([decryptedBuffer]);
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(
+      new URL("./decryptFileWorker.ts", import.meta.url)
+    );
+    worker.onmessage = (event) => {
+      const decryptedBuffer = event.data;
+      const decryptedBlob = new Blob([decryptedBuffer]);
+      resolve(decryptedBlob);
+      worker.terminate();
+    };
+    worker.onerror = (error) => {
+      reject(error);
+      worker.terminate();
+    };
+    worker.postMessage({ encryptedBlob, unwrappingKey, metadata });
+  });
 }
 
-export async function encryptFile(
+export function encryptFile(
   file: File,
   masterKey: CryptoKey,
   masterKeySalt: string
 ) {
-  const fileBuffer = await file.arrayBuffer();
+  return new Promise<{
+    encryptedFileBlob: Blob;
+    metadata: {
+      fileIv: string;
+      wrappedFileKey: string;
+      keyWrapIv: string;
+      fileAlgorithm: string;
+      keyDerivationSalt: string;
+      argon2MemorySize: number;
+      argon2Iterations: number;
+      argon2Parallelism: number;
+      argon2HashLength: number;
+    };
+  }>((resolve, reject) => {
+    const worker = new Worker(
+      new URL("./encryptFileWorker.ts", import.meta.url)
+    );
+    worker.onmessage = (event) => {
+      const { encryptedContent, metadata } = event.data;
+      const encryptedFileBlob = new Blob([encryptedContent], { type: 'application/octet-stream' });
+      resolve({ encryptedFileBlob, metadata });
+      worker.terminate();
+    };
+    worker.onerror = (error) => {
+      reject(error);
+      worker.terminate();
+    };
 
-  // 1. Generate a random file key
-  const fileKey = await crypto.subtle.generateKey(
-    { name: 'AES-GCM', length: 256 },
-    true,
-    ['encrypt', 'decrypt']
-  );
+    const fileIv = generateIv();
+    const keyWrapIv = generateIv();
 
-  // 2. Encrypt the file with the file key
-  const fileIv = generateIv();
-  const encryptedContent = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv: fileIv },
-    fileKey,
-    fileBuffer
-  );
-
-  // 3. Wrap the file key with the master key
-  const keyWrapIv = generateIv();
-  const wrappedFileKey = await crypto.subtle.wrapKey(
-    "raw",
-    fileKey,
-    masterKey,
-    { name: "AES-GCM", iv: keyWrapIv }
-  );
-
-  // 4. Prepare metadata
-  const metadata = {
-    fileIv: uint8ToBase64(fileIv),
-    wrappedFileKey: uint8ToBase64(new Uint8Array(wrappedFileKey)),
-    keyWrapIv: uint8ToBase64(keyWrapIv),
-    fileAlgorithm: 'AES-GCM',
-    keyDerivationSalt: masterKeySalt,
-    argon2MemorySize: ARGON2_MEMORY_SIZE,
-    argon2Iterations: ARGON2_ITERATIONS,
-    argon2Parallelism: ARGON2_PARALLELISM,
-    argon2HashLength: ARGON2_HASH_LENGTH,
-  };
-
-  const encryptedFileBlob = new Blob([encryptedContent], { type: 'application/octet-stream' });
-
-  return {
-    encryptedFileBlob,
-    metadata
-  };
+    worker.postMessage({ file, masterKey, masterKeySalt, fileIv, keyWrapIv });
+  });
 }
 
 

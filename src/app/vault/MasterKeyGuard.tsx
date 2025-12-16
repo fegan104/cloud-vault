@@ -1,7 +1,7 @@
 "use client";
 
 import { useMasterKey } from "../../components/MasterKeyContext";
-import { deriveMasterKey, signChallenge } from "../../lib/clientCrypto";
+import { deriveMasterKey, signChallenge } from "../../lib/util/clientCrypto";
 import { useState } from "react";
 import CircularProgress from "../../components/CircularProgress";
 import { Key } from "lucide-react";
@@ -9,7 +9,7 @@ import { PasswordInput } from "@/components/TextInput";
 import { TonalButton } from "@/components/Buttons";
 import { Card } from "../../components/Card";
 import { verifyChallengeForSession, generateChallengeForSession } from "./actions";
-import { base64ToUint8Array } from "@/lib/arrayHelpers";
+import { base64ToUint8Array } from "@/lib/util/arrayHelpers";
 
 type MasterKeyGuardProps = {
   masterKeySalt: string;

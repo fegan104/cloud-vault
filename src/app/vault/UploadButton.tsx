@@ -1,6 +1,6 @@
 "use client"
 import { useMasterKey } from "../../components/MasterKeyContext";
-import { encryptFile } from "../../lib/clientCrypto";
+import { encryptFile } from "../../lib/util/clientCrypto";
 import { ChangeEvent, useState } from "react";
 import { Upload } from "lucide-react";
 import CircularProgress from "@/components/CircularProgress";
