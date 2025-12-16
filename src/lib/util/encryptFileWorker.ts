@@ -45,8 +45,5 @@ self.onmessage = async (e) => {
     argon2HashLength: ARGON2_HASH_LENGTH,
   };
 
-  (self as unknown as Worker).postMessage({
-    encryptedContent,
-    metadata
-  }, [encryptedContent]);
+  self.postMessage({ encryptedContent, metadata }, [encryptedContent] as WindowPostMessageOptions);
 };

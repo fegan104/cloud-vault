@@ -27,5 +27,5 @@ self.onmessage = async (e) => {
     encryptedBuffer
   );
 
-  (self as unknown as Worker).postMessage(decryptedBuffer, [decryptedBuffer]);
+  self.postMessage(decryptedBuffer, [decryptedBuffer] as WindowPostMessageOptions);
 };
