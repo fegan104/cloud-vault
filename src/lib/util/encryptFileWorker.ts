@@ -1,5 +1,4 @@
 import { uint8ToBase64 } from "./arrayHelpers";
-import { generateIv } from "./cryptoHelpers";
 
 const ARGON2_MEMORY_SIZE = 131_072; // 128 MB
 const ARGON2_ITERATIONS = 4;
@@ -7,7 +6,7 @@ const ARGON2_PARALLELISM = 1;
 const ARGON2_HASH_LENGTH = 32;
 
 self.onmessage = async (e) => {
-  const { file, masterKey, masterKeySalt } = e.data;
+  const { file, masterKey, masterKeySalt, fileIv, keyWrapIv } = e.data;
 
   const fileBuffer = await file.arrayBuffer();
 
@@ -19,7 +18,6 @@ self.onmessage = async (e) => {
   );
 
   // 2. Encrypt the file with the file key
-  const fileIv = generateIv();
   const encryptedContent = await crypto.subtle.encrypt(
     { name: 'AES-GCM', iv: fileIv },
     fileKey,
@@ -27,7 +25,6 @@ self.onmessage = async (e) => {
   );
 
   // 3. Wrap the file key with the master key
-  const keyWrapIv = generateIv();
   const wrappedFileKey = await crypto.subtle.wrapKey(
     "raw",
     fileKey,
