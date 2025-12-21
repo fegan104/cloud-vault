@@ -74,11 +74,11 @@ export default function FileListItem<T extends FileListItemData>({
         </div>
       </div>
       {isSupportedBrowser ? null : <UnsupportedBrowserMessage />}
-      <div className="flex gap-2 w-full sm:w-auto">
+      <div className="flex gap-2 w-full sm:w-auto justify-between items-center">
         <TextButton
           onClick={() => onDownload(file)}
           disabled={isBusy || !isSupportedBrowser}
-          className={`flex-1 sm:flex-initial ring-1 ring-primary 
+          className={`sm:flex-initial ring-1 ring-primary
               ${isBusy ? 'opacity-50 cursor-wait' : ''}`}
         >
           {isDownloading ? (
