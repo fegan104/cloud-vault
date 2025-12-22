@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, Trash2, FilePenLine, MoreVertical, Share2 } from "lucide-react";
+import { FileText, Trash2, FilePenLine, MoreVertical, Share2, Download } from "lucide-react";
 import CircularProgress from "@/components/CircularProgress";
 import { TextButton } from "@/components/Buttons";
 import { useIsSupportedBrowser } from "../hooks/useIsSupportedBrowser";
@@ -56,25 +56,25 @@ export default function FileListItem<T extends FileListItemData>({
 
   return (
     <li
-      className="relative bg-surface-variant p-5 rounded-[8px] shadow-[--shadow-2] 
+      className="relative bg-surface-variant p-5 rounded-sm shadow-[--shadow-2] 
                flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4
                hover:shadow-[--shadow-3] transition-all duration-200"
     >
-      <div className="flex items-center gap-4 min-w-0 pr-10 sm:pr-0">
-        <div className="p-3 flex-shrink-0">
+      <div className="flex items-start gap-4 min-w-0 flex-1 pr-10 sm:pr-0">
+        <div className="shrink-0 pt-1 md:p-3">
           <FileText className="w-6 h-6 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-[--font-body-lg] text-on-surface mb-1 break-words">
+          <p className="font-semibold text-on-surface mb-1 break-all leading-tight">
             {file.fileName}
           </p>
-          <p className="text-[--font-body-sm] text-on-surface-variant">
+          <p className="text-on-surface-variant">
             {formatFileSize(file.fileSize)} • {new Date(file.createdAt).toLocaleDateString()}
           </p>
         </div>
       </div>
       {isSupportedBrowser ? null : <UnsupportedBrowserMessage />}
-      <div className="flex gap-2 w-full sm:w-auto justify-end items-center">
+      <div className="flex gap-2 w-full sm:w-auto justify-end items-center shrink-0">
         <TextButton
           onClick={() => onDownload(file)}
           disabled={isBusy || !isSupportedBrowser}
@@ -87,17 +87,18 @@ export default function FileListItem<T extends FileListItemData>({
               <CircularProgress size={18} progress={downloadProgress} />
             </div>
           ) : (
-            <>
+            <div className="flex items-center gap-2">
+              <Download className="w-4 h-4" />
               <span>Download</span>
-            </>
+            </div>
           )}
         </TextButton>
         {hasMenuItems && (
-          <div className="absolute top-2 right-2 sm:relative sm:top-auto sm:right-auto">
+          <div className="absolute top-5 right-5 sm:relative sm:top-auto sm:right-auto">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               disabled={isBusy}
-              className={`p-2 rounded-lg transition-all duration-200
+              className={`rounded-lg transition-all duration-200
                 text-on-secondary-container hover:bg-secondary-container/70 
                 ${isBusy ? 'opacity-50 cursor-wait' : ''}`}
               aria-label="More actions"
@@ -121,7 +122,7 @@ export default function FileListItem<T extends FileListItemData>({
                       className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-surface-variant transition-colors"
                     >
                       <Share2 className="w-5 h-5 text-on-surface" />
-                      <span className="text-[--font-body-md] text-on-surface">Share</span>
+                      <span className="text-on-surface">Share</span>
                     </button>
                   )}
                   {/* Rename button */}
@@ -134,7 +135,7 @@ export default function FileListItem<T extends FileListItemData>({
                       className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-surface-variant transition-colors"
                     >
                       <FilePenLine className="w-5 h-5 text-on-surface" />
-                      <span className="text-[--font-body-md] text-on-surface">Rename</span>
+                      <span className="text-on-surface">Rename</span>
                     </button>
                   )}
                   {/* Delete button */}
@@ -147,7 +148,7 @@ export default function FileListItem<T extends FileListItemData>({
                       className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-error/10 transition-colors"
                     >
                       <Trash2 className="w-5 h-5 text-error" />
-                      <span className="text-[--font-body-md] text-error">Delete</span>
+                      <span className="text-error">Delete</span>
                     </button>
                   )}
                 </div>
