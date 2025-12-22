@@ -65,7 +65,7 @@ export default function FileListItem<T extends FileListItemData>({
           <FileText className="w-6 h-6 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-on-surface mb-1 break-all leading-tight">
+          <p className="font-semibold text-on-surface mb-1 break-all leading-tight md:pr-8">
             {file.fileName}
           </p>
           <p className="text-on-surface-variant">
