@@ -56,11 +56,11 @@ export default function FileListItem<T extends FileListItemData>({
 
   return (
     <li
-      className="bg-surface-variant p-5 rounded-[8px] shadow-[--shadow-2] 
+      className="relative bg-surface-variant p-5 rounded-[8px] shadow-[--shadow-2] 
                flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4
                hover:shadow-[--shadow-3] transition-all duration-200"
     >
-      <div className="flex items-center gap-4 min-w-0">
+      <div className="flex items-center gap-4 min-w-0 pr-10 sm:pr-0">
         <div className="p-3 flex-shrink-0">
           <FileText className="w-6 h-6 text-primary" />
         </div>
@@ -74,11 +74,11 @@ export default function FileListItem<T extends FileListItemData>({
         </div>
       </div>
       {isSupportedBrowser ? null : <UnsupportedBrowserMessage />}
-      <div className="flex gap-2 w-full sm:w-auto">
+      <div className="flex gap-2 w-full sm:w-auto justify-end items-center">
         <TextButton
           onClick={() => onDownload(file)}
           disabled={isBusy || !isSupportedBrowser}
-          className={`flex-1 sm:flex-initial ring-1 ring-primary 
+          className={`w-fit sm:flex-initial ring-1 ring-primary 
               ${isBusy ? 'opacity-50 cursor-wait' : ''}`}
         >
           {isDownloading ? (
@@ -93,7 +93,7 @@ export default function FileListItem<T extends FileListItemData>({
           )}
         </TextButton>
         {hasMenuItems && (
-          <div className="relative">
+          <div className="absolute top-2 right-2 sm:relative sm:top-auto sm:right-auto">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               disabled={isBusy}
