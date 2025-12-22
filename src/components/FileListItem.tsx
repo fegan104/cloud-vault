@@ -38,6 +38,77 @@ export type FileListItemProps<T extends FileListItemData> = {
   onShare?: (file: T) => void;
 };
 
+// Reusable ActionsMenu component to avoid duplication
+function ActionsMenu<T extends FileListItemData>({
+  file,
+  isMenuOpen,
+  setIsMenuOpen,
+  isBusy,
+  onShare,
+  onRename,
+  onDelete,
+}: {
+  file: T;
+  isMenuOpen: boolean;
+  setIsMenuOpen: (isOpen: boolean) => void;
+  isBusy: boolean;
+  onShare?: (file: T) => void;
+  onRename?: (file: T) => void;
+  onDelete?: (file: T) => void;
+}) {
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsMenuOpen(!isMenuOpen)}
+        disabled={isBusy}
+        className={`p-2 rounded-lg transition-all duration-200
+          text-on-secondary-container hover:bg-secondary-container/70
+          ${isBusy ? 'opacity-50 cursor-wait' : ''}`}
+        aria-label="More actions"
+      >
+        <MoreVertical className="w-5 h-5 text-on-surface" />
+      </button>
+      {isMenuOpen && !isBusy && (
+        <>
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setIsMenuOpen(false)}
+          />
+          <div className="absolute right-0 mt-2 w-48 bg-surface rounded-lg shadow-[--shadow-4] z-20 overflow-hidden">
+            {onShare && (
+              <button
+                onClick={() => { setIsMenuOpen(false); onShare(file); }}
+                className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-surface-variant transition-colors"
+              >
+                <Share2 className="w-5 h-5 text-on-surface" />
+                <span className="text-[--font-body-md] text-on-surface">Share</span>
+              </button>
+            )}
+            {onRename && (
+              <button
+                onClick={() => { setIsMenuOpen(false); onRename(file); }}
+                className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-surface-variant transition-colors"
+              >
+                <FilePenLine className="w-5 h-5 text-on-surface" />
+                <span className="text-[--font-body-md] text-on-surface">Rename</span>
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={() => { setIsMenuOpen(false); onDelete(file); }}
+                className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-error/10 transition-colors"
+              >
+                <Trash2 className="w-5 h-5 text-error" />
+                <span className="text-[--font-body-md] text-error">Delete</span>
+              </button>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function FileListItem<T extends FileListItemData>({
   file,
   isDownloading = false,
@@ -56,11 +127,11 @@ export default function FileListItem<T extends FileListItemData>({
 
   return (
     <li
-      className="bg-surface-variant p-5 rounded-[8px] shadow-[--shadow-2] 
+      className="relative bg-surface-variant p-5 rounded-[8px] shadow-[--shadow-2]
                flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4
                hover:shadow-[--shadow-3] transition-all duration-200"
     >
-      <div className="flex items-center gap-4 min-w-0">
+      <div className="flex items-center gap-4 min-w-0 pr-10 sm:pr-0">
         <div className="p-3 flex-shrink-0">
           <FileText className="w-6 h-6 text-primary" />
         </div>
@@ -74,7 +145,43 @@ export default function FileListItem<T extends FileListItemData>({
         </div>
       </div>
       {isSupportedBrowser ? null : <UnsupportedBrowserMessage />}
-      <div className="flex gap-2 w-full sm:w-auto justify-between items-center">
+
+      {/* --- ACTIONS --- */}
+      {/* Mobile-only layout with absolute positioning */}
+      <div className="sm:hidden">
+        {hasMenuItems && (
+          <div className="absolute top-2 right-2">
+            <ActionsMenu
+              file={file}
+              isMenuOpen={isMenuOpen}
+              setIsMenuOpen={setIsMenuOpen}
+              isBusy={isBusy}
+              onShare={onShare}
+              onRename={onRename}
+              onDelete={onDelete}
+            />
+          </div>
+        )}
+        <div className="absolute bottom-4 right-4">
+          <TextButton
+            onClick={() => onDownload(file)}
+            disabled={isBusy || !isSupportedBrowser}
+            className={`ring-1 ring-primary ${isBusy ? 'opacity-50 cursor-wait' : ''}`}
+          >
+            {isDownloading ? (
+              <div className="flex items-center gap-2">
+                <span>Downloading</span>
+                <CircularProgress size={18} progress={downloadProgress} />
+              </div>
+            ) : (
+              <span>Download</span>
+            )}
+          </TextButton>
+        </div>
+      </div>
+
+      {/* Desktop-only layout with flexbox */}
+      <div className="hidden sm:flex sm:gap-2 sm:items-center">
         <TextButton
           onClick={() => onDownload(file)}
           disabled={isBusy || !isSupportedBrowser}
@@ -87,73 +194,19 @@ export default function FileListItem<T extends FileListItemData>({
               <CircularProgress size={18} progress={downloadProgress} />
             </div>
           ) : (
-            <>
-              <span>Download</span>
-            </>
+            <span>Download</span>
           )}
         </TextButton>
         {hasMenuItems && (
-          <div className="relative">
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              disabled={isBusy}
-              className={`p-2 rounded-lg transition-all duration-200
-                text-on-secondary-container hover:bg-secondary-container/70 
-                ${isBusy ? 'opacity-50 cursor-wait' : ''}`}
-              aria-label="More actions"
-            >
-              <MoreVertical className="w-5 h-5 text-on-surface" />
-            </button>
-            {isMenuOpen && !isBusy && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setIsMenuOpen(false)}
-                />
-                <div className="absolute right-0 mt-2 w-48 bg-surface rounded-lg shadow-[--shadow-4] z-20 overflow-hidden">
-                  {/* Share button */}
-                  {onShare && (
-                    <button
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                        onShare(file);
-                      }}
-                      className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-surface-variant transition-colors"
-                    >
-                      <Share2 className="w-5 h-5 text-on-surface" />
-                      <span className="text-[--font-body-md] text-on-surface">Share</span>
-                    </button>
-                  )}
-                  {/* Rename button */}
-                  {onRename && (
-                    <button
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                        onRename(file);
-                      }}
-                      className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-surface-variant transition-colors"
-                    >
-                      <FilePenLine className="w-5 h-5 text-on-surface" />
-                      <span className="text-[--font-body-md] text-on-surface">Rename</span>
-                    </button>
-                  )}
-                  {/* Delete button */}
-                  {onDelete && (
-                    <button
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                        onDelete(file);
-                      }}
-                      className="w-full px-4 py-3 text-left flex items-center gap-3 hover:bg-error/10 transition-colors"
-                    >
-                      <Trash2 className="w-5 h-5 text-error" />
-                      <span className="text-[--font-body-md] text-error">Delete</span>
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
+          <ActionsMenu
+            file={file}
+            isMenuOpen={isMenuOpen}
+            setIsMenuOpen={setIsMenuOpen}
+            isBusy={isBusy}
+            onShare={onShare}
+            onRename={onRename}
+            onDelete={onDelete}
+          />
         )}
       </div>
     </li>
