@@ -83,8 +83,8 @@ export default function FileListItem<T extends FileListItemData>({
         >
           {isDownloading ? (
             <div className="flex items-center gap-2">
-              <span>Downloading</span>
               <CircularProgress size={18} progress={downloadProgress} />
+              <span>Downloading</span>
             </div>
           ) : (
             <div className="flex items-center gap-2">
