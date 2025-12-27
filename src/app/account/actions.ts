@@ -22,7 +22,7 @@ export async function startPasswordChangeRegistration(
     throw new Error("Unauthorized");
   }
 
-  return opaqueServer.createRegistrationResponse(user.email, registrationRequest);
+  return await opaqueServer.createRegistrationResponse(user.email, registrationRequest);
 }
 /**
  * Signs out the user. This deletes the session cookie and removes 

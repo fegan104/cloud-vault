@@ -3,8 +3,7 @@
 import { getShareById } from "@/lib/share/getShareById";
 import { getSignedDownloadUrl } from "@/lib/firebaseAdmin";
 import { prisma } from "@/lib/db";
-import { generateChallenge } from "@/lib/challenge/generateChallenge";
-import { verifyChallenge } from "@/lib/challenge/verifyChallenge";
+import * as opaqueServer from "@/lib/opaque";
 
 /**
  * Get a signed URL for a share that can be used to download the file.
@@ -21,56 +20,82 @@ export async function getShareDownloadUrl(shareId: string): Promise<string> {
 }
 
 /**
- * Generates a challenge for granting access to a share.
+ * Step 1: Start OPAQUE login for accessing a share.
  * @param shareId - the share's unique ID
- * @returns an object containing the challenge and the share's key derivation parameters
+ * @param startLoginRequest - OPAQUE start login request from client
+ * @returns loginResponse and share name if successful
  */
-export async function generateChallengeForShare(shareId: string) {
-  const shareKeyDerivationParams = await prisma.share.findUnique({
+export async function startShareLogin(
+  shareId: string,
+  startLoginRequest: string
+): Promise<{ loginResponse: string; shareName: string } | null> {
+  const share = await prisma.share.findUnique({
     where: { id: shareId },
     select: {
       name: true,
-      publicKey: true,
-      keyDerivationSalt: true,
-      argon2MemorySize: true,
-      argon2Iterations: true,
-      argon2Parallelism: true,
-      argon2HashLength: true,
+      opaqueRegistrationRecord: true,
     }
   });
 
-  if (!shareKeyDerivationParams) {
-    throw new Error("Share not found");
+  if (!share || !share.opaqueRegistrationRecord) {
+    return null;
   }
 
-  // Store it in the database
-  const record = await generateChallenge();
+  // Start OPAQUE login using shareId as user identifier
+  const { loginResponse, serverLoginState } = await opaqueServer.startLogin(
+    shareId,
+    share.opaqueRegistrationRecord,
+    startLoginRequest
+  );
 
-  return { challenge: record.challenge, shareKeyDerivationParams };
+  // Store the server login state as ephemeral (expires in 5 minutes)
+  await prisma.opaqueEphemeral.upsert({
+    where: { userIdentifier: shareId },
+    update: {
+      serverLoginState,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    },
+    create: {
+      userIdentifier: shareId,
+      serverLoginState,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    },
+  });
+
+  return { loginResponse, shareName: share.name };
 }
 
 /**
- * Verify a client's signed challenge for a share.
- * Uses the share's publicKey instead of the user's.
- *
- * @param shareId - the share ID to look up the publicKey
- * @param challengeFromClient - the plaintext challenge string that was signed
- * @param clientSignedChallenge - base64-encoded signature produced by client
- * @returns boolean - true if signature verifies, false otherwise
+ * Step 2: Finish OPAQUE login for accessing a share.
+ * @param shareId - the share's unique ID
+ * @param finishLoginRequest - OPAQUE finish login request from client
+ * @returns true if verified, false otherwise
  */
-export async function verifyChallengeForShare(
+export async function finishShareLogin(
   shareId: string,
-  challengeFromClient: string,
-  clientSignedChallenge: string
+  finishLoginRequest: string
 ): Promise<boolean> {
-  const share = await prisma.share.findUnique({
-    where: { id: shareId },
-    select: { publicKey: true },
+  const ephemeral = await prisma.opaqueEphemeral.findUnique({
+    where: { userIdentifier: shareId },
   });
 
-  if (!share) {
+  if (!ephemeral || ephemeral.expiresAt < new Date()) {
+    if (ephemeral) {
+      await prisma.opaqueEphemeral.delete({
+        where: { id: ephemeral.id },
+      });
+    }
     return false;
   }
 
-  return await verifyChallenge(share.publicKey, challengeFromClient, clientSignedChallenge);
+  const sessionKey = await opaqueServer.finishLogin(
+    ephemeral.serverLoginState,
+    finishLoginRequest
+  );
+
+  await prisma.opaqueEphemeral.delete({
+    where: { id: ephemeral.id },
+  });
+
+  return sessionKey !== null;
 }

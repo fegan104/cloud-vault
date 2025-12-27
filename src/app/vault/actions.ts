@@ -48,11 +48,6 @@ export async function saveEncryptedFileDetails(
     wrappedFileKey: string;
     keyWrapIv: string;
     fileAlgorithm: string;
-    keyDerivationSalt: string;
-    argon2MemorySize: number;
-    argon2Iterations: number;
-    argon2Parallelism: number;
-    argon2HashLength: number;
   }
 ) {
   const currentUser = await getUser();
@@ -79,11 +74,6 @@ export async function saveEncryptedFileDetails(
       fileAlgorithm: metadata.fileAlgorithm,
       wrappedFileKey: metadata.wrappedFileKey,
       keyWrapIv: metadata.keyWrapIv,
-      keyDerivationSalt: metadata.keyDerivationSalt,
-      argon2MemorySize: metadata.argon2MemorySize,
-      argon2Iterations: metadata.argon2Iterations,
-      argon2Parallelism: metadata.argon2Parallelism,
-      argon2HashLength: metadata.argon2HashLength,
     }
   });
   revalidatePath("/vault");
@@ -222,7 +212,7 @@ export async function startLoginForSession(
     return null;
   }
 
-  const { loginResponse, serverLoginState } = opaqueServer.startLogin(
+  const { loginResponse, serverLoginState } = await opaqueServer.startLogin(
     user.email,
     user.opaqueRegistrationRecord,
     startLoginRequest
@@ -273,7 +263,7 @@ export async function verifyPasswordForSession(
     return false;
   }
 
-  const sessionKey = opaqueServer.finishLogin(
+  const sessionKey = await opaqueServer.finishLogin(
     ephemeral.serverLoginState,
     finishLoginRequest
   );

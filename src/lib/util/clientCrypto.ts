@@ -1,11 +1,18 @@
 import nacl from "tweetnacl";
-import { argon2id } from "hash-wasm";
 import { base64ToUint8Array, uint8ToBase64 } from "./arrayHelpers";
 
-const ARGON2_MEMORY_SIZE = 131_072; // 128 MB
-const ARGON2_ITERATIONS = 4;
-const ARGON2_PARALLELISM = 1;
-const ARGON2_HASH_LENGTH = 32;
+const HKDF_SALT = new Uint8Array(0); // Standard OPAQUE/HKDF practice when salt is handled elsewhere
+
+/**
+ * Converts a hex string to a Uint8Array.
+ */
+function hexToUint8Array(hex: string): Uint8Array<ArrayBuffer> {
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+  }
+  return bytes;
+}
 
 /**
  * When you derive a new key from a password you need to add some uniqueness to
@@ -27,72 +34,38 @@ export function generateIv() {
 
 
 /**
- * Derives a stable public/private keypair from a password and salt using argon2id. 
- * @param password - the password to derive the keypair from
- * @param salt - the salt to use for the keypair derivation
- * @returns an object containing the public and private key
+ * Imports a usable CryptoKey from an OPAQUE export key using HKDF.
+ * This is required because the raw export key is not yet ready for use as an AES-256 key.
+ * 
+ * @param exportKeyHex - The OPAQUE export key in hex format
+ * @param usage - The intended usage ('master' for user vault, 'share' for share access)
+ * @returns A CryptoKey for AES-GCM 256
  */
-export async function deriveKeypair(password: string, salt: Uint8Array<ArrayBuffer>) {
-  const keyBits = await deriveKeyBits(password, salt);
-  const keypair = nacl.sign.keyPair.fromSeed(keyBits);
+export async function importKeyFromExportKey(
+  exportKeyHex: string,
+  usage: 'master' | 'share'
+): Promise<CryptoKey> {
+  const exportKeyBytes = hexToUint8Array(exportKeyHex);
+  const info = new TextEncoder().encode(usage === 'master' ? "OPAQUE_MASTER_KEY" : "OPAQUE_SHARE_KEY");
 
-  return {
-    publicKey: keypair.publicKey,
-    privateKey: keypair.secretKey
-  };
-}
-
-/**
- * Signs a challenge using the client's private key
- * @param password - the password to derive the keypair from
- * @param masterKeySaltB64 - the salt to use for the keypair derivation
- * @param challenge - the challenge to sign
- * @returns the signature
- */
-export async function signChallenge(
-  password: string,
-  masterKeySaltB64: string,
-  challenge: string
-) {
-  const encoder = new TextEncoder();
-
-  // derive the private key using the master password and salt
-  const { privateKey } = await deriveKeypair(password, base64ToUint8Array(masterKeySaltB64))
-  const messageBytes = encoder.encode(challenge);
-  const sig = nacl.sign.detached(messageBytes, privateKey);
-  return uint8ToBase64(sig);
-}
-
-/**
- * Signs a challenge using the client's private key
- * @param privateKey - the private key to sign the challenge with
- * @param challenge - the challenge to sign
- * @returns the signature
- */
-export async function signShareChallenge(
-  privateKey: Uint8Array,
-  challenge: string
-) {
-  const encoder = new TextEncoder();
-
-  // sign the challenge using the private key
-  const messageBytes = encoder.encode(challenge);
-  const sig = nacl.sign.detached(messageBytes, privateKey);
-  return uint8ToBase64(sig);
-}
-
-/**
- * Derives a master key from a password and salt using argon2id
- * @param masterPassword - the password to derive the key from
- * @param masterKeySalt - the salt to use for the key derivation
- * @returns the master key imported into the CryptoKey interface of the Web Crypto API.
- */
-export async function deriveMasterKey(masterPassword: string, masterKeySalt: Uint8Array) {
-  const keyBits = await deriveKeyBits(masterPassword, masterKeySalt);
-
-  return crypto.subtle.importKey(
+  // 1. Import the raw bytes as a base key for HKDF
+  const baseKey = await crypto.subtle.importKey(
     "raw",
-    keyBits,
+    exportKeyBytes,
+    { name: "HKDF" },
+    false,
+    ["deriveBits", "deriveKey"]
+  );
+
+  // 2. Derive the final AES-GCM 256 key using HKDF
+  return crypto.subtle.deriveKey(
+    {
+      name: "HKDF",
+      hash: "SHA-256",
+      salt: HKDF_SALT,
+      info: info,
+    },
+    baseKey,
     { name: "AES-GCM", length: 256 },
     false,
     ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
@@ -144,11 +117,6 @@ export function encryptFile(
       wrappedFileKey: string;
       keyWrapIv: string;
       fileAlgorithm: string;
-      keyDerivationSalt: string;
-      argon2MemorySize: number;
-      argon2Iterations: number;
-      argon2Parallelism: number;
-      argon2HashLength: number;
     };
   }>((resolve, reject) => {
     const worker = new Worker(
@@ -173,64 +141,7 @@ export function encryptFile(
 }
 
 
-/**
- * Derives a new CryptoKey from a password and salt using argon2id
- * @param sharePassword - the password to derive the key from
- * @param shareSalt - the salt to use for the key derivation
- * @returns an object containing the share key used for unwrapping 
- * shared file keys, public key, private key, and key derivation metadata
- */
-export async function deriveShareKey(
-  sharePassword: string,
-  shareSalt: Uint8Array
-): Promise<{
-  shareKey: CryptoKey;
-  publicKey: string;
-  privateKey: string;
-  metadata: {
-    argon2MemorySize: number;
-    argon2Iterations: number;
-    argon2Parallelism: number;
-    argon2HashLength: number;
-  };
-}> {
-  const keyHex = await argon2id({
-    password: sharePassword,
-    salt: shareSalt,
-    parallelism: ARGON2_PARALLELISM,
-    iterations: ARGON2_ITERATIONS,
-    memorySize: ARGON2_MEMORY_SIZE,
-    hashLength: ARGON2_HASH_LENGTH,
-    outputType: "hex",
-  });
 
-  const keyBytes = new Uint8Array(
-    keyHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
-  );
-
-  const shareKey = await crypto.subtle.importKey(
-    "raw",
-    keyBytes,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
-  );
-
-  // Convert seed → Ed25519 keypair using TweetNaCl
-  const keypair = nacl.sign.keyPair.fromSeed(keyBytes);
-
-  return {
-    shareKey,
-    publicKey: uint8ToBase64(keypair.publicKey),
-    privateKey: uint8ToBase64(keypair.secretKey),
-    metadata: {
-      argon2MemorySize: ARGON2_MEMORY_SIZE,
-      argon2Iterations: ARGON2_ITERATIONS,
-      argon2Parallelism: ARGON2_PARALLELISM,
-      argon2HashLength: ARGON2_HASH_LENGTH,
-    },
-  };
-}
 
 /**
  * Unwraps a file key with a master key, wraps the file key with the new share key.
@@ -286,30 +197,4 @@ export async function rewrapKey({
     wrappedKey: uint8ToBase64(new Uint8Array(rewrappedKey)),
     wrappedKeyIv: uint8ToBase64(newKeyWrapIv),
   };
-}
-
-/**
- * Derives a cryptographic key from a password and salt using argon2id
- * 
- * @param password The password to derive the key from
- * @param salt The salt to use for the key derivation
- * 
- * @returns The derived key as a Uint8Array
- */
-async function deriveKeyBits(password: string, salt: Uint8Array) {
-  const keyHex = await argon2id({
-    password: password,
-    salt: salt,
-    parallelism: ARGON2_PARALLELISM,
-    iterations: ARGON2_ITERATIONS,
-    memorySize: ARGON2_MEMORY_SIZE,
-    hashLength: ARGON2_HASH_LENGTH,
-    outputType: "hex",
-  });
-
-  const keyBytes = new Uint8Array(
-    keyHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
-  );
-
-  return keyBytes;
 }

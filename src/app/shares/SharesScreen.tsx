@@ -79,9 +79,9 @@ export default function SharesScreen({ shares, isLoading = false }: SharesScreen
               </div>
             ) : filteredShares.length === 0 ? (
               <div className="w-full max-w-3xl mt-12 text-center">
-                <div className="bg-surface p-12 shadow-[--shadow-2]">
+                <div className="bg-surface p-12 shadow-[--shadow-2] rounded-md">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-variant mb-4">
-                    <Users className="w-8 h-8 text-on-surface-variant" />
+                    <Users className="w-8 h-8 text-primary" />
                   </div>
                   <p className="text-on-surface-variant">
                     {searchQuery.trim()

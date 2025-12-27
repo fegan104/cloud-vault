@@ -1,4 +1,5 @@
 "use client";
+import { importKeyFromExportKey } from "@/lib/util/clientCrypto";
 
 import { useMasterKey } from "../../components/MasterKeyContext";
 import { useState } from "react";
@@ -10,21 +11,7 @@ import { Card } from "../../components/Card";
 import { startLoginForSession, verifyPasswordForSession } from "./actions";
 import * as opaque from "@serenity-kit/opaque";
 
-/**
- * Converts a hex string to a CryptoKey for AES-GCM encryption.
- */
-async function hexToCryptoKey(hex: string): Promise<CryptoKey> {
-  const keyBytes = new Uint8Array(
-    hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
-  );
-  return crypto.subtle.importKey(
-    "raw",
-    keyBytes,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
-  );
-}
+
 
 type MasterKeyGuardProps = {
   children: React.ReactNode;
@@ -69,6 +56,13 @@ export default function MasterKeyGuard({ children }: MasterKeyGuardProps) {
         clientLoginState,
         loginResponse,
         password,
+        keyStretching: {
+          "argon2id-custom": {
+            memory: 131072,
+            iterations: 4,
+            parallelism: 1,
+          },
+        },
       });
 
       if (!loginResult) {
@@ -84,7 +78,7 @@ export default function MasterKeyGuard({ children }: MasterKeyGuardProps) {
 
       if (verified) {
         // Use OPAQUE export key as master key
-        const newMasterKey = await hexToCryptoKey(exportKey);
+        const newMasterKey = await importKeyFromExportKey(exportKey, 'master');
         setMasterKey(newMasterKey);
       } else {
         setError("Incorrect password");

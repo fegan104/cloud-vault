@@ -16,11 +16,6 @@ export function UploadButton({ onEncrypted }: {
       wrappedFileKey: string;
       keyWrapIv: string;
       fileAlgorithm: string;
-      keyDerivationSalt: string;
-      argon2MemorySize: number;
-      argon2Iterations: number;
-      argon2Parallelism: number;
-      argon2HashLength: number;
     }
   ) => Promise<void>;
 }) {

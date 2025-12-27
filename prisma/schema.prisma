@@ -10,8 +10,7 @@ datasource db {
 model User {
   id                       String   @id @default(uuid())
   email                    String   @unique
-  masterKeySalt            String?  // Deprecated: kept for backward compatibility, no longer used with OPAQUE
-  opaqueRegistrationRecord String?
+  opaqueRegistrationRecord String
   createdAt                DateTime @default(now())
 
   sessions       Session[]
@@ -42,15 +41,6 @@ model Session {
   @@map("sessions")
 }
 
-model Challenge {
-  id        String   @id @default(uuid())
-  challenge String   @unique
-  createdAt DateTime @default(now())
-  expiresAt DateTime
-
-  @@map("challenges")
-}
-
 model EncryptedFile {
   id                String @id @default(uuid())
   userId            String
@@ -61,12 +51,6 @@ model EncryptedFile {
   fileAlgorithm     String
   wrappedFileKey    String
   keyWrapIv         String
-  keyDerivationSalt String
-
-  argon2MemorySize  Int
-  argon2Iterations  Int
-  argon2Parallelism Int
-  argon2HashLength  Int
   createdAt         DateTime @default(now())
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -81,16 +65,11 @@ model Share {
 
   fileId    String
   name      String
-  publicKey String
+  opaqueRegistrationRecord String  // OPAQUE registration record for share password verification
 
   wrappedFileKey    String
   keyWrapIv         String
-  keyDerivationSalt String
-
-  argon2MemorySize  Int
-  argon2Iterations  Int
-  argon2Parallelism Int
-  argon2HashLength  Int
+  
   createdAt         DateTime @default(now())
 
   file EncryptedFile @relation(fields: [fileId], references: [id], onDelete: Cascade)

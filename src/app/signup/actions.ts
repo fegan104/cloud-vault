@@ -17,7 +17,7 @@ export async function startRegistration(
   email: string,
   registrationRequest: string
 ): Promise<string> {
-  return opaqueServer.createRegistrationResponse(email, registrationRequest);
+  return await opaqueServer.createRegistrationResponse(email, registrationRequest);
 }
 
 /**

@@ -10,23 +10,10 @@ import { TextInput, PasswordInput } from '@/components/TextInput';
 import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
 import CircularProgress from '@/components/CircularProgress';
+import { importKeyFromExportKey } from '@/lib/util/clientCrypto';
 import * as opaque from '@serenity-kit/opaque';
 
-/**
- * Converts a hex string to a CryptoKey for AES-GCM encryption.
- */
-async function hexToCryptoKey(hex: string): Promise<CryptoKey> {
-  const keyBytes = new Uint8Array(
-    hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
-  );
-  return crypto.subtle.importKey(
-    "raw",
-    keyBytes,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
-  );
-}
+
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
@@ -55,7 +42,9 @@ export default function SignUpPage() {
     try {
       // Step 1: Client starts OPAQUE registration
       const { clientRegistrationState, registrationRequest } =
-        opaque.client.startRegistration({ password });
+        opaque.client.startRegistration({
+          password,
+        });
 
       // Step 2: Server creates registration response
       const registrationResponse = await startRegistration(email, registrationRequest);
@@ -65,6 +54,13 @@ export default function SignUpPage() {
         clientRegistrationState,
         registrationResponse,
         password,
+        keyStretching: {
+          "argon2id-custom": {
+            memory: 131072,
+            iterations: 4,
+            parallelism: 1,
+          },
+        },
       });
 
       // Step 4: Server stores registration record and creates user
@@ -80,7 +76,7 @@ export default function SignUpPage() {
       }
 
       // Use OPAQUE export key as master key (convert hex to CryptoKey)
-      const masterKey = await hexToCryptoKey(exportKey);
+      const masterKey = await importKeyFromExportKey(exportKey, 'master');
       setMasterKey(masterKey);
       redirect('/vault');
     } catch (err) {

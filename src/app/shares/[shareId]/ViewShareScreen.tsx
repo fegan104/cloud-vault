@@ -3,12 +3,14 @@
 import ShareKeyGuard from "@/components/ShareKeyGuard";
 import FileListItem from "@/components/FileListItem";
 import { downloadFileWithProgress } from "@/lib/util/downloadFileWithProgress";
-import { decryptFile, deriveShareKey, signShareChallenge } from "@/lib/util/clientCrypto";
+import { decryptFile, importKeyFromExportKey } from "@/lib/util/clientCrypto";
 import { useState } from "react";
-import { generateChallengeForShare, getShareDownloadUrl, verifyChallengeForShare } from "./actions";
+import { startShareLogin, getShareDownloadUrl, finishShareLogin } from "./actions";
 import { getShareById, ShareWithFile } from "@/lib/share/getShareById";
-import { base64ToUint8Array } from "@/lib/util/arrayHelpers";
 import { saveFileToDevice } from "@/lib/util/saveFileToDevice";
+import * as opaque from "@serenity-kit/opaque";
+
+
 
 export default function ViewShareScreen({ shareId, name }: { shareId: string, name: string }) {
 
@@ -19,23 +21,54 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Handles the unlock process for a share.
+   * Handles the unlock process for a share using OPAQUE authentication.
    * @param password The password used to unlock the share.
    */
   const handleUnlock = async (password: string) => {
-    const { challenge, shareKeyDerivationParams } = await generateChallengeForShare(shareId);
-    const encodedSalt = base64ToUint8Array(shareKeyDerivationParams.keyDerivationSalt);
-    const { shareKey, privateKey } = await deriveShareKey(password, encodedSalt);
-    setShareKey(shareKey);
+    // Step 1: Start OPAQUE login
+    const { clientLoginState, startLoginRequest } = opaque.client.startLogin({
+      password,
+    });
 
-    const encodedPrivateKey = base64ToUint8Array(privateKey);
-    const signedChallenge = await signShareChallenge(encodedPrivateKey, challenge);
-    const verified = await verifyChallengeForShare(shareId, challenge, signedChallenge);
-    if (verified) {
-      setShare(await getShareById(shareId));
-    } else {
+    // Step 2: Server starts login
+    const loginStart = await startShareLogin(shareId, startLoginRequest);
+    if (!loginStart) {
+      throw new Error("Share not found");
+    }
+
+    const { loginResponse } = loginStart;
+
+    // Step 3: Client finishes login - get export key
+    const loginResult = opaque.client.finishLogin({
+      clientLoginState,
+      loginResponse,
+      password,
+      keyStretching: {
+        "argon2id-custom": {
+          memory: 131072,
+          iterations: 4,
+          parallelism: 1,
+        },
+      },
+    });
+
+    if (!loginResult) {
       throw new Error("Incorrect password");
     }
+
+    const { finishLoginRequest, exportKey } = loginResult;
+
+    // Step 4: Server verifies
+    const verified = await finishShareLogin(shareId, finishLoginRequest);
+
+    if (!verified) {
+      throw new Error("Incorrect password");
+    }
+
+    // Use export key as share key
+    const key = await importKeyFromExportKey(exportKey, 'share');
+    setShareKey(key);
+    setShare(await getShareById(shareId));
   };
 
   /**

@@ -6,26 +6,12 @@ import { PasswordInput, TextInput } from "@/components/TextInput";
 import { useState } from "react";
 import { Mail, Lock, LogOut } from "lucide-react";
 import { useMasterKey } from "@/components/MasterKeyContext";
-import { rewrapKey } from "@/lib/util/clientCrypto";
+import { rewrapKey, importKeyFromExportKey } from "@/lib/util/clientCrypto";
 import CircularProgress from "@/components/CircularProgress";
 import { TopAppBar } from "@/components/TopAppBar";
 import * as opaque from "@serenity-kit/opaque";
 
-/**
- * Converts a hex string to a CryptoKey for AES-GCM encryption.
- */
-async function hexToCryptoKey(hex: string): Promise<CryptoKey> {
-  const keyBytes = new Uint8Array(
-    hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
-  );
-  return crypto.subtle.importKey(
-    "raw",
-    keyBytes,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
-  );
-}
+
 
 export default function AccountScreen({ currentEmail }: { currentEmail: string }) {
   const [email, setEmail] = useState(currentEmail);
@@ -68,7 +54,9 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
       // Create new OPAQUE registration for the new password
       // Step 1: Client starts OPAQUE registration
       const { clientRegistrationState, registrationRequest } =
-        opaque.client.startRegistration({ password: newPassword });
+        opaque.client.startRegistration({
+          password: newPassword,
+        });
 
       // Step 2: Server creates registration response
       const registrationResponse = await startPasswordChangeRegistration(registrationRequest);
@@ -78,10 +66,17 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
         clientRegistrationState,
         registrationResponse,
         password: newPassword,
+        keyStretching: {
+          "argon2id-custom": {
+            memory: 131072,
+            iterations: 4,
+            parallelism: 1,
+          },
+        },
       });
 
       // Convert new export key to CryptoKey
-      const newMasterKey = await hexToCryptoKey(exportKey);
+      const newMasterKey = await importKeyFromExportKey(exportKey, 'master');
 
       // Fetch all encrypted file key derivation data
       const files = await getAllEncryptedFilesKeyDerivationParams();

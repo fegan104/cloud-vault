@@ -2,7 +2,7 @@
 
 import { useMasterKey } from "../../components/MasterKeyContext";
 import MasterKeyGuard from "./MasterKeyGuard";
-import { decryptFile, deriveShareKey, rewrapKey, generateSalt } from "../../lib/util/clientCrypto";
+import { decryptFile, rewrapKey, importKeyFromExportKey } from "../../lib/util/clientCrypto";
 import { useState } from "react";
 import { EncryptedFile } from "@prisma/client";
 import { getDownloadUrlByFileId, saveEncryptedFileDetails, deleteFile, renameFile } from "./actions";
@@ -11,11 +11,13 @@ import { UploadButton } from "./UploadButton";
 import { TonalButton } from "@/components/Buttons";
 import { DeleteConfirmationModal, TextInputModal, CreateShareModal } from "@/components/Modals";
 import Scaffold from "../../components/Scaffold";
-import { createShare } from "@/lib/share/createShare";
+import { createShare, startShareRegistration } from "@/lib/share/createShare";
 import FileListItem from "@/components/FileListItem";
-import { uint8ToBase64 } from "@/lib/util/arrayHelpers";
 import { saveFileToDevice } from "@/lib/util/saveFileToDevice";
 import { downloadFileWithProgress } from "@/lib/util/downloadFileWithProgress";
+import * as opaque from "@serenity-kit/opaque";
+
+
 
 type VaultScreenProps = {
   files: EncryptedFile[];
@@ -143,6 +145,7 @@ export default function VaultScreen({ files }: VaultScreenProps) {
 
   /**
    * This function is called when the user confirms the sharing of a file.
+   * Uses OPAQUE registration to create a password-protected share.
    * @param shareName The name of the share.
    * @param password The password for the share.
    */
@@ -152,14 +155,39 @@ export default function VaultScreen({ files }: VaultScreenProps) {
     setIsCreatingShare(true);
 
     try {
-      // 1. Generate a random salt for the share key derivation
-      const shareSaltBytes = generateSalt();
-      const shareSaltB64 = uint8ToBase64(shareSaltBytes);
+      // Generate a temporary share ID for OPAQUE registration
+      const tempShareId = crypto.randomUUID();
 
-      // 2. Derive the share key from the password
-      const { shareKey, publicKey, metadata } = await deriveShareKey(password, shareSaltBytes);
+      // Step 1: Start OPAQUE registration for the share
+      const { clientRegistrationState, registrationRequest } =
+        opaque.client.startRegistration({
+          password,
+        });
 
-      // 3. Wrap the file key with the share key
+      // Step 2: Get registration response from server
+      const registrationResponse = await startShareRegistration(
+        tempShareId,
+        registrationRequest
+      );
+
+      // Step 3: Complete registration - get export key to use as share key
+      const { registrationRecord, exportKey } = opaque.client.finishRegistration({
+        clientRegistrationState,
+        registrationResponse,
+        password,
+        keyStretching: {
+          "argon2id-custom": {
+            memory: 131072,
+            iterations: 4,
+            parallelism: 1,
+          },
+        },
+      });
+
+      // Convert export key to CryptoKey for wrapping
+      const shareKey = await importKeyFromExportKey(exportKey, 'share');
+
+      // 4. Wrap the file key with the share key
       const { wrappedKey: wrappedShareKey, wrappedKeyIv: wrappedShareKeyIv } = await rewrapKey({
         wrappedKey: fileToShare.wrappedFileKey,
         wrappedKeyIv: fileToShare.keyWrapIv,
@@ -167,15 +195,13 @@ export default function VaultScreen({ files }: VaultScreenProps) {
         wrappingKey: shareKey,
       });
 
-      // 4. Create the share record in the database
+      // 5. Create the share record in the database
       const share = await createShare(
         shareName,
         fileToShare.id,
         wrappedShareKey,
         wrappedShareKeyIv,
-        shareSaltB64,
-        publicKey,
-        metadata
+        registrationRecord
       );
 
       return share.id;

@@ -10,23 +10,10 @@ import { TextInput, PasswordInput } from '@/components/TextInput';
 import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
 import CircularProgress from '@/components/CircularProgress';
+import { importKeyFromExportKey } from '@/lib/util/clientCrypto';
 import * as opaque from '@serenity-kit/opaque';
 
-/**
- * Converts a hex string to a CryptoKey for AES-GCM encryption.
- */
-async function hexToCryptoKey(hex: string): Promise<CryptoKey> {
-  const keyBytes = new Uint8Array(
-    hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
-  );
-  return crypto.subtle.importKey(
-    "raw",
-    keyBytes,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
-  );
-}
+
 
 export default function SignInPage() {
   const [email, setEmail] = useState('');
@@ -66,6 +53,13 @@ export default function SignInPage() {
         clientLoginState,
         loginResponse,
         password,
+        keyStretching: {
+          "argon2id-custom": {
+            memory: 131072,
+            iterations: 4,
+            parallelism: 1,
+          },
+        },
       });
 
       if (!loginResult) {
@@ -81,7 +75,7 @@ export default function SignInPage() {
 
       if (verified) {
         // Use OPAQUE export key as master key (convert hex to CryptoKey)
-        const masterKey = await hexToCryptoKey(exportKey);
+        const masterKey = await importKeyFromExportKey(exportKey, 'master');
         setMasterKey(masterKey);
         redirect("/vault");
       } else {

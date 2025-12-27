@@ -40,11 +40,6 @@ self.onmessage = async (e) => {
     wrappedFileKey: uint8ToBase64(new Uint8Array(wrappedFileKey)),
     keyWrapIv: uint8ToBase64(keyWrapIv),
     fileAlgorithm: 'AES-GCM',
-    keyDerivationSalt: '', // No longer needed with OPAQUE
-    argon2MemorySize: ARGON2_MEMORY_SIZE,
-    argon2Iterations: ARGON2_ITERATIONS,
-    argon2Parallelism: ARGON2_PARALLELISM,
-    argon2HashLength: ARGON2_HASH_LENGTH,
   };
 
   self.postMessage({ encryptedContent, metadata }, [encryptedContent] as WindowPostMessageOptions);

@@ -30,7 +30,7 @@ export async function startLogin(
   }
 
   // Start the OPAQUE login
-  const { loginResponse, serverLoginState } = opaqueServer.startLogin(
+  const { loginResponse, serverLoginState } = await opaqueServer.startLogin(
     email,
     user.opaqueRegistrationRecord,
     startLoginRequest
@@ -81,7 +81,7 @@ export async function finishLogin(
   }
 
   // Finish the OPAQUE login
-  const sessionKey = opaqueServer.finishLogin(
+  const sessionKey = await opaqueServer.finishLogin(
     ephemeral.serverLoginState,
     finishLoginRequest
   );
