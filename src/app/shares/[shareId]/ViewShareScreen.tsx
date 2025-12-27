@@ -138,18 +138,18 @@ function ShareScreen({
   return (
     <div className="size-full p-4 flex flex-col items-center bg-background">
       <div className="w-full mb-8 text-center">
-        <h2 className="text-[--font-headline-lg] font-bold text-on-surface mb-3">
+        <h2 className="font-bold text-on-surface mb-3">
           {share.name}
         </h2>
-        <p className="text-[--font-body-md] text-on-surface-variant">
+        <p className="text-on-surface-variant">
           Has been shared with you
         </p>
       </div>
 
       <ul className="w-full max-w-3xl space-y-3">
         {error && (
-          <div className="p-3 rounded-[var(--radius-md)] bg-error-container mb-4">
-            <p className="text-[--font-body-sm] text-on-error-container">{error}</p>
+          <div className="p-3 bg-error-container mb-4">
+            <p className="text-on-error-container">{error}</p>
           </div>
         )}
         <FileListItem

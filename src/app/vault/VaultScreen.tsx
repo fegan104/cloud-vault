@@ -156,7 +156,7 @@ export default function VaultScreen({ files }: VaultScreenProps) {
 
     try {
       // Generate a temporary share ID for OPAQUE registration
-      const tempShareId = crypto.randomUUID();
+      const newShareId = crypto.randomUUID();
 
       // Step 1: Start OPAQUE registration for the share
       const { clientRegistrationState, registrationRequest } =
@@ -166,7 +166,7 @@ export default function VaultScreen({ files }: VaultScreenProps) {
 
       // Step 2: Get registration response from server
       const registrationResponse = await startShareRegistration(
-        tempShareId,
+        newShareId,
         registrationRequest
       );
 
@@ -197,6 +197,7 @@ export default function VaultScreen({ files }: VaultScreenProps) {
 
       // 5. Create the share record in the database
       const share = await createShare(
+        newShareId,
         shareName,
         fileToShare.id,
         wrappedShareKey,

@@ -25,6 +25,7 @@ export async function startShareRegistration(
  * @param opaqueRegistrationRecord - OPAQUE registration record
  */
 export async function createShare(
+  newShareId: string,
   shareName: string,
   fileId: string,
   wrappedFileKey: string,
@@ -33,6 +34,7 @@ export async function createShare(
 ) {
   const share = await prisma.share.create({
     data: {
+      id: newShareId,
       name: shareName,
       fileId,
       wrappedFileKey,
