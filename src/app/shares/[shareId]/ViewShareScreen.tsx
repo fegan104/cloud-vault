@@ -3,12 +3,11 @@
 import ShareKeyGuard from "@/components/ShareKeyGuard";
 import FileListItem from "@/components/FileListItem";
 import { downloadFileWithProgress } from "@/lib/util/downloadFileWithProgress";
-import { decryptFile, importKeyFromExportKey } from "@/lib/util/clientCrypto";
+import { decryptFile, importKeyFromExportKey, finishOpaqueLogin, startOpaqueLogin } from "@/lib/util/clientCrypto";
 import { useState } from "react";
 import { startShareLogin, getShareDownloadUrl, finishShareLogin } from "./actions";
 import { getShareById, ShareWithFile } from "@/lib/share/getShareById";
 import { saveFileToDevice } from "@/lib/util/saveFileToDevice";
-import * as opaque from "@serenity-kit/opaque";
 
 
 
@@ -26,7 +25,7 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
    */
   const handleUnlock = async (password: string) => {
     // Step 1: Start OPAQUE login
-    const { clientLoginState, startLoginRequest } = opaque.client.startLogin({
+    const { clientLoginState, startLoginRequest } = startOpaqueLogin({
       password,
     });
 
@@ -39,17 +38,10 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
     const { loginResponse } = loginStart;
 
     // Step 3: Client finishes login - get export key
-    const loginResult = opaque.client.finishLogin({
+    const loginResult = finishOpaqueLogin({
       clientLoginState,
       loginResponse,
       password,
-      keyStretching: {
-        "argon2id-custom": {
-          memory: 131072,
-          iterations: 4,
-          parallelism: 1,
-        },
-      },
     });
 
     if (!loginResult) {
@@ -66,7 +58,7 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
     }
 
     // Use export key as share key
-    const key = await importKeyFromExportKey(exportKey, 'share');
+    const key = await importKeyFromExportKey(exportKey);
     setShareKey(key);
     setShare(await getShareById(shareId));
   };

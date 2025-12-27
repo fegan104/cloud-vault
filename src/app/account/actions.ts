@@ -82,7 +82,7 @@ export async function getAllEncryptedFilesKeyDerivationParams(): Promise<{ id: s
 // Updates the encrypted file key derivation params in the database
 // This should be done in a transaction
 export async function updateEncryptedFilesKeyDerivationParams(
-  updates: { id: string; wrappedFileKey: string; keyWrapIv: string }[],
+  updates: { id: string; wrappedFileKey: string; keyWrapNonce: string }[],
   opaqueRegistrationRecord: string
 ) {
   const user = await getUser();
@@ -100,7 +100,7 @@ export async function updateEncryptedFilesKeyDerivationParams(
         },
         data: {
           wrappedFileKey: update.wrappedFileKey,
-          keyWrapIv: update.keyWrapIv,
+          keyWrapIv: update.keyWrapNonce,
         },
       })
     ),

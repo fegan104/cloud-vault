@@ -10,8 +10,7 @@ import { TextInput, PasswordInput } from '@/components/TextInput';
 import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
 import CircularProgress from '@/components/CircularProgress';
-import { importKeyFromExportKey } from '@/lib/util/clientCrypto';
-import * as opaque from '@serenity-kit/opaque';
+import { importKeyFromExportKey, finishOpaqueRegistration, startOpaqueRegistration } from '@/lib/util/clientCrypto';
 
 
 
@@ -42,7 +41,7 @@ export default function SignUpPage() {
     try {
       // Step 1: Client starts OPAQUE registration
       const { clientRegistrationState, registrationRequest } =
-        opaque.client.startRegistration({
+        startOpaqueRegistration({
           password,
         });
 
@@ -50,17 +49,10 @@ export default function SignUpPage() {
       const registrationResponse = await startRegistration(email, registrationRequest);
 
       // Step 3: Client finishes registration - get export key for encryption
-      const { registrationRecord, exportKey } = opaque.client.finishRegistration({
+      const { registrationRecord, exportKey } = finishOpaqueRegistration({
         clientRegistrationState,
         registrationResponse,
         password,
-        keyStretching: {
-          "argon2id-custom": {
-            memory: 131072,
-            iterations: 4,
-            parallelism: 1,
-          },
-        },
       });
 
       // Step 4: Server stores registration record and creates user
@@ -76,7 +68,7 @@ export default function SignUpPage() {
       }
 
       // Use OPAQUE export key as master key (convert hex to CryptoKey)
-      const masterKey = await importKeyFromExportKey(exportKey, 'master');
+      const masterKey = await importKeyFromExportKey(exportKey);
       setMasterKey(masterKey);
       redirect('/vault');
     } catch (err) {
@@ -97,10 +89,10 @@ export default function SignUpPage() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-secondary-container mb-4">
                 <UserPlus className="w-8 h-8 text-primary" />
               </div>
-              <h1 className="text-[--font-headline-md] font-semibold text-on-surface mb-2">
+              <h1 className="text-2xl font-semibold text-on-surface mb-2">
                 Create Account
               </h1>
-              <p className="text-[--font-body-md] text-on-surface-variant">
+              <p className="text-on-surface-variant">
                 Start securing your files with end-to-end encryption
               </p>
             </div>
@@ -132,14 +124,14 @@ export default function SignUpPage() {
                 placeholder="Re-enter your password"
                 error={confirmPassword.length > 0 && password !== confirmPassword ? 'Passwords do not match' : null}
               />
-              <p className="text-[--font-body-sm] text-on-surface-variant">
+              <p className="text-sm text-on-surface-variant">
                 Choose a strong password. You cannot recover it if lost.
               </p>
 
               {/* Error Message */}
               {error && (
-                <div className="p-3 rounded-[var(--radius-md)] bg-error-container">
-                  <p className="text-[--font-body-sm] text-on-error-container">{error}</p>
+                <div className="p-3 rounded-md bg-error-container">
+                  <p className="text-sm text-on-error-container">{error}</p>
                 </div>
               )}
 
@@ -156,7 +148,7 @@ export default function SignUpPage() {
 
             {/* Sign In Link */}
             <div className="mt-6 text-center">
-              <p className="text-[--font-body-sm] text-on-surface-variant">
+              <p className="text-sm text-on-surface-variant">
                 Already have an account?{' '}
                 <Link
                   href="/signin"

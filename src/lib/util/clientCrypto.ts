@@ -1,5 +1,5 @@
-import nacl from "tweetnacl";
 import { base64ToUint8Array, uint8ToBase64 } from "./arrayHelpers";
+import * as opaque from "@serenity-kit/opaque";
 
 const HKDF_SALT = new Uint8Array(0); // Standard OPAQUE/HKDF practice when salt is handled elsewhere
 
@@ -24,11 +24,10 @@ export function generateSalt() {
 }
 
 /**
- * When using AES-GCM you need to generate a unique number-used-once (nonce). This is 
- * a "initialization vector" (IV) for each encryption operation. This allows us to 
+ * When using AES-GCM you need to generate a unique number-used-once (nonce). This allows us to 
  * reuse the same master key for identical files and still produce different ciphertexts.
  */
-export function generateIv() {
+export function generateNonce() {
   return crypto.getRandomValues(new Uint8Array(12));
 }
 
@@ -38,15 +37,12 @@ export function generateIv() {
  * This is required because the raw export key is not yet ready for use as an AES-256 key.
  * 
  * @param exportKeyHex - The OPAQUE export key in hex format
- * @param usage - The intended usage ('master' for user vault, 'share' for share access)
  * @returns A CryptoKey for AES-GCM 256
  */
 export async function importKeyFromExportKey(
   exportKeyHex: string,
-  usage: 'master' | 'share'
 ): Promise<CryptoKey> {
   const exportKeyBytes = hexToUint8Array(exportKeyHex);
-  const info = new TextEncoder().encode(usage === 'master' ? "OPAQUE_MASTER_KEY" : "OPAQUE_SHARE_KEY");
 
   // 1. Import the raw bytes as a base key for HKDF
   const baseKey = await crypto.subtle.importKey(
@@ -63,7 +59,6 @@ export async function importKeyFromExportKey(
       name: "HKDF",
       hash: "SHA-256",
       salt: HKDF_SALT,
-      info: info,
     },
     baseKey,
     { name: "AES-GCM", length: 256 },
@@ -133,8 +128,8 @@ export function encryptFile(
       worker.terminate();
     };
 
-    const fileIv = generateIv();
-    const keyWrapIv = generateIv();
+    const fileIv = generateNonce();
+    const keyWrapIv = generateNonce();
 
     worker.postMessage({ file, masterKey, fileIv, keyWrapIv });
   });
@@ -156,34 +151,34 @@ export function encryptFile(
  */
 export async function rewrapKey({
   wrappedKey,
-  wrappedKeyIv,
+  wrappedKeyNonce,
   unwrappingKey,
   wrappingKey,
 }: {
   wrappedKey: string,
-  wrappedKeyIv: string,
+  wrappedKeyNonce: string,
   unwrappingKey: CryptoKey,
   wrappingKey: CryptoKey
 }): Promise<{
   wrappedKey: string;
-  wrappedKeyIv: string;
+  wrappedKeyNonce: string;
 }> {
   // 1. Unwrap the file key using the master key
   const wrappedKeyBytes = base64ToUint8Array(wrappedKey);
-  const wrappedKeyIvBytes = base64ToUint8Array(wrappedKeyIv);
+  const wrappedKeyNonceBytes = base64ToUint8Array(wrappedKeyNonce);
 
   const key = await crypto.subtle.unwrapKey(
     "raw",
     wrappedKeyBytes,
     unwrappingKey,
-    { name: "AES-GCM", iv: wrappedKeyIvBytes },
+    { name: "AES-GCM", iv: wrappedKeyNonceBytes },
     { name: "AES-GCM", length: 256 },
     true,
     ["encrypt", "decrypt"]
   );
 
   // 2. Generate a new IV for wrapping with the share key
-  const newKeyWrapIv = generateIv();
+  const newKeyWrapIv = generateNonce();
 
   // 3. Wrap the file key with the share key
   const rewrappedKey = await crypto.subtle.wrapKey(
@@ -195,6 +190,53 @@ export async function rewrapKey({
 
   return {
     wrappedKey: uint8ToBase64(new Uint8Array(rewrappedKey)),
-    wrappedKeyIv: uint8ToBase64(newKeyWrapIv),
+    wrappedKeyNonce: uint8ToBase64(newKeyWrapIv),
   };
+}
+
+/**
+ * Standardizes the client-side OPAQUE registration finalization workflow.
+ * This ensures consistent key stretching parameters (Argon2id) across the app.
+ */
+export function finishOpaqueRegistration(params: Parameters<typeof opaque.client.finishRegistration>[0]) {
+  return opaque.client.finishRegistration({
+    ...params,
+    keyStretching: {
+      "argon2id-custom": {
+        memory: 131072,
+        iterations: 4,
+        parallelism: 1,
+      },
+    },
+  });
+}
+
+/**
+ * Standardizes the client-side OPAQUE login finalization workflow.
+ * This ensures consistent key stretching parameters (Argon2id) across the app.
+ */
+export function finishOpaqueLogin(params: Parameters<typeof opaque.client.finishLogin>[0]) {
+  return opaque.client.finishLogin({
+    ...params,
+    keyStretching: {
+      "argon2id-custom": {
+        memory: 131072,
+        iterations: 4,
+        parallelism: 1,
+      },
+    },
+  });
+}
+/**
+ * Standardizes the client-side OPAQUE registration initiation workflow.
+ */
+export function startOpaqueRegistration(params: Parameters<typeof opaque.client.startRegistration>[0]) {
+  return opaque.client.startRegistration(params);
+}
+
+/**
+ * Standardizes the client-side OPAQUE login initiation workflow.
+ */
+export function startOpaqueLogin(params: Parameters<typeof opaque.client.startLogin>[0]) {
+  return opaque.client.startLogin(params);
 }

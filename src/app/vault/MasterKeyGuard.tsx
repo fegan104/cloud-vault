@@ -1,5 +1,5 @@
 "use client";
-import { importKeyFromExportKey } from "@/lib/util/clientCrypto";
+import { importKeyFromExportKey, finishOpaqueLogin, startOpaqueLogin } from "@/lib/util/clientCrypto";
 
 import { useMasterKey } from "../../components/MasterKeyContext";
 import { useState } from "react";
@@ -9,7 +9,6 @@ import { PasswordInput } from "@/components/TextInput";
 import { TonalButton } from "@/components/Buttons";
 import { Card } from "../../components/Card";
 import { startLoginForSession, verifyPasswordForSession } from "./actions";
-import * as opaque from "@serenity-kit/opaque";
 
 
 
@@ -37,7 +36,7 @@ export default function MasterKeyGuard({ children }: MasterKeyGuardProps) {
       setIsLoading(true);
 
       // Step 1: Client starts OPAQUE login
-      const { clientLoginState, startLoginRequest } = opaque.client.startLogin({
+      const { clientLoginState, startLoginRequest } = startOpaqueLogin({
         password,
       });
 
@@ -52,17 +51,10 @@ export default function MasterKeyGuard({ children }: MasterKeyGuardProps) {
       const { loginResponse } = loginStart;
 
       // Step 3: Client finishes login - get export key
-      const loginResult = opaque.client.finishLogin({
+      const loginResult = finishOpaqueLogin({
         clientLoginState,
         loginResponse,
         password,
-        keyStretching: {
-          "argon2id-custom": {
-            memory: 131072,
-            iterations: 4,
-            parallelism: 1,
-          },
-        },
       });
 
       if (!loginResult) {
@@ -78,7 +70,7 @@ export default function MasterKeyGuard({ children }: MasterKeyGuardProps) {
 
       if (verified) {
         // Use OPAQUE export key as master key
-        const newMasterKey = await importKeyFromExportKey(exportKey, 'master');
+        const newMasterKey = await importKeyFromExportKey(exportKey);
         setMasterKey(newMasterKey);
       } else {
         setError("Incorrect password");
@@ -101,10 +93,10 @@ export default function MasterKeyGuard({ children }: MasterKeyGuardProps) {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-container mb-4">
                 <Key className="w-8 h-8 text-primary" />
               </div>
-              <h2 className="text-[--font-headline-md] font-semibold text-on-surface mb-2">
+              <h2 className="text-2xl font-semibold text-on-surface mb-2">
                 Unlock Your Vault
               </h2>
-              <p className="text-[--font-body-md] text-on-surface-variant">
+              <p className="text-on-surface-variant">
                 Enter your password to decrypt your files
               </p>
             </div>
@@ -127,7 +119,7 @@ export default function MasterKeyGuard({ children }: MasterKeyGuardProps) {
 
               {error && (
                 <div className="p-3 rounded-md bg-error-container">
-                  <p className="text-[--font-body-sm] text-on-error-container">{error}</p>
+                  <p className="text-sm text-on-error-container">{error}</p>
                 </div>
               )}
 

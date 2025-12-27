@@ -2,7 +2,7 @@
 
 import { useMasterKey } from "../../components/MasterKeyContext";
 import MasterKeyGuard from "./MasterKeyGuard";
-import { decryptFile, rewrapKey, importKeyFromExportKey } from "../../lib/util/clientCrypto";
+import { decryptFile, rewrapKey, importKeyFromExportKey, finishOpaqueRegistration, startOpaqueRegistration } from "../../lib/util/clientCrypto";
 import { useState } from "react";
 import { EncryptedFile } from "@prisma/client";
 import { getDownloadUrlByFileId, saveEncryptedFileDetails, deleteFile, renameFile } from "./actions";
@@ -15,7 +15,6 @@ import { createShare, startShareRegistration } from "@/lib/share/createShare";
 import FileListItem from "@/components/FileListItem";
 import { saveFileToDevice } from "@/lib/util/saveFileToDevice";
 import { downloadFileWithProgress } from "@/lib/util/downloadFileWithProgress";
-import * as opaque from "@serenity-kit/opaque";
 
 
 
@@ -159,10 +158,7 @@ export default function VaultScreen({ files }: VaultScreenProps) {
       const newShareId = crypto.randomUUID();
 
       // Step 1: Start OPAQUE registration for the share
-      const { clientRegistrationState, registrationRequest } =
-        opaque.client.startRegistration({
-          password,
-        });
+      const { clientRegistrationState, registrationRequest } = startOpaqueRegistration({ password });
 
       // Step 2: Get registration response from server
       const registrationResponse = await startShareRegistration(
@@ -171,26 +167,19 @@ export default function VaultScreen({ files }: VaultScreenProps) {
       );
 
       // Step 3: Complete registration - get export key to use as share key
-      const { registrationRecord, exportKey } = opaque.client.finishRegistration({
+      const { registrationRecord, exportKey } = finishOpaqueRegistration({
         clientRegistrationState,
         registrationResponse,
         password,
-        keyStretching: {
-          "argon2id-custom": {
-            memory: 131072,
-            iterations: 4,
-            parallelism: 1,
-          },
-        },
       });
 
       // Convert export key to CryptoKey for wrapping
-      const shareKey = await importKeyFromExportKey(exportKey, 'share');
+      const shareKey = await importKeyFromExportKey(exportKey);
 
       // 4. Wrap the file key with the share key
-      const { wrappedKey: wrappedShareKey, wrappedKeyIv: wrappedShareKeyIv } = await rewrapKey({
+      const { wrappedKey: wrappedShareKey, wrappedKeyNonce: wrappedShareKeyNonce } = await rewrapKey({
         wrappedKey: fileToShare.wrappedFileKey,
-        wrappedKeyIv: fileToShare.keyWrapIv,
+        wrappedKeyNonce: fileToShare.keyWrapIv,
         unwrappingKey: masterKey,
         wrappingKey: shareKey,
       });
@@ -201,7 +190,7 @@ export default function VaultScreen({ files }: VaultScreenProps) {
         shareName,
         fileToShare.id,
         wrappedShareKey,
-        wrappedShareKeyIv,
+        wrappedShareKeyNonce,
         registrationRecord
       );
 
@@ -257,10 +246,10 @@ export default function VaultScreen({ files }: VaultScreenProps) {
           <div className="flex-1 overflow-y-auto md:ring-1 ring-on-surface rounded-2xl md:m-4" style={{ "scrollbarWidth": "none" }}>
             <div className="w-full max-w-5xl mx-auto p-4 flex flex-col items-center">
               <div className="w-full mb-8 text-center">
-                <h2 className="text-[--font-headline-lg] font-bold text-on-surface mb-3">
+                <h2 className="font-bold text-on-surface mb-3">
                   Your Encrypted Files
                 </h2>
-                <p className="text-[--font-body-md] text-on-surface-variant">
+                <p className="text-on-surface-variant">
                   All files are encrypted with your master key
                 </p>
               </div>
@@ -309,11 +298,11 @@ export default function VaultScreen({ files }: VaultScreenProps) {
 function EmptyState({ searchQuery, children }: { searchQuery: string; children: React.ReactNode }) {
   return (
     <div className="w-full max-w-3xl mt-12 text-center">
-      <div className="bg-surface rounded-[var(--radius-xl)] p-12 shadow-[--shadow-2]">
+      <div className="bg-surface p-12 shadow-[--shadow-2]">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-variant mb-4">
           <FileText className="w-8 h-8 text-primary" />
         </div>
-        <p className="text-[--font-body-lg] text-on-surface-variant">
+        <p className="text-on-surface-variant">
           {searchQuery.trim()
             ? `No files found matching "${searchQuery}".`
             : "No files uploaded yet. Upload your first file to get started."

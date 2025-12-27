@@ -6,10 +6,9 @@ import { PasswordInput, TextInput } from "@/components/TextInput";
 import { useState } from "react";
 import { Mail, Lock, LogOut } from "lucide-react";
 import { useMasterKey } from "@/components/MasterKeyContext";
-import { rewrapKey, importKeyFromExportKey } from "@/lib/util/clientCrypto";
+import { rewrapKey, importKeyFromExportKey, finishOpaqueRegistration, startOpaqueRegistration } from "@/lib/util/clientCrypto";
 import CircularProgress from "@/components/CircularProgress";
 import { TopAppBar } from "@/components/TopAppBar";
-import * as opaque from "@serenity-kit/opaque";
 
 
 
@@ -54,7 +53,7 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
       // Create new OPAQUE registration for the new password
       // Step 1: Client starts OPAQUE registration
       const { clientRegistrationState, registrationRequest } =
-        opaque.client.startRegistration({
+        startOpaqueRegistration({
           password: newPassword,
         });
 
@@ -62,30 +61,23 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
       const registrationResponse = await startPasswordChangeRegistration(registrationRequest);
 
       // Step 3: Client finishes registration - get new export key
-      const { registrationRecord, exportKey } = opaque.client.finishRegistration({
+      const { registrationRecord, exportKey } = finishOpaqueRegistration({
         clientRegistrationState,
         registrationResponse,
         password: newPassword,
-        keyStretching: {
-          "argon2id-custom": {
-            memory: 131072,
-            iterations: 4,
-            parallelism: 1,
-          },
-        },
       });
 
       // Convert new export key to CryptoKey
-      const newMasterKey = await importKeyFromExportKey(exportKey, 'master');
+      const newMasterKey = await importKeyFromExportKey(exportKey);
 
       // Fetch all encrypted file key derivation data
       const files = await getAllEncryptedFilesKeyDerivationParams();
 
       // Decrypt all wrappedFileKeys and rewrap with new master key
       const updates = await Promise.all(files.map(async (file) => {
-        const { wrappedKey: newWrappedFileKey, wrappedKeyIv: newKeyWrapIv } = await rewrapKey({
+        const { wrappedKey: newWrappedFileKey, wrappedKeyNonce: newKeyWrapNonce } = await rewrapKey({
           wrappedKey: file.wrappedFileKey,
-          wrappedKeyIv: file.keyWrapIv,
+          wrappedKeyNonce: file.keyWrapIv,
           unwrappingKey: masterKey,
           wrappingKey: newMasterKey,
         });
@@ -93,7 +85,7 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
         return {
           id: file.id,
           wrappedFileKey: newWrappedFileKey,
-          keyWrapIv: newKeyWrapIv,
+          keyWrapNonce: newKeyWrapNonce,
         };
       }));
 

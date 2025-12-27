@@ -10,8 +10,7 @@ import { TextInput, PasswordInput } from '@/components/TextInput';
 import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
 import CircularProgress from '@/components/CircularProgress';
-import { importKeyFromExportKey } from '@/lib/util/clientCrypto';
-import * as opaque from '@serenity-kit/opaque';
+import { importKeyFromExportKey, finishOpaqueLogin, startOpaqueLogin } from '@/lib/util/clientCrypto';
 
 
 
@@ -33,7 +32,7 @@ export default function SignInPage() {
 
     try {
       // Step 1: Client starts OPAQUE login
-      const { clientLoginState, startLoginRequest } = opaque.client.startLogin({
+      const { clientLoginState, startLoginRequest } = startOpaqueLogin({
         password,
       });
 
@@ -49,17 +48,10 @@ export default function SignInPage() {
       const { loginResponse } = loginStart;
 
       // Step 3: Client finishes login - get export key for encryption
-      const loginResult = opaque.client.finishLogin({
+      const loginResult = finishOpaqueLogin({
         clientLoginState,
         loginResponse,
         password,
-        keyStretching: {
-          "argon2id-custom": {
-            memory: 131072,
-            iterations: 4,
-            parallelism: 1,
-          },
-        },
       });
 
       if (!loginResult) {
@@ -75,7 +67,7 @@ export default function SignInPage() {
 
       if (verified) {
         // Use OPAQUE export key as master key (convert hex to CryptoKey)
-        const masterKey = await importKeyFromExportKey(exportKey, 'master');
+        const masterKey = await importKeyFromExportKey(exportKey);
         setMasterKey(masterKey);
         redirect("/vault");
       } else {
@@ -100,10 +92,10 @@ export default function SignInPage() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-container mb-4">
                 <LogIn className="w-8 h-8 text-primary" />
               </div>
-              <h1 className="text-[--font-headline-md] font-semibold text-on-surface mb-2">
+              <h1 className="text-2xl font-semibold text-on-surface mb-2">
                 Welcome Back
               </h1>
-              <p className="text-[--font-body-md] text-on-surface-variant">
+              <p className="text-on-surface-variant">
                 Sign in to access your encrypted vault
               </p>
             </div>
@@ -129,8 +121,8 @@ export default function SignInPage() {
 
               {/* Error Message */}
               {error && (
-                <div className="p-3 rounded-[var(--radius-md)] bg-error-container">
-                  <p className="text-[--font-body-sm] text-on-error-container">{error}</p>
+                <div className="p-3 rounded-md bg-error-container">
+                  <p className="text-sm text-on-error-container">{error}</p>
                 </div>
               )}
 
@@ -147,7 +139,7 @@ export default function SignInPage() {
 
             {/* Sign Up Link */}
             <div className="mt-6 text-center">
-              <p className="text-[--font-body-sm] text-on-surface-variant">
+              <p className="text-sm text-on-surface-variant">
                 Don't have an account?{' '}
                 <Link
                   href="/signup"
