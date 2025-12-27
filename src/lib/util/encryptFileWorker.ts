@@ -6,7 +6,7 @@ const ARGON2_PARALLELISM = 1;
 const ARGON2_HASH_LENGTH = 32;
 
 self.onmessage = async (e) => {
-  const { file, masterKey, masterKeySalt, fileIv, keyWrapIv } = e.data;
+  const { file, masterKey, fileIv, keyWrapIv } = e.data;
 
   const fileBuffer = await file.arrayBuffer();
 
@@ -33,12 +33,14 @@ self.onmessage = async (e) => {
   );
 
   // 4. Prepare metadata
+  // Note: keyDerivationSalt is kept for backward compatibility but no longer used
+  // with OPAQUE export key - the master key is derived internally by OPAQUE
   const metadata = {
     fileIv: uint8ToBase64(fileIv),
     wrappedFileKey: uint8ToBase64(new Uint8Array(wrappedFileKey)),
     keyWrapIv: uint8ToBase64(keyWrapIv),
     fileAlgorithm: 'AES-GCM',
-    keyDerivationSalt: masterKeySalt,
+    keyDerivationSalt: '', // No longer needed with OPAQUE
     argon2MemorySize: ARGON2_MEMORY_SIZE,
     argon2Iterations: ARGON2_ITERATIONS,
     argon2Parallelism: ARGON2_PARALLELISM,

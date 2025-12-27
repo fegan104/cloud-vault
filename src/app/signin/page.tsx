@@ -2,7 +2,6 @@
 
 import { startLogin, finishLogin } from '../../app/signin/actions';
 import { useMasterKey } from '../../components/MasterKeyContext';
-import { deriveMasterKey } from '../../lib/util/clientCrypto';
 import { redirect } from 'next/navigation';
 import { useState } from 'react';
 import { LogIn } from 'lucide-react';
@@ -11,8 +10,23 @@ import { TextInput, PasswordInput } from '@/components/TextInput';
 import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
 import CircularProgress from '@/components/CircularProgress';
-import { base64ToUint8Array } from '@/lib/util/arrayHelpers';
 import * as opaque from '@serenity-kit/opaque';
+
+/**
+ * Converts a hex string to a CryptoKey for AES-GCM encryption.
+ */
+async function hexToCryptoKey(hex: string): Promise<CryptoKey> {
+  const keyBytes = new Uint8Array(
+    hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
+  );
+  return crypto.subtle.importKey(
+    "raw",
+    keyBytes,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
+  );
+}
 
 export default function SignInPage() {
   const [email, setEmail] = useState('');
@@ -23,9 +37,7 @@ export default function SignInPage() {
 
   /**
    * Handles the sign in process using OPAQUE protocol.
-   * OPAQUE login is a 2-step process:
-   * 1. Client starts login → Server creates login response
-   * 2. Client finishes login → Server verifies and creates session
+   * The OPAQUE export key is used directly as the master key for file encryption.
    */
   async function handleSignIn(event: React.FormEvent) {
     event.preventDefault();
@@ -47,9 +59,9 @@ export default function SignInPage() {
         return;
       }
 
-      const { loginResponse, masterKeySalt } = loginStart;
+      const { loginResponse } = loginStart;
 
-      // Step 3: Client finishes login
+      // Step 3: Client finishes login - get export key for encryption
       const loginResult = opaque.client.finishLogin({
         clientLoginState,
         loginResponse,
@@ -62,20 +74,19 @@ export default function SignInPage() {
         return;
       }
 
-      const { finishLoginRequest } = loginResult;
+      const { finishLoginRequest, exportKey } = loginResult;
 
       // Step 4: Server verifies and creates session
       const verified = await finishLogin(email, finishLoginRequest);
 
       if (verified) {
-        // Derive the master key from the password and salt
-        const saltBytes = base64ToUint8Array(masterKeySalt)
-        const masterKey = await deriveMasterKey(password, saltBytes)
-        setMasterKey(masterKey)
-        redirect("/vault")
+        // Use OPAQUE export key as master key (convert hex to CryptoKey)
+        const masterKey = await hexToCryptoKey(exportKey);
+        setMasterKey(masterKey);
+        redirect("/vault");
       } else {
         setIsLoading(false);
-        setError('Invalid email or password')
+        setError('Invalid email or password');
       }
     } catch (err) {
       console.error('Sign in error:', err);

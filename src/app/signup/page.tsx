@@ -1,7 +1,6 @@
 'use client';
 
 import { startRegistration, finishRegistration } from './actions';
-import { deriveMasterKey, generateSalt } from '../../lib/util/clientCrypto';
 import { useState } from 'react';
 import { useMasterKey } from '../../components/MasterKeyContext';
 import { redirect } from 'next/navigation';
@@ -10,9 +9,24 @@ import Link from 'next/link';
 import { TextInput, PasswordInput } from '@/components/TextInput';
 import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
-import { uint8ToBase64 } from '@/lib/util/arrayHelpers';
 import CircularProgress from '@/components/CircularProgress';
 import * as opaque from '@serenity-kit/opaque';
+
+/**
+ * Converts a hex string to a CryptoKey for AES-GCM encryption.
+ */
+async function hexToCryptoKey(hex: string): Promise<CryptoKey> {
+  const keyBytes = new Uint8Array(
+    hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
+  );
+  return crypto.subtle.importKey(
+    "raw",
+    keyBytes,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
+  );
+}
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
@@ -24,9 +38,7 @@ export default function SignUpPage() {
 
   /**
    * Handles the sign up process using OPAQUE protocol.
-   * OPAQUE registration is a 2-step process:
-   * 1. Client starts registration → Server creates registration response
-   * 2. Client finishes registration → Server stores registration record
+   * The OPAQUE export key is used directly as the master key for file encryption.
    */
   async function handleSignUp(event: React.FormEvent) {
     event.preventDefault();
@@ -48,21 +60,16 @@ export default function SignUpPage() {
       // Step 2: Server creates registration response
       const registrationResponse = await startRegistration(email, registrationRequest);
 
-      // Step 3: Client finishes registration
-      const { registrationRecord } = opaque.client.finishRegistration({
+      // Step 3: Client finishes registration - get export key for encryption
+      const { registrationRecord, exportKey } = opaque.client.finishRegistration({
         clientRegistrationState,
         registrationResponse,
         password,
       });
 
-      // Generate salt for file encryption key derivation
-      const saltBytes = generateSalt();
-      const salt = uint8ToBase64(saltBytes);
-
       // Step 4: Server stores registration record and creates user
       const user = await finishRegistration({
         email,
-        salt,
         registrationRecord,
       });
 
@@ -72,10 +79,10 @@ export default function SignUpPage() {
         return;
       }
 
-      // Derive master key locally and store in memory
-      const masterKey = await deriveMasterKey(password, saltBytes)
-      setMasterKey(masterKey)
-      redirect('/vault')
+      // Use OPAQUE export key as master key (convert hex to CryptoKey)
+      const masterKey = await hexToCryptoKey(exportKey);
+      setMasterKey(masterKey);
+      redirect('/vault');
     } catch (err) {
       console.error('Sign up error:', err);
       setError('An error occurred during sign up. Please try again.');

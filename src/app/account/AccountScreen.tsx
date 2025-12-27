@@ -1,5 +1,4 @@
 "use client";
-import { User } from "@prisma/client";
 import { signOut, updateEmail, getAllEncryptedFilesKeyDerivationParams, updateEncryptedFilesKeyDerivationParams, startPasswordChangeRegistration } from "./actions";
 import { Card } from "@/components/Card";
 import { TonalButton } from "@/components/Buttons";
@@ -7,17 +6,31 @@ import { PasswordInput, TextInput } from "@/components/TextInput";
 import { useState } from "react";
 import { Mail, Lock, LogOut } from "lucide-react";
 import { useMasterKey } from "@/components/MasterKeyContext";
-import { deriveMasterKey, generateSalt, rewrapKey } from "@/lib/util/clientCrypto";
-import { base64ToUint8Array, uint8ToBase64 } from "@/lib/util/arrayHelpers";
+import { rewrapKey } from "@/lib/util/clientCrypto";
 import CircularProgress from "@/components/CircularProgress";
 import { TopAppBar } from "@/components/TopAppBar";
 import * as opaque from "@serenity-kit/opaque";
 
-export default function AccountScreen({ currentEmail, masterKeySalt }: { currentEmail: string, masterKeySalt: string }) {
+/**
+ * Converts a hex string to a CryptoKey for AES-GCM encryption.
+ */
+async function hexToCryptoKey(hex: string): Promise<CryptoKey> {
+  const keyBytes = new Uint8Array(
+    hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
+  );
+  return crypto.subtle.importKey(
+    "raw",
+    keyBytes,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
+  );
+}
+
+export default function AccountScreen({ currentEmail }: { currentEmail: string }) {
   const [email, setEmail] = useState(currentEmail);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
-  const { setMasterKey } = useMasterKey()
-  const [currentPassword, setCurrentPassword] = useState('');
+  const { masterKey, setMasterKey } = useMasterKey()
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
@@ -41,28 +54,44 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
   };
 
   const handleChangePassword = async () => {
-    if (!currentPassword || !newPassword || !confirmNewPassword) return;
+    if (!newPassword || !confirmNewPassword) return;
+    if (!masterKey) {
+      setError("Please unlock your vault first.");
+      return;
+    }
 
     setIsUpdatingPassword(true);
     setError(null);
     try {
-      // derive current master key
-      const salt = base64ToUint8Array(masterKeySalt);
-      const currentMasterKey = await deriveMasterKey(currentPassword, salt);
+      // Current master key is already in memory from when user logged in
 
-      // derive new master key
-      const newMasterKeySalt = generateSalt();
-      const newMasterKey = await deriveMasterKey(newPassword, newMasterKeySalt);
+      // Create new OPAQUE registration for the new password
+      // Step 1: Client starts OPAQUE registration
+      const { clientRegistrationState, registrationRequest } =
+        opaque.client.startRegistration({ password: newPassword });
 
-      // fetch all encrypted file key derivation data
+      // Step 2: Server creates registration response
+      const registrationResponse = await startPasswordChangeRegistration(registrationRequest);
+
+      // Step 3: Client finishes registration - get new export key
+      const { registrationRecord, exportKey } = opaque.client.finishRegistration({
+        clientRegistrationState,
+        registrationResponse,
+        password: newPassword,
+      });
+
+      // Convert new export key to CryptoKey
+      const newMasterKey = await hexToCryptoKey(exportKey);
+
+      // Fetch all encrypted file key derivation data
       const files = await getAllEncryptedFilesKeyDerivationParams();
 
-      // decrypt all wrappedFileKeys and rewrap with new master key
+      // Decrypt all wrappedFileKeys and rewrap with new master key
       const updates = await Promise.all(files.map(async (file) => {
         const { wrappedKey: newWrappedFileKey, wrappedKeyIv: newKeyWrapIv } = await rewrapKey({
           wrappedKey: file.wrappedFileKey,
           wrappedKeyIv: file.keyWrapIv,
-          unwrappingKey: currentMasterKey,
+          unwrappingKey: masterKey,
           wrappingKey: newMasterKey,
         });
 
@@ -73,36 +102,20 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
         };
       }));
 
-      // Create new OPAQUE registration for the new password
-      // Step 1: Client starts OPAQUE registration
-      const { clientRegistrationState, registrationRequest } =
-        opaque.client.startRegistration({ password: newPassword });
+      // Update all encrypted file key derivation data in database transactionally
+      await updateEncryptedFilesKeyDerivationParams(updates, registrationRecord);
 
-      // Step 2: Server creates registration response
-      const registrationResponse = await startPasswordChangeRegistration(registrationRequest);
-
-      // Step 3: Client finishes registration
-      const { registrationRecord } = opaque.client.finishRegistration({
-        clientRegistrationState,
-        registrationResponse,
-        password: newPassword,
-      });
-
-      // update all encrypted file key derivation data in database transactionally
-      await updateEncryptedFilesKeyDerivationParams(updates, registrationRecord, uint8ToBase64(newMasterKeySalt));
-
-      // update master key with master key context
+      // Update master key in memory
       setMasterKey(newMasterKey);
 
       // Reset form
-      setCurrentPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
       setExpandedSection(null);
 
     } catch (err) {
       console.error("Failed to change password:", err);
-      setError("Failed to change password. Please check your current password.");
+      setError("Failed to change password. Please try again.");
     } finally {
       setIsUpdatingPassword(false);
     }
@@ -167,11 +180,6 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
           {expandedSection === 'password' && (
             <div className="flex flex-col gap-2 px-6 pb-6 border-t border-gray-100 mt-2 pt-4">
               <PasswordInput
-                label="Current Password"
-                value={currentPassword}
-                onChange={setCurrentPassword}
-              />
-              <PasswordInput
                 label="New Password"
                 value={newPassword}
                 onChange={setNewPassword}
@@ -185,7 +193,7 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
               <TonalButton
                 onClick={handleChangePassword}
                 className="btn-neutral w-full mt-2"
-                disabled={isUpdatingPassword}
+                disabled={isUpdatingPassword || !newPassword || !confirmNewPassword || newPassword !== confirmNewPassword}
               >
                 {isUpdatingPassword ? <CircularProgress size={20} /> : null}
                 {isUpdatingPassword ? 'Updating...' : "Update Master Password"}

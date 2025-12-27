@@ -10,18 +10,17 @@ import * as opaqueServer from "@/lib/opaque";
  * 
  * @param email - The user's email address
  * @param startLoginRequest - The OPAQUE start login request from the client
- * @returns The login response and master key salt, or null if user not found
+ * @returns The login response, or null if user not found
  */
 export async function startLogin(
   email: string,
   startLoginRequest: string
-): Promise<{ loginResponse: string; masterKeySalt: string } | null> {
+): Promise<{ loginResponse: string } | null> {
   // Find the user and their registration record
   const user = await prisma.user.findUnique({
     where: { email },
     select: {
       id: true,
-      masterKeySalt: true,
       opaqueRegistrationRecord: true,
     },
   });
@@ -51,10 +50,7 @@ export async function startLogin(
     },
   });
 
-  return {
-    loginResponse,
-    masterKeySalt: user.masterKeySalt,
-  };
+  return { loginResponse };
 }
 
 /**

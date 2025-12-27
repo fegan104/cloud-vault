@@ -1,7 +1,6 @@
 "use client";
 
 import { useMasterKey } from "../../components/MasterKeyContext";
-import { deriveMasterKey } from "../../lib/util/clientCrypto";
 import { useState } from "react";
 import CircularProgress from "../../components/CircularProgress";
 import { Key } from "lucide-react";
@@ -9,15 +8,29 @@ import { PasswordInput } from "@/components/TextInput";
 import { TonalButton } from "@/components/Buttons";
 import { Card } from "../../components/Card";
 import { startLoginForSession, verifyPasswordForSession } from "./actions";
-import { base64ToUint8Array } from "@/lib/util/arrayHelpers";
 import * as opaque from "@serenity-kit/opaque";
 
+/**
+ * Converts a hex string to a CryptoKey for AES-GCM encryption.
+ */
+async function hexToCryptoKey(hex: string): Promise<CryptoKey> {
+  const keyBytes = new Uint8Array(
+    hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
+  );
+  return crypto.subtle.importKey(
+    "raw",
+    keyBytes,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
+  );
+}
+
 type MasterKeyGuardProps = {
-  masterKeySalt: string;
   children: React.ReactNode;
 };
 
-export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGuardProps) {
+export default function MasterKeyGuard({ children }: MasterKeyGuardProps) {
   const [password, setPassword] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +42,8 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
   };
 
   /**
-   * Handles the submission of the password to verify using OPAQUE protocol.
+   * Handles the submission of the password using OPAQUE protocol.
+   * The export key from OPAQUE is used directly as the master key.
    */
   const handleSubmitPassword = async () => {
     try {
@@ -50,7 +64,7 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
 
       const { loginResponse } = loginStart;
 
-      // Step 3: Client finishes login
+      // Step 3: Client finishes login - get export key
       const loginResult = opaque.client.finishLogin({
         clientLoginState,
         loginResponse,
@@ -63,14 +77,14 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
         return;
       }
 
-      const { finishLoginRequest } = loginResult;
+      const { finishLoginRequest, exportKey } = loginResult;
 
       // Step 4: Server verifies
       const verified = await verifyPasswordForSession(finishLoginRequest);
 
       if (verified) {
-        const masterKeySaltBytes = base64ToUint8Array(masterKeySalt);
-        const newMasterKey = await deriveMasterKey(password, masterKeySaltBytes);
+        // Use OPAQUE export key as master key
+        const newMasterKey = await hexToCryptoKey(exportKey);
         setMasterKey(newMasterKey);
       } else {
         setError("Incorrect password");
@@ -118,7 +132,7 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
               />
 
               {error && (
-                <div className="p-3 rounded-[var(--radius-md)] bg-error-container">
+                <div className="p-3 rounded-md bg-error-container">
                   <p className="text-[--font-body-sm] text-on-error-container">{error}</p>
                 </div>
               )}

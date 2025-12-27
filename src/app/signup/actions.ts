@@ -22,27 +22,23 @@ export async function startRegistration(
 
 /**
  * Step 2 of OPAQUE registration: Finish registration and create user.
- * The client sends the final registrationRecord along with the salt.
+ * The client sends the final registrationRecord.
  * 
  * @param email - The user's email address
- * @param salt - The master key salt (for file encryption key derivation)
  * @param registrationRecord - The OPAQUE registration record to store
  * @returns The created user or null if creation failed
  */
 export async function finishRegistration({
   email,
-  salt,
   registrationRecord,
 }: {
   email: string;
-  salt: string;
   registrationRecord: string;
 }): Promise<User | null> {
   try {
     const user = await prisma.user.create({
       data: {
         email,
-        masterKeySalt: salt,
         opaqueRegistrationRecord: registrationRecord,
       },
     });

@@ -18,11 +18,10 @@ import { saveFileToDevice } from "@/lib/util/saveFileToDevice";
 import { downloadFileWithProgress } from "@/lib/util/downloadFileWithProgress";
 
 type VaultScreenProps = {
-  masterKeySalt: string;
   files: EncryptedFile[];
 };
 
-export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) {
+export default function VaultScreen({ files }: VaultScreenProps) {
   const { masterKey } = useMasterKey();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
@@ -227,7 +226,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
           isLoading={isCreatingShare}
         />
 
-        <MasterKeyGuard masterKeySalt={masterKeySalt}>
+        <MasterKeyGuard>
           <div className="flex-1 overflow-y-auto md:ring-1 ring-on-surface rounded-2xl md:m-4" style={{ "scrollbarWidth": "none" }}>
             <div className="w-full max-w-5xl mx-auto p-4 flex flex-col items-center">
               <div className="w-full mb-8 text-center">
@@ -241,7 +240,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
 
               {/* Upload Button */}
               <div className="w-full max-w-3xl mb-6">
-                <UploadButton masterKeySalt={masterKeySalt} onEncrypted={saveEncryptedFileDetails} />
+                <UploadButton onEncrypted={saveEncryptedFileDetails} />
               </div>
 
               {/* File List */}

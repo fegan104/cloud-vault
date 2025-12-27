@@ -135,8 +135,7 @@ export function decryptFile(
 
 export function encryptFile(
   file: File,
-  masterKey: CryptoKey,
-  masterKeySalt: string
+  masterKey: CryptoKey
 ) {
   return new Promise<{
     encryptedFileBlob: Blob;
@@ -169,7 +168,7 @@ export function encryptFile(
     const fileIv = generateIv();
     const keyWrapIv = generateIv();
 
-    worker.postMessage({ file, masterKey, masterKeySalt, fileIv, keyWrapIv });
+    worker.postMessage({ file, masterKey, fileIv, keyWrapIv });
   });
 }
 

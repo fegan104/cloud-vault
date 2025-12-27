@@ -83,8 +83,7 @@ export async function getAllEncryptedFilesKeyDerivationParams(): Promise<{ id: s
 // This should be done in a transaction
 export async function updateEncryptedFilesKeyDerivationParams(
   updates: { id: string; wrappedFileKey: string; keyWrapIv: string }[],
-  opaqueRegistrationRecord: string,
-  masterKeySalt: string
+  opaqueRegistrationRecord: string
 ) {
   const user = await getUser();
   if (!user) {
@@ -112,7 +111,6 @@ export async function updateEncryptedFilesKeyDerivationParams(
       },
       data: {
         opaqueRegistrationRecord: opaqueRegistrationRecord,
-        masterKeySalt: masterKeySalt
       }
     })]
   );
