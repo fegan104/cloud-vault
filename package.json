@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",
+    "@serenity-kit/opaque": "^1.0.0",
     "firebase": "^12.5.0",
     "firebase-admin": "^13.5.0",
     "hash-wasm": "^4.12.0",
