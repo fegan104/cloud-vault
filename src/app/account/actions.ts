@@ -5,7 +5,25 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/user/getUser";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import * as opaqueServer from "@/lib/opaque";
 
+/**
+ * Creates an OPAQUE registration response for password change.
+ * Used when the user is changing their master password.
+ * 
+ * @param registrationRequest - The OPAQUE registration request from the client
+ * @returns The registration response to send back to the client
+ */
+export async function startPasswordChangeRegistration(
+  registrationRequest: string
+): Promise<string> {
+  const user = await getUser();
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  return opaqueServer.createRegistrationResponse(user.email, registrationRequest);
+}
 /**
  * Signs out the user. This deletes the session cookie and removes 
  * the session from the database. Then redirects to the home page.
@@ -65,7 +83,7 @@ export async function getAllEncryptedFilesKeyDerivationParams(): Promise<{ id: s
 // This should be done in a transaction
 export async function updateEncryptedFilesKeyDerivationParams(
   updates: { id: string; wrappedFileKey: string; keyWrapIv: string }[],
-  publicKey: string,
+  opaqueRegistrationRecord: string,
   masterKeySalt: string
 ) {
   const user = await getUser();
@@ -93,7 +111,7 @@ export async function updateEncryptedFilesKeyDerivationParams(
         id: user.id
       },
       data: {
-        publicKey: publicKey,
+        opaqueRegistrationRecord: opaqueRegistrationRecord,
         masterKeySalt: masterKeySalt
       }
     })]

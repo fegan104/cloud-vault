@@ -1,7 +1,7 @@
 'use client';
 
-import { createUser } from './actions';
-import { deriveKeypair, deriveMasterKey, generateSalt } from '../../lib/util/clientCrypto';
+import { startRegistration, finishRegistration } from './actions';
+import { deriveMasterKey, generateSalt } from '../../lib/util/clientCrypto';
 import { useState } from 'react';
 import { useMasterKey } from '../../components/MasterKeyContext';
 import { redirect } from 'next/navigation';
@@ -12,6 +12,7 @@ import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
 import { uint8ToBase64 } from '@/lib/util/arrayHelpers';
 import CircularProgress from '@/components/CircularProgress';
+import * as opaque from '@serenity-kit/opaque';
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
@@ -22,8 +23,10 @@ export default function SignUpPage() {
   const { setMasterKey } = useMasterKey()
 
   /**
-   * Handles the sign up process by creating a new user on the server and storing the master key in memory client-side.
-   * @param event The form event.
+   * Handles the sign up process using OPAQUE protocol.
+   * OPAQUE registration is a 2-step process:
+   * 1. Client starts registration → Server creates registration response
+   * 2. Client finishes registration → Server stores registration record
    */
   async function handleSignUp(event: React.FormEvent) {
     event.preventDefault();
@@ -37,25 +40,47 @@ export default function SignUpPage() {
       return;
     }
 
-    // 1) Generate salt
-    const saltBytes = generateSalt();
-    const salt = uint8ToBase64(saltBytes);
+    try {
+      // Step 1: Client starts OPAQUE registration
+      const { clientRegistrationState, registrationRequest } =
+        opaque.client.startRegistration({ password });
 
-    // 2) Generate public key
-    const { publicKey } = await deriveKeypair(password, saltBytes)
-    const publicKeyBase64 = uint8ToBase64(publicKey);
+      // Step 2: Server creates registration response
+      const registrationResponse = await startRegistration(email, registrationRequest);
 
-    // 3) Create user account on server
-    const user = await createUser({ email, salt, publicKey: publicKeyBase64 });
-    if (!user) {
-      setError('Failed to create user, that email may already be in use.');
+      // Step 3: Client finishes registration
+      const { registrationRecord } = opaque.client.finishRegistration({
+        clientRegistrationState,
+        registrationResponse,
+        password,
+      });
+
+      // Generate salt for file encryption key derivation
+      const saltBytes = generateSalt();
+      const salt = uint8ToBase64(saltBytes);
+
+      // Step 4: Server stores registration record and creates user
+      const user = await finishRegistration({
+        email,
+        salt,
+        registrationRecord,
+      });
+
+      if (!user) {
+        setError('Failed to create user, that email may already be in use.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Derive master key locally and store in memory
+      const masterKey = await deriveMasterKey(password, saltBytes)
+      setMasterKey(masterKey)
+      redirect('/vault')
+    } catch (err) {
+      console.error('Sign up error:', err);
+      setError('An error occurred during sign up. Please try again.');
       setIsLoading(false);
-      return;
     }
-    // 4) Derive master key locally and store in memory
-    const masterKey = await deriveMasterKey(password, saltBytes)
-    setMasterKey(masterKey)
-    redirect('/vault')
   }
 
   return (

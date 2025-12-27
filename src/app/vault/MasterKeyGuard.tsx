@@ -1,15 +1,16 @@
 "use client";
 
 import { useMasterKey } from "../../components/MasterKeyContext";
-import { deriveMasterKey, signChallenge } from "../../lib/util/clientCrypto";
+import { deriveMasterKey } from "../../lib/util/clientCrypto";
 import { useState } from "react";
 import CircularProgress from "../../components/CircularProgress";
 import { Key } from "lucide-react";
 import { PasswordInput } from "@/components/TextInput";
 import { TonalButton } from "@/components/Buttons";
 import { Card } from "../../components/Card";
-import { verifyChallengeForSession, generateChallengeForSession } from "./actions";
+import { startLoginForSession, verifyPasswordForSession } from "./actions";
 import { base64ToUint8Array } from "@/lib/util/arrayHelpers";
+import * as opaque from "@serenity-kit/opaque";
 
 type MasterKeyGuardProps = {
   masterKeySalt: string;
@@ -28,18 +29,45 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
   };
 
   /**
-   * Handles the submission of the password to verify the master key.
+   * Handles the submission of the password to verify using OPAQUE protocol.
    */
   const handleSubmitPassword = async () => {
     try {
       setIsLoading(true);
-      // 1. Request a challenge from the server
-      const { challenge } = await generateChallengeForSession();
-      // 2. Sign the challenge with the password
-      const signature = await signChallenge(password, masterKeySalt, challenge);
-      // 3. Verify the challenge with the signature
-      const verified = await verifyChallengeForSession(challenge, signature);
-      // 4. If verified, derive the master key and set it in the context
+
+      // Step 1: Client starts OPAQUE login
+      const { clientLoginState, startLoginRequest } = opaque.client.startLogin({
+        password,
+      });
+
+      // Step 2: Server starts login
+      const loginStart = await startLoginForSession(startLoginRequest);
+      if (!loginStart) {
+        setError("Failed to verify password");
+        setIsLoading(false);
+        return;
+      }
+
+      const { loginResponse } = loginStart;
+
+      // Step 3: Client finishes login
+      const loginResult = opaque.client.finishLogin({
+        clientLoginState,
+        loginResponse,
+        password,
+      });
+
+      if (!loginResult) {
+        setError("Incorrect password");
+        setIsLoading(false);
+        return;
+      }
+
+      const { finishLoginRequest } = loginResult;
+
+      // Step 4: Server verifies
+      const verified = await verifyPasswordForSession(finishLoginRequest);
+
       if (verified) {
         const masterKeySaltBytes = base64ToUint8Array(masterKeySalt);
         const newMasterKey = await deriveMasterKey(password, masterKeySaltBytes);

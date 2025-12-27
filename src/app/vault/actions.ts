@@ -6,9 +6,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/user/getUser";
-import { generateChallenge } from "@/lib/challenge/generateChallenge";
 import { getSessionToken } from "@/lib/session/getSessionToken";
-import { verifyChallenge } from "@/lib/challenge/verifyChallenge";
+import * as opaqueServer from "@/lib/opaque";
 
 /**
  * Generates a URL for uploading a file to cloud storage.
@@ -209,31 +208,79 @@ export async function renameFile(fileId: string, newFileName: string) {
 }
 
 /**
- * Verifies a challenge for an authenticated user.
- * @param challengeFromClient - the challenge string that was signed
- * @param clientSignedChallenge - base64-encoded signature produced by client
- * @returns boolean - true if signature verifies, false otherwise
+ * Starts OPAQUE login for an already-authenticated user (for re-verifying password).
+ * This is used when the client needs to verify the password to derive the master key.
+ * 
+ * @param startLoginRequest - The OPAQUE start login request from the client
+ * @returns loginResponse if successful, null if failed
  */
-export async function verifyChallengeForSession(
-  challengeFromClient: string,
-  clientSignedChallenge: string
+export async function startLoginForSession(
+  startLoginRequest: string
+): Promise<{ loginResponse: string } | null> {
+  const user = await getUser();
+  if (!user || !user.opaqueRegistrationRecord) {
+    return null;
+  }
+
+  const { loginResponse, serverLoginState } = opaqueServer.startLogin(
+    user.email,
+    user.opaqueRegistrationRecord,
+    startLoginRequest
+  );
+
+  // Store the server login state as ephemeral
+  await prisma.opaqueEphemeral.upsert({
+    where: { userIdentifier: user.email },
+    update: {
+      serverLoginState,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    },
+    create: {
+      userIdentifier: user.email,
+      serverLoginState,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    },
+  });
+
+  return { loginResponse };
+}
+
+/**
+ * Finishes OPAQUE login for an already-authenticated user.
+ * This verifies the password is correct without creating a new session.
+ * 
+ * @param finishLoginRequest - The OPAQUE finish login request from the client
+ * @returns boolean - true if password verification succeeded
+ */
+export async function verifyPasswordForSession(
+  finishLoginRequest: string
 ): Promise<boolean> {
   const user = await getUser();
   if (!user) {
     return false;
   }
 
-  return await verifyChallenge(user.publicKey, challengeFromClient, clientSignedChallenge);
-}
+  const ephemeral = await prisma.opaqueEphemeral.findUnique({
+    where: { userIdentifier: user.email },
+  });
 
-/**
- * Generates a challenge for an authenticated user.
- * @returns the challenge string
- */
-export async function generateChallengeForSession() {
-  const user = await getUser();
-  if (!user) {
-    throw new Error("User not authenticated");
+  if (!ephemeral || ephemeral.expiresAt < new Date()) {
+    if (ephemeral) {
+      await prisma.opaqueEphemeral.delete({
+        where: { id: ephemeral.id },
+      });
+    }
+    return false;
   }
-  return await generateChallenge();
+
+  const sessionKey = opaqueServer.finishLogin(
+    ephemeral.serverLoginState,
+    finishLoginRequest
+  );
+
+  await prisma.opaqueEphemeral.delete({
+    where: { id: ephemeral.id },
+  });
+
+  return sessionKey !== null;
 }

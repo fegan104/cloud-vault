@@ -1,69 +1,114 @@
 "use server";
-import { uint8ToBase64 } from "@/lib/util/arrayHelpers";
-import { generateChallenge } from "@/lib/challenge/generateChallenge";
-import { verifyChallenge } from "@/lib/challenge/verifyChallenge";
-import { generateSalt } from "@/lib/util/clientCrypto";
+
 import { prisma } from "@/lib/db";
 import { createSession } from "@/lib/session/createSessions";
+import * as opaqueServer from "@/lib/opaque";
 
 /**
- * Generates a challenge for a user.
- * @param emailAddress - the user's email address
- * @returns an object containing the challenge and the user's master key salt
+ * Step 1 of OPAQUE login: Start the login process.
+ * Returns the login response and stores server state as ephemeral.
+ * 
+ * @param email - The user's email address
+ * @param startLoginRequest - The OPAQUE start login request from the client
+ * @returns The login response and master key salt, or null if user not found
  */
-export async function requestSignInChallenge(emailAddress: string) {
-  // Find the user details by email address
+export async function startLogin(
+  email: string,
+  startLoginRequest: string
+): Promise<{ loginResponse: string; masterKeySalt: string } | null> {
+  // Find the user and their registration record
   const user = await prisma.user.findUnique({
-    where: {
-      email: emailAddress,
-    },
+    where: { email },
     select: {
       id: true,
-      masterKeySalt: true
+      masterKeySalt: true,
+      opaqueRegistrationRecord: true,
     },
   });
 
-  //TODO we want to send back a deterministic salt if the user isn't found so we don't leak whether a user exists or not
-  const masterKeySalt = user?.masterKeySalt || uint8ToBase64(generateSalt());
+  if (!user || !user.opaqueRegistrationRecord) {
+    return null;
+  }
 
-  // Generate an authentication challenge
-  const record = await generateChallenge();
+  // Start the OPAQUE login
+  const { loginResponse, serverLoginState } = opaqueServer.startLogin(
+    email,
+    user.opaqueRegistrationRecord,
+    startLoginRequest
+  );
 
-  return { challenge: record.challenge, masterKeySalt };
+  // Store the server login state as ephemeral (expires in 5 minutes)
+  await prisma.opaqueEphemeral.upsert({
+    where: { userIdentifier: email },
+    update: {
+      serverLoginState,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    },
+    create: {
+      userIdentifier: email,
+      serverLoginState,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    },
+  });
+
+  return {
+    loginResponse,
+    masterKeySalt: user.masterKeySalt,
+  };
 }
 
 /**
- * Verify a client's signed challenge. If the signature is valid, we also set a session cookie.
- *
- * @param emailAddress - user's email (used to look up stored publicKey + optional masterKeySalt)
- * @param challengeFromClient - the plaintext challenge string that was signed
- * @param clientSignedChallenge - base64-encoded signature produced by client
- * @returns boolean - true if signature verifies, false otherwise
+ * Step 2 of OPAQUE login: Finish the login process.
+ * Verifies the login and creates a session.
+ * 
+ * @param email - The user's email address
+ * @param finishLoginRequest - The OPAQUE finish login request from the client
+ * @returns True if login successful, false otherwise
  */
-export async function verifySignInChallenge(
-  emailAddress: string,
-  challengeFromClient: string,
-  clientSignedChallenge: string
+export async function finishLogin(
+  email: string,
+  finishLoginRequest: string
 ): Promise<boolean> {
-  // 1) Find the user and their stored public key / salt
+  // Get the stored ephemeral state
+  const ephemeral = await prisma.opaqueEphemeral.findUnique({
+    where: { userIdentifier: email },
+  });
+
+  if (!ephemeral || ephemeral.expiresAt < new Date()) {
+    // Ephemeral not found or expired
+    if (ephemeral) {
+      await prisma.opaqueEphemeral.delete({
+        where: { id: ephemeral.id },
+      });
+    }
+    return false;
+  }
+
+  // Finish the OPAQUE login
+  const sessionKey = opaqueServer.finishLogin(
+    ephemeral.serverLoginState,
+    finishLoginRequest
+  );
+
+  // Clean up the ephemeral
+  await prisma.opaqueEphemeral.delete({
+    where: { id: ephemeral.id },
+  });
+
+  if (!sessionKey) {
+    return false;
+  }
+
+  // Find the user and create a session
   const user = await prisma.user.findUnique({
-    where: { email: emailAddress },
-    select: { id: true, publicKey: true, masterKeySalt: true },
+    where: { email },
+    select: { id: true },
   });
 
   if (!user) {
-    // no such user or missing public key
     return false;
   }
 
-  const verified = await verifyChallenge(user.publicKey, challengeFromClient, clientSignedChallenge);
-
-  if (!verified) {
-    return false;
-  }
-
-  // signature valid now we can create a session
   await createSession(user.id);
-
-  return true
+  return true;
 }

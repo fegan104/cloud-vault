@@ -1,7 +1,8 @@
 'use client';
-import { requestSignInChallenge, verifySignInChallenge } from '../../app/signin/actions';
+
+import { startLogin, finishLogin } from '../../app/signin/actions';
 import { useMasterKey } from '../../components/MasterKeyContext';
-import { deriveMasterKey, signChallenge } from '../../lib/util/clientCrypto';
+import { deriveMasterKey } from '../../lib/util/clientCrypto';
 import { redirect } from 'next/navigation';
 import { useState } from 'react';
 import { LogIn } from 'lucide-react';
@@ -11,6 +12,7 @@ import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
 import CircularProgress from '@/components/CircularProgress';
 import { base64ToUint8Array } from '@/lib/util/arrayHelpers';
+import * as opaque from '@serenity-kit/opaque';
 
 export default function SignInPage() {
   const [email, setEmail] = useState('');
@@ -20,32 +22,65 @@ export default function SignInPage() {
   const { setMasterKey } = useMasterKey()
 
   /**
-   * Handles the request for a challenge to verify the user's identity.
-   * @param event The form event.
+   * Handles the sign in process using OPAQUE protocol.
+   * OPAQUE login is a 2-step process:
+   * 1. Client starts login → Server creates login response
+   * 2. Client finishes login → Server verifies and creates session
    */
-  async function handleRequestChallenge(event: React.FormEvent) {
+  async function handleSignIn(event: React.FormEvent) {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
 
-    // 1. Request a challenge from the server
-    const { challenge, masterKeySalt } = await requestSignInChallenge(email);
+    try {
+      // Step 1: Client starts OPAQUE login
+      const { clientLoginState, startLoginRequest } = opaque.client.startLogin({
+        password,
+      });
 
-    // 2. Sign the challenge with the user's master password
-    const signature = await signChallenge(password, masterKeySalt, challenge)
+      // Step 2: Server starts login and returns response
+      const loginStart = await startLogin(email, startLoginRequest);
 
-    // 3. Verify the challenge with the server
-    const verified = await verifySignInChallenge(email, challenge, signature);
+      if (!loginStart) {
+        setError('Invalid email or password');
+        setIsLoading(false);
+        return;
+      }
 
-    if (verified) {
-      // 4. Derive the master key from the password and salt
-      const saltBytes = base64ToUint8Array(masterKeySalt)
-      const masterKey = await deriveMasterKey(password, saltBytes)
-      setMasterKey(masterKey)
-      redirect("/vault")
-    } else {
+      const { loginResponse, masterKeySalt } = loginStart;
+
+      // Step 3: Client finishes login
+      const loginResult = opaque.client.finishLogin({
+        clientLoginState,
+        loginResponse,
+        password,
+      });
+
+      if (!loginResult) {
+        setError('Invalid email or password');
+        setIsLoading(false);
+        return;
+      }
+
+      const { finishLoginRequest } = loginResult;
+
+      // Step 4: Server verifies and creates session
+      const verified = await finishLogin(email, finishLoginRequest);
+
+      if (verified) {
+        // Derive the master key from the password and salt
+        const saltBytes = base64ToUint8Array(masterKeySalt)
+        const masterKey = await deriveMasterKey(password, saltBytes)
+        setMasterKey(masterKey)
+        redirect("/vault")
+      } else {
+        setIsLoading(false);
+        setError('Invalid email or password')
+      }
+    } catch (err) {
+      console.error('Sign in error:', err);
+      setError('An error occurred during sign in. Please try again.');
       setIsLoading(false);
-      setError('Invalid email or password')
     }
   }
 
@@ -69,7 +104,7 @@ export default function SignInPage() {
             </div>
 
             {/* Form */}
-            <form onSubmit={handleRequestChallenge} className="space-y-5">
+            <form onSubmit={handleSignIn} className="space-y-5">
               {/* Email Input */}
               <TextInput
                 label="Email"

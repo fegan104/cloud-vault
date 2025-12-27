@@ -1,16 +1,17 @@
 "use client";
 import { User } from "@prisma/client";
-import { signOut, updateEmail, getAllEncryptedFilesKeyDerivationParams, updateEncryptedFilesKeyDerivationParams } from "./actions";
+import { signOut, updateEmail, getAllEncryptedFilesKeyDerivationParams, updateEncryptedFilesKeyDerivationParams, startPasswordChangeRegistration } from "./actions";
 import { Card } from "@/components/Card";
 import { TonalButton } from "@/components/Buttons";
 import { PasswordInput, TextInput } from "@/components/TextInput";
 import { useState } from "react";
 import { Mail, Lock, LogOut } from "lucide-react";
 import { useMasterKey } from "@/components/MasterKeyContext";
-import { deriveKeypair, deriveMasterKey, generateSalt, rewrapKey } from "@/lib/util/clientCrypto";
+import { deriveMasterKey, generateSalt, rewrapKey } from "@/lib/util/clientCrypto";
 import { base64ToUint8Array, uint8ToBase64 } from "@/lib/util/arrayHelpers";
 import CircularProgress from "@/components/CircularProgress";
 import { TopAppBar } from "@/components/TopAppBar";
+import * as opaque from "@serenity-kit/opaque";
 
 export default function AccountScreen({ currentEmail, masterKeySalt }: { currentEmail: string, masterKeySalt: string }) {
   const [email, setEmail] = useState(currentEmail);
@@ -72,9 +73,23 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
         };
       }));
 
+      // Create new OPAQUE registration for the new password
+      // Step 1: Client starts OPAQUE registration
+      const { clientRegistrationState, registrationRequest } =
+        opaque.client.startRegistration({ password: newPassword });
+
+      // Step 2: Server creates registration response
+      const registrationResponse = await startPasswordChangeRegistration(registrationRequest);
+
+      // Step 3: Client finishes registration
+      const { registrationRecord } = opaque.client.finishRegistration({
+        clientRegistrationState,
+        registrationResponse,
+        password: newPassword,
+      });
+
       // update all encrypted file key derivation data in database transactionally
-      const { publicKey } = await deriveKeypair(newPassword, newMasterKeySalt);
-      await updateEncryptedFilesKeyDerivationParams(updates, uint8ToBase64(publicKey), uint8ToBase64(newMasterKeySalt));
+      await updateEncryptedFilesKeyDerivationParams(updates, registrationRecord, uint8ToBase64(newMasterKeySalt));
 
       // update master key with master key context
       setMasterKey(newMasterKey);
