@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Scaffold from "../../components/Scaffold";
 import { Share } from "@prisma/client";
-import { Users, FileText, Link as LinkIcon, Check, Trash2, MoreVertical } from "lucide-react";
+import { Users, FileText, Link as LinkIcon, Check, Trash2, MoreVertical, Loader2 } from "lucide-react";
+import CircularProgress from "@/components/CircularProgress";
 import { TonalButton } from "@/components/Buttons";
 import { DeleteConfirmationModal } from "@/components/Modals";
 import { deleteShare } from "./actions";
@@ -18,9 +19,10 @@ type ShareWithFile = Share & {
 
 type SharesScreenProps = {
   shares: ShareWithFile[];
+  isLoading?: boolean;
 };
 
-export default function SharesScreen({ shares }: SharesScreenProps) {
+export default function SharesScreen({ shares, isLoading = false }: SharesScreenProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [shareToDelete, setShareToDelete] = useState<ShareWithFile | null>(null);
 
@@ -68,7 +70,14 @@ export default function SharesScreen({ shares }: SharesScreenProps) {
               </p>
             </div>
 
-            {filteredShares.length === 0 ? (
+            {isLoading ? (
+              <div className="w-full max-w-3xl mt-12 text-center">
+                <div className="flex flex-col items-center gap-4 py-12">
+                  <CircularProgress size={48} />
+                  <p className="text-on-surface-variant text-lg animate-pulse">Loading Shares...</p>
+                </div>
+              </div>
+            ) : filteredShares.length === 0 ? (
               <div className="w-full max-w-3xl mt-12 text-center">
                 <div className="bg-surface p-12 shadow-[--shadow-2]">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-variant mb-4">
