@@ -9,13 +9,15 @@ import { useMasterKey } from "@/components/MasterKeyContext";
 import { rewrapKey, importKeyFromExportKey } from "@/lib/util/clientCrypto";
 import CircularProgress from "@/components/CircularProgress";
 import { TopAppBar } from "@/components/TopAppBar";
-import { createFinishSignUpRequest, createStartSignUpRequest } from "@/lib/opaque/opaqueClient";
+import { createFinishSignUpRequest, createStartSignUpRequest, createStartSignInRequest, createFinishSignInRequest } from "@/lib/opaque/opaqueClient";
+import { createSignInResponseForSession, verifyPasswordForSession } from "../vault/actions";
 
 
 export default function AccountScreen({ currentEmail }: { currentEmail: string }) {
   const [email, setEmail] = useState(currentEmail);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
-  const { masterKey, setMasterKey } = useMasterKey()
+  const { setMasterKey } = useMasterKey()
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
@@ -39,16 +41,38 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
   };
 
   const handleChangePassword = async () => {
-    if (!newPassword || !confirmNewPassword) return;
-    if (!masterKey) {
-      setError("Please unlock your vault first.");
-      return;
-    }
+    if (!currentPassword || !newPassword || !confirmNewPassword) return;
 
     setIsUpdatingPassword(true);
     setError(null);
     try {
-      // Current master key is already in memory from when user logged in
+      // Step 1: Derive current master key
+      const { clientLoginState, startLoginRequest } = createStartSignInRequest({ password: currentPassword });
+      const loginStart = await createSignInResponseForSession(startLoginRequest);
+      if (!loginStart) {
+        setError("Invalid current password");
+        return;
+      }
+      const loginResult = createFinishSignInRequest({
+        clientLoginState,
+        loginResponse: loginStart.loginResponse,
+        password: currentPassword,
+      });
+      if (!loginResult) {
+        setError("Invalid current password");
+        return;
+      }
+
+      // Step 2: Verify password for session
+      const verified = await verifyPasswordForSession(loginResult.finishLoginRequest);
+      if (!verified) {
+        setError("Invalid current password");
+        return;
+      }
+
+      // Current master key derived from the OPAQUE export key
+      const currentMasterKey = await importKeyFromExportKey(loginResult.exportKey);
+
 
       // Create new OPAQUE registration for the new password
       // Step 1: Client starts OPAQUE registration
@@ -75,7 +99,7 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
         const { wrappedKey: newWrappedFileKey, wrappedKeyNonce: newKeyWrapNonce } = await rewrapKey({
           wrappedKey: file.wrappedFileKey,
           wrappedKeyNonce: file.keyWrapIv,
-          unwrappingKey: masterKey,
+          unwrappingKey: currentMasterKey,
           wrappingKey: newMasterKey,
         });
 
@@ -163,6 +187,11 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
 
           {expandedSection === 'password' && (
             <div className="flex flex-col gap-2 px-6 pb-6 border-t border-gray-100 mt-2 pt-4">
+              <PasswordInput
+                label="Current Password"
+                value={currentPassword}
+                onChange={setCurrentPassword}
+              />
               <PasswordInput
                 label="New Password"
                 value={newPassword}
