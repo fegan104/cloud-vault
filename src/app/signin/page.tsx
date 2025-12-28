@@ -10,8 +10,8 @@ import { TextInput, PasswordInput } from '@/components/TextInput';
 import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
 import CircularProgress from '@/components/CircularProgress';
-import { importKeyFromExportKey, finishOpaqueLogin, startOpaqueLogin } from '@/lib/util/clientCrypto';
-
+import { importKeyFromExportKey } from '@/lib/util/clientCrypto';
+import { createStartSignInRequest, createFinishSignInRequest } from '@/lib/opaque/opaqueClient';
 
 
 export default function SignInPage() {
@@ -32,7 +32,7 @@ export default function SignInPage() {
 
     try {
       // Step 1: Client starts OPAQUE login
-      const { clientLoginState, startLoginRequest } = startOpaqueLogin({
+      const { clientLoginState, startLoginRequest } = createStartSignInRequest({
         password,
       });
 
@@ -48,7 +48,7 @@ export default function SignInPage() {
       const { loginResponse } = loginStart;
 
       // Step 3: Client finishes login - get export key for encryption
-      const loginResult = finishOpaqueLogin({
+      const loginResult = createFinishSignInRequest({
         clientLoginState,
         loginResponse,
         password,

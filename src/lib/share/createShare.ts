@@ -1,6 +1,6 @@
 "use server"
 import { prisma } from "@/lib/db"
-import * as opaqueServer from "@/lib/opaque";
+import * as opaqueServer from "@/lib/opaque/opaqueServer";
 
 /**
  * Step 1: Client starts share registration - get registration response.
@@ -13,7 +13,7 @@ export async function startShareRegistration(
   registrationRequest: string
 ): Promise<string> {
   // Use shareId as the user identifier for OPAQUE
-  return await opaqueServer.createRegistrationResponse(shareId, registrationRequest);
+  return await opaqueServer.createSignUpResponse(shareId, registrationRequest);
 }
 
 /**

@@ -1,15 +1,15 @@
 "use client";
-import { signOut, updateEmail, getAllEncryptedFilesKeyDerivationParams, updateEncryptedFilesKeyDerivationParams, startPasswordChangeRegistration } from "./actions";
+import { signOut, updateEmail, getAllEncryptedFilesKeyDerivationParams, updateEncryptedFilesKeyDerivationParams, createSignUpResponse } from "./actions";
 import { Card } from "@/components/Card";
 import { TonalButton } from "@/components/Buttons";
 import { PasswordInput, TextInput } from "@/components/TextInput";
 import { useState } from "react";
 import { Mail, Lock, LogOut } from "lucide-react";
 import { useMasterKey } from "@/components/MasterKeyContext";
-import { rewrapKey, importKeyFromExportKey, finishOpaqueRegistration, startOpaqueRegistration } from "@/lib/util/clientCrypto";
+import { rewrapKey, importKeyFromExportKey } from "@/lib/util/clientCrypto";
 import CircularProgress from "@/components/CircularProgress";
 import { TopAppBar } from "@/components/TopAppBar";
-
+import { createFinishSignUpRequest, createStartSignUpRequest } from "@/lib/opaque/opaqueClient";
 
 
 export default function AccountScreen({ currentEmail }: { currentEmail: string }) {
@@ -52,16 +52,13 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
 
       // Create new OPAQUE registration for the new password
       // Step 1: Client starts OPAQUE registration
-      const { clientRegistrationState, registrationRequest } =
-        startOpaqueRegistration({
-          password: newPassword,
-        });
+      const { clientRegistrationState, registrationRequest } = createStartSignUpRequest({ password: newPassword });
 
       // Step 2: Server creates registration response
-      const registrationResponse = await startPasswordChangeRegistration(registrationRequest);
+      const registrationResponse = await createSignUpResponse(registrationRequest);
 
       // Step 3: Client finishes registration - get new export key
-      const { registrationRecord, exportKey } = finishOpaqueRegistration({
+      const { registrationRecord, exportKey } = createFinishSignUpRequest({
         clientRegistrationState,
         registrationResponse,
         password: newPassword,

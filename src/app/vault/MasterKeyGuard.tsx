@@ -1,6 +1,5 @@
 "use client";
-import { importKeyFromExportKey, finishOpaqueLogin, startOpaqueLogin } from "@/lib/util/clientCrypto";
-
+import { importKeyFromExportKey } from "@/lib/util/clientCrypto";
 import { useMasterKey } from "../../components/MasterKeyContext";
 import { useState } from "react";
 import CircularProgress from "../../components/CircularProgress";
@@ -8,7 +7,8 @@ import { Key } from "lucide-react";
 import { PasswordInput } from "@/components/TextInput";
 import { TonalButton } from "@/components/Buttons";
 import { Card } from "../../components/Card";
-import { startLoginForSession, verifyPasswordForSession } from "./actions";
+import { createSignInResponseForSession, verifyPasswordForSession } from "./actions";
+import { createFinishSignInRequest, createStartSignInRequest } from "@/lib/opaque/opaqueClient";
 
 
 
@@ -36,12 +36,12 @@ export default function MasterKeyGuard({ children }: MasterKeyGuardProps) {
       setIsLoading(true);
 
       // Step 1: Client starts OPAQUE login
-      const { clientLoginState, startLoginRequest } = startOpaqueLogin({
+      const { clientLoginState, startLoginRequest } = createStartSignInRequest({
         password,
       });
 
       // Step 2: Server starts login
-      const loginStart = await startLoginForSession(startLoginRequest);
+      const loginStart = await createSignInResponseForSession(startLoginRequest);
       if (!loginStart) {
         setError("Failed to verify password");
         setIsLoading(false);
@@ -51,7 +51,7 @@ export default function MasterKeyGuard({ children }: MasterKeyGuardProps) {
       const { loginResponse } = loginStart;
 
       // Step 3: Client finishes login - get export key
-      const loginResult = finishOpaqueLogin({
+      const loginResult = createFinishSignInRequest({
         clientLoginState,
         loginResponse,
         password,

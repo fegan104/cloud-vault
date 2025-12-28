@@ -3,7 +3,7 @@
 import { getShareById } from "@/lib/share/getShareById";
 import { getSignedDownloadUrl } from "@/lib/firebaseAdmin";
 import { prisma } from "@/lib/db";
-import * as opaqueServer from "@/lib/opaque";
+import * as opaqueServer from "@/lib/opaque/opaqueServer";
 
 /**
  * Get a signed URL for a share that can be used to download the file.
@@ -42,7 +42,7 @@ export async function startShareLogin(
   }
 
   // Start OPAQUE login using shareId as user identifier
-  const { loginResponse, serverLoginState } = await opaqueServer.startLogin(
+  const { loginResponse, serverLoginState } = await opaqueServer.createSignInResponse(
     shareId,
     share.opaqueRegistrationRecord,
     startLoginRequest
@@ -88,7 +88,7 @@ export async function finishShareLogin(
     return false;
   }
 
-  const sessionKey = await opaqueServer.finishLogin(
+  const sessionKey = await opaqueServer.finishSignIn(
     ephemeral.serverLoginState,
     finishLoginRequest
   );

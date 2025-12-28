@@ -1,5 +1,4 @@
 import { base64ToUint8Array, uint8ToBase64 } from "./arrayHelpers";
-import * as opaque from "@serenity-kit/opaque";
 
 const HKDF_SALT = new Uint8Array(0); // Standard OPAQUE/HKDF practice when salt is handled elsewhere
 
@@ -59,6 +58,7 @@ export async function importKeyFromExportKey(
       name: "HKDF",
       hash: "SHA-256",
       salt: HKDF_SALT,
+      info: new TextEncoder().encode("opaque_export_key"),
     },
     baseKey,
     { name: "AES-GCM", length: 256 },
@@ -194,49 +194,3 @@ export async function rewrapKey({
   };
 }
 
-/**
- * Standardizes the client-side OPAQUE registration finalization workflow.
- * This ensures consistent key stretching parameters (Argon2id) across the app.
- */
-export function finishOpaqueRegistration(params: Parameters<typeof opaque.client.finishRegistration>[0]) {
-  return opaque.client.finishRegistration({
-    ...params,
-    keyStretching: {
-      "argon2id-custom": {
-        memory: 131072,
-        iterations: 4,
-        parallelism: 1,
-      },
-    },
-  });
-}
-
-/**
- * Standardizes the client-side OPAQUE login finalization workflow.
- * This ensures consistent key stretching parameters (Argon2id) across the app.
- */
-export function finishOpaqueLogin(params: Parameters<typeof opaque.client.finishLogin>[0]) {
-  return opaque.client.finishLogin({
-    ...params,
-    keyStretching: {
-      "argon2id-custom": {
-        memory: 131072,
-        iterations: 4,
-        parallelism: 1,
-      },
-    },
-  });
-}
-/**
- * Standardizes the client-side OPAQUE registration initiation workflow.
- */
-export function startOpaqueRegistration(params: Parameters<typeof opaque.client.startRegistration>[0]) {
-  return opaque.client.startRegistration(params);
-}
-
-/**
- * Standardizes the client-side OPAQUE login initiation workflow.
- */
-export function startOpaqueLogin(params: Parameters<typeof opaque.client.startLogin>[0]) {
-  return opaque.client.startLogin(params);
-}

@@ -3,7 +3,7 @@
 import { prisma } from "../../lib/db";
 import { createSession } from "@/lib/session/createSessions";
 import { User } from "@prisma/client";
-import * as opaqueServer from "@/lib/opaque";
+import * as opaqueServer from "@/lib/opaque/opaqueServer";
 
 /**
  * Step 1 of OPAQUE registration: Create a registration response.
@@ -13,11 +13,11 @@ import * as opaqueServer from "@/lib/opaque";
  * @param registrationRequest - The OPAQUE registration request from the client
  * @returns The registration response to send back to the client
  */
-export async function startRegistration(
+export async function createSignUpResponse(
   email: string,
   registrationRequest: string
 ): Promise<string> {
-  return await opaqueServer.createRegistrationResponse(email, registrationRequest);
+  return await opaqueServer.createSignUpResponse(email, registrationRequest);
 }
 
 /**
@@ -28,7 +28,7 @@ export async function startRegistration(
  * @param registrationRecord - The OPAQUE registration record to store
  * @returns The created user or null if creation failed
  */
-export async function finishRegistration({
+export async function createUser({
   email,
   registrationRecord,
 }: {

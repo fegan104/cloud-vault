@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import { createSession } from "@/lib/session/createSessions";
-import * as opaqueServer from "@/lib/opaque";
+import * as opaqueServer from "@/lib/opaque/opaqueServer";
 
 /**
  * Step 1 of OPAQUE login: Start the login process.
@@ -30,7 +30,7 @@ export async function startLogin(
   }
 
   // Start the OPAQUE login
-  const { loginResponse, serverLoginState } = await opaqueServer.startLogin(
+  const { loginResponse, serverLoginState } = await opaqueServer.createSignInResponse(
     email,
     user.opaqueRegistrationRecord,
     startLoginRequest
@@ -81,7 +81,7 @@ export async function finishLogin(
   }
 
   // Finish the OPAQUE login
-  const sessionKey = await opaqueServer.finishLogin(
+  const sessionKey = await opaqueServer.finishSignIn(
     ephemeral.serverLoginState,
     finishLoginRequest
   );

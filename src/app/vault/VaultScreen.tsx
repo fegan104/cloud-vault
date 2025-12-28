@@ -2,7 +2,7 @@
 
 import { useMasterKey } from "../../components/MasterKeyContext";
 import MasterKeyGuard from "./MasterKeyGuard";
-import { decryptFile, rewrapKey, importKeyFromExportKey, finishOpaqueRegistration, startOpaqueRegistration } from "../../lib/util/clientCrypto";
+import { decryptFile, rewrapKey, importKeyFromExportKey } from "../../lib/util/clientCrypto";
 import { useState } from "react";
 import { EncryptedFile } from "@prisma/client";
 import { getDownloadUrlByFileId, saveEncryptedFileDetails, deleteFile, renameFile } from "./actions";
@@ -15,6 +15,7 @@ import { createShare, startShareRegistration } from "@/lib/share/createShare";
 import FileListItem from "@/components/FileListItem";
 import { saveFileToDevice } from "@/lib/util/saveFileToDevice";
 import { downloadFileWithProgress } from "@/lib/util/downloadFileWithProgress";
+import { createFinishSignUpRequest, createStartSignUpRequest } from "@/lib/opaque/opaqueClient";
 
 
 
@@ -158,7 +159,7 @@ export default function VaultScreen({ files }: VaultScreenProps) {
       const newShareId = crypto.randomUUID();
 
       // Step 1: Start OPAQUE registration for the share
-      const { clientRegistrationState, registrationRequest } = startOpaqueRegistration({ password });
+      const { clientRegistrationState, registrationRequest } = createStartSignUpRequest({ password });
 
       // Step 2: Get registration response from server
       const registrationResponse = await startShareRegistration(
@@ -167,7 +168,7 @@ export default function VaultScreen({ files }: VaultScreenProps) {
       );
 
       // Step 3: Complete registration - get export key to use as share key
-      const { registrationRecord, exportKey } = finishOpaqueRegistration({
+      const { registrationRecord, exportKey } = createFinishSignUpRequest({
         clientRegistrationState,
         registrationResponse,
         password,

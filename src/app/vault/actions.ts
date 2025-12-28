@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/user/getUser";
 import { getSessionToken } from "@/lib/session/getSessionToken";
-import * as opaqueServer from "@/lib/opaque";
+import * as opaqueServer from "@/lib/opaque/opaqueServer";
 
 /**
  * Generates a URL for uploading a file to cloud storage.
@@ -204,7 +204,7 @@ export async function renameFile(fileId: string, newFileName: string) {
  * @param startLoginRequest - The OPAQUE start login request from the client
  * @returns loginResponse if successful, null if failed
  */
-export async function startLoginForSession(
+export async function createSignInResponseForSession(
   startLoginRequest: string
 ): Promise<{ loginResponse: string } | null> {
   const user = await getUser();
@@ -212,7 +212,7 @@ export async function startLoginForSession(
     return null;
   }
 
-  const { loginResponse, serverLoginState } = await opaqueServer.startLogin(
+  const { loginResponse, serverLoginState } = await opaqueServer.createSignInResponse(
     user.email,
     user.opaqueRegistrationRecord,
     startLoginRequest
@@ -263,7 +263,7 @@ export async function verifyPasswordForSession(
     return false;
   }
 
-  const sessionKey = await opaqueServer.finishLogin(
+  const sessionKey = await opaqueServer.finishSignIn(
     ephemeral.serverLoginState,
     finishLoginRequest
   );

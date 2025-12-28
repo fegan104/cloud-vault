@@ -3,11 +3,12 @@
 import ShareKeyGuard from "@/components/ShareKeyGuard";
 import FileListItem from "@/components/FileListItem";
 import { downloadFileWithProgress } from "@/lib/util/downloadFileWithProgress";
-import { decryptFile, importKeyFromExportKey, finishOpaqueLogin, startOpaqueLogin } from "@/lib/util/clientCrypto";
+import { decryptFile, importKeyFromExportKey } from "@/lib/util/clientCrypto";
 import { useState } from "react";
 import { startShareLogin, getShareDownloadUrl, finishShareLogin } from "./actions";
 import { getShareById, ShareWithFile } from "@/lib/share/getShareById";
 import { saveFileToDevice } from "@/lib/util/saveFileToDevice";
+import { createStartSignInRequest, createFinishSignInRequest } from "@/lib/opaque/opaqueClient";
 
 
 
@@ -25,7 +26,7 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
    */
   const handleUnlock = async (password: string) => {
     // Step 1: Start OPAQUE login
-    const { clientLoginState, startLoginRequest } = startOpaqueLogin({
+    const { clientLoginState, startLoginRequest } = createStartSignInRequest({
       password,
     });
 
@@ -38,7 +39,7 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
     const { loginResponse } = loginStart;
 
     // Step 3: Client finishes login - get export key
-    const loginResult = finishOpaqueLogin({
+    const loginResult = createFinishSignInRequest({
       clientLoginState,
       loginResponse,
       password,

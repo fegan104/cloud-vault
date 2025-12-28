@@ -1,4 +1,3 @@
-"use server";
 import * as opaque from "@serenity-kit/opaque";
 
 function getServerSetup(): string {
@@ -20,7 +19,7 @@ function getServerSetup(): string {
  * @param registrationRequest - The registration request from the client
  * @returns The registration response to send back to the client
  */
-export async function createRegistrationResponse(
+export async function createSignUpResponse(
   userIdentifier: string,
   registrationRequest: string
 ): Promise<string> {
@@ -42,7 +41,7 @@ export async function createRegistrationResponse(
  * @param startLoginRequest - The login request from the client
  * @returns The login response and server state (state must be stored temporarily)
  */
-export async function startLogin(
+export async function createSignInResponse(
   userIdentifier: string,
   registrationRecord: string,
   startLoginRequest: string
@@ -65,7 +64,7 @@ export async function startLogin(
  * @param finishLoginRequest - The finish login request from the client
  * @returns The session key if successful, null if login failed
  */
-export async function finishLogin(
+export async function finishSignIn(
   serverLoginState: string,
   finishLoginRequest: string
 ): Promise<string | null> {

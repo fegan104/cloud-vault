@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/user/getUser";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
-import * as opaqueServer from "@/lib/opaque";
+import * as opaqueServer from "@/lib/opaque/opaqueServer";
 
 /**
  * Creates an OPAQUE registration response for password change.
@@ -14,7 +14,7 @@ import * as opaqueServer from "@/lib/opaque";
  * @param registrationRequest - The OPAQUE registration request from the client
  * @returns The registration response to send back to the client
  */
-export async function startPasswordChangeRegistration(
+export async function createSignUpResponse(
   registrationRequest: string
 ): Promise<string> {
   const user = await getUser();
@@ -22,7 +22,7 @@ export async function startPasswordChangeRegistration(
     throw new Error("Unauthorized");
   }
 
-  return await opaqueServer.createRegistrationResponse(user.email, registrationRequest);
+  return await opaqueServer.createSignUpResponse(user.email, registrationRequest);
 }
 /**
  * Signs out the user. This deletes the session cookie and removes 

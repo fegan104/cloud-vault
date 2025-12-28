@@ -1,6 +1,6 @@
 'use client';
 
-import { startRegistration, finishRegistration } from './actions';
+import { createSignUpResponse, createUser } from './actions';
 import { useState } from 'react';
 import { useMasterKey } from '../../components/MasterKeyContext';
 import { redirect } from 'next/navigation';
@@ -10,7 +10,8 @@ import { TextInput, PasswordInput } from '@/components/TextInput';
 import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
 import CircularProgress from '@/components/CircularProgress';
-import { importKeyFromExportKey, finishOpaqueRegistration, startOpaqueRegistration } from '@/lib/util/clientCrypto';
+import { importKeyFromExportKey } from '@/lib/util/clientCrypto';
+import { createFinishSignUpRequest, createSignUpRequest } from '@/lib/opaque/opaqueClient';
 
 
 
@@ -40,23 +41,20 @@ export default function SignUpPage() {
 
     try {
       // Step 1: Client starts OPAQUE registration
-      const { clientRegistrationState, registrationRequest } =
-        startOpaqueRegistration({
-          password,
-        });
+      const { clientRegistrationState, registrationRequest } = createSignUpRequest({ password });
 
       // Step 2: Server creates registration response
-      const registrationResponse = await startRegistration(email, registrationRequest);
+      const registrationResponse = await createSignUpResponse(email, registrationRequest);
 
       // Step 3: Client finishes registration - get export key for encryption
-      const { registrationRecord, exportKey } = finishOpaqueRegistration({
+      const { registrationRecord, exportKey } = createFinishSignUpRequest({
         clientRegistrationState,
         registrationResponse,
         password,
       });
 
       // Step 4: Server stores registration record and creates user
-      const user = await finishRegistration({
+      const user = await createUser({
         email,
         registrationRecord,
       });
