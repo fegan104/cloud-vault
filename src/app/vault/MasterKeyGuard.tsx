@@ -8,7 +8,7 @@ import { PasswordInput } from "@/components/TextInput";
 import { TonalButton } from "@/components/Buttons";
 import { Card } from "../../components/Card";
 import { createSignInResponseForSession, verifyPasswordForSession } from "./actions";
-import { createFinishSignInRequest, createStartSignInRequest } from "@/lib/opaque/opaqueClient";
+import { createFinishSignInRequest, createStartSignInRequest } from "@/lib/opaque/client";
 
 
 

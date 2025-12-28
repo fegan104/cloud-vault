@@ -8,7 +8,7 @@ import { useState } from "react";
 import { startShareLogin, getShareDownloadUrl, finishShareLogin } from "./actions";
 import { getShareById, ShareWithFile } from "@/lib/share/getShareById";
 import { saveFileToDevice } from "@/lib/util/saveFileToDevice";
-import { createStartSignInRequest, createFinishSignInRequest } from "@/lib/opaque/opaqueClient";
+import { createStartSignInRequest, createFinishSignInRequest } from "@/lib/opaque/client";
 
 
 

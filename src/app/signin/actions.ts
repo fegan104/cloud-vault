@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import { createSession } from "@/lib/session/createSessions";
-import * as opaqueServer from "@/lib/opaque/opaqueServer";
+import * as opaqueServer from "@/lib/opaque/server";
 
 /**
  * Step 1 of OPAQUE login: Start the login process.

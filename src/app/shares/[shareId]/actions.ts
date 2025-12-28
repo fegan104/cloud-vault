@@ -3,7 +3,7 @@
 import { getShareById } from "@/lib/share/getShareById";
 import { getSignedDownloadUrl } from "@/lib/firebaseAdmin";
 import { prisma } from "@/lib/db";
-import * as opaqueServer from "@/lib/opaque/opaqueServer";
+import * as opaqueServer from "@/lib/opaque/server";
 
 /**
  * Get a signed URL for a share that can be used to download the file.

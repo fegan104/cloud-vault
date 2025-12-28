@@ -11,7 +11,7 @@ import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
 import CircularProgress from '@/components/CircularProgress';
 import { importKeyFromExportKey } from '@/lib/util/clientCrypto';
-import { createStartSignInRequest, createFinishSignInRequest } from '@/lib/opaque/opaqueClient';
+import { createStartSignInRequest, createFinishSignInRequest } from '@/lib/opaque/client';
 
 
 export default function SignInPage() {

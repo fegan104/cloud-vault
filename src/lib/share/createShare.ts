@@ -1,6 +1,6 @@
 "use server"
 import { prisma } from "@/lib/db"
-import * as opaqueServer from "@/lib/opaque/opaqueServer";
+import * as opaqueServer from "@/lib/opaque/server";
 
 /**
  * Step 1: Client starts share registration - get registration response.

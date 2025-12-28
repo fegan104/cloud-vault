@@ -9,7 +9,7 @@ import { useMasterKey } from "@/components/MasterKeyContext";
 import { rewrapKey, importKeyFromExportKey } from "@/lib/util/clientCrypto";
 import CircularProgress from "@/components/CircularProgress";
 import { TopAppBar } from "@/components/TopAppBar";
-import { createFinishSignUpRequest, createStartSignUpRequest, createStartSignInRequest, createFinishSignInRequest } from "@/lib/opaque/opaqueClient";
+import { createFinishSignUpRequest, createStartSignUpRequest, createStartSignInRequest, createFinishSignInRequest } from "@/lib/opaque/client";
 import { createSignInResponseForSession, verifyPasswordForSession } from "../vault/actions";
 
 

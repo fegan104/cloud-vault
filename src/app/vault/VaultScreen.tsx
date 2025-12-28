@@ -15,7 +15,7 @@ import { createShare, startShareRegistration } from "@/lib/share/createShare";
 import FileListItem from "@/components/FileListItem";
 import { saveFileToDevice } from "@/lib/util/saveFileToDevice";
 import { downloadFileWithProgress } from "@/lib/util/downloadFileWithProgress";
-import { createFinishSignUpRequest, createStartSignUpRequest } from "@/lib/opaque/opaqueClient";
+import { createFinishSignUpRequest, createStartSignUpRequest } from "@/lib/opaque/client";
 
 
 

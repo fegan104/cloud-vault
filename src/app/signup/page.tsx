@@ -11,7 +11,7 @@ import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
 import CircularProgress from '@/components/CircularProgress';
 import { importKeyFromExportKey } from '@/lib/util/clientCrypto';
-import { createFinishSignUpRequest, createStartSignUpRequest } from '@/lib/opaque/opaqueClient';
+import { createFinishSignUpRequest, createStartSignUpRequest } from '@/lib/opaque/client';
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');

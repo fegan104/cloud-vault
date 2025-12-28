@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/user/getUser";
 import { getSessionToken } from "@/lib/session/getSessionToken";
-import * as opaqueServer from "@/lib/opaque/opaqueServer";
+import * as opaqueServer from "@/lib/opaque/server";
 
 /**
  * Generates a URL for uploading a file to cloud storage.

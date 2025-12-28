@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/user/getUser";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
-import * as opaqueServer from "@/lib/opaque/opaqueServer";
+import * as opaqueServer from "@/lib/opaque/server";
 
 /**
  * Creates an OPAQUE registration response for password change.
