@@ -11,9 +11,7 @@ import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
 import CircularProgress from '@/components/CircularProgress';
 import { importKeyFromExportKey } from '@/lib/util/clientCrypto';
-import { createFinishSignUpRequest, createSignUpRequest } from '@/lib/opaque/opaqueClient';
-
-
+import { createFinishSignUpRequest, createStartSignUpRequest } from '@/lib/opaque/opaqueClient';
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
@@ -38,42 +36,35 @@ export default function SignUpPage() {
       setIsLoading(false);
       return;
     }
+    // Step 1: Client starts OPAQUE registration
+    const { clientRegistrationState, registrationRequest } = createStartSignUpRequest({ password });
 
-    try {
-      // Step 1: Client starts OPAQUE registration
-      const { clientRegistrationState, registrationRequest } = createSignUpRequest({ password });
+    // Step 2: Server creates registration response
+    const registrationResponse = await createSignUpResponse(email, registrationRequest);
 
-      // Step 2: Server creates registration response
-      const registrationResponse = await createSignUpResponse(email, registrationRequest);
+    // Step 3: Client finishes registration - get export key for encryption
+    const { registrationRecord, exportKey } = createFinishSignUpRequest({
+      clientRegistrationState,
+      registrationResponse,
+      password,
+    });
 
-      // Step 3: Client finishes registration - get export key for encryption
-      const { registrationRecord, exportKey } = createFinishSignUpRequest({
-        clientRegistrationState,
-        registrationResponse,
-        password,
-      });
+    // Step 4: Server stores registration record and creates user
+    const user = await createUser({
+      email,
+      registrationRecord,
+    });
 
-      // Step 4: Server stores registration record and creates user
-      const user = await createUser({
-        email,
-        registrationRecord,
-      });
-
-      if (!user) {
-        setError('Failed to create user, that email may already be in use.');
-        setIsLoading(false);
-        return;
-      }
-
-      // Use OPAQUE export key as master key (convert hex to CryptoKey)
-      const masterKey = await importKeyFromExportKey(exportKey);
-      setMasterKey(masterKey);
-      redirect('/vault');
-    } catch (err) {
-      console.error('Sign up error:', err);
-      setError('An error occurred during sign up. Please try again.');
+    if (!user) {
+      setError('Failed to create user, that email may already be in use.');
       setIsLoading(false);
+      return;
     }
+
+    // Use OPAQUE export key as master key (convert hex to CryptoKey)
+    const masterKey = await importKeyFromExportKey(exportKey);
+    setMasterKey(masterKey);
+    redirect('/vault');
   }
 
   return (

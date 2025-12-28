@@ -30,54 +30,48 @@ export default function SignInPage() {
     setIsLoading(true);
     setError(null);
 
-    try {
-      // Step 1: Client starts OPAQUE login
-      const { clientLoginState, startLoginRequest } = createStartSignInRequest({
-        password,
-      });
+    // Step 1: Client starts OPAQUE login
+    const { clientLoginState, startLoginRequest } = createStartSignInRequest({
+      password,
+    });
 
-      // Step 2: Server starts login and returns response
-      const loginStart = await startLogin(email, startLoginRequest);
+    // Step 2: Server starts login and returns response
+    const loginStart = await startLogin(email, startLoginRequest);
 
-      if (!loginStart) {
-        setError('Invalid email or password');
-        setIsLoading(false);
-        return;
-      }
-
-      const { loginResponse } = loginStart;
-
-      // Step 3: Client finishes login - get export key for encryption
-      const loginResult = createFinishSignInRequest({
-        clientLoginState,
-        loginResponse,
-        password,
-      });
-
-      if (!loginResult) {
-        setError('Invalid email or password');
-        setIsLoading(false);
-        return;
-      }
-
-      const { finishLoginRequest, exportKey } = loginResult;
-
-      // Step 4: Server verifies and creates session
-      const verified = await finishLogin(email, finishLoginRequest);
-
-      if (verified) {
-        // Use OPAQUE export key as master key (convert hex to CryptoKey)
-        const masterKey = await importKeyFromExportKey(exportKey);
-        setMasterKey(masterKey);
-        redirect("/vault");
-      } else {
-        setIsLoading(false);
-        setError('Invalid email or password');
-      }
-    } catch (err) {
-      console.error('Sign in error:', err);
-      setError('An error occurred during sign in. Please try again.');
+    if (!loginStart) {
+      setError('Invalid email or password');
       setIsLoading(false);
+      return;
+    }
+
+    const { loginResponse } = loginStart;
+
+    // Step 3: Client finishes login - get export key for encryption
+    const loginResult = createFinishSignInRequest({
+      clientLoginState,
+      loginResponse,
+      password,
+    });
+
+    if (!loginResult) {
+      setError('Invalid email or password');
+      setIsLoading(false);
+      return;
+    }
+
+    const { finishLoginRequest, exportKey } = loginResult;
+
+    // Step 4: Server verifies and creates session
+    const verified = await finishLogin(email, finishLoginRequest);
+
+    if (verified) {
+      // Use OPAQUE export key as master key (convert hex to CryptoKey)
+      const masterKey = await importKeyFromExportKey(exportKey);
+      setMasterKey(masterKey);
+      redirect("/vault");
+    } else {
+      setIsLoading(false);
+      setError('Invalid email or password');
     }
   }
 
