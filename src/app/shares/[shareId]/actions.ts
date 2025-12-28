@@ -1,8 +1,9 @@
 "use server"
 
 import { getShareById } from "@/lib/share/getShareById";
+import { getShareAuthInfo } from "@/lib/share/getShareAuthInfo";
 import { getSignedDownloadUrl } from "@/lib/firebaseAdmin";
-import { prisma } from "@/lib/db";
+import { upsertEphemeral, getEphemeral, deleteEphemeral } from "@/lib/opaque/ephemeral";
 import * as opaqueServer from "@/lib/opaque/server";
 
 /**
@@ -29,13 +30,7 @@ export async function startShareLogin(
   shareId: string,
   startLoginRequest: string
 ): Promise<{ loginResponse: string; shareName: string } | null> {
-  const share = await prisma.share.findUnique({
-    where: { id: shareId },
-    select: {
-      name: true,
-      opaqueRegistrationRecord: true,
-    }
-  });
+  const share = await getShareAuthInfo(shareId);
 
   if (!share || !share.opaqueRegistrationRecord) {
     return null;
@@ -49,18 +44,7 @@ export async function startShareLogin(
   );
 
   // Store the server login state as ephemeral (expires in 5 minutes)
-  await prisma.opaqueEphemeral.upsert({
-    where: { userIdentifier: shareId },
-    update: {
-      serverLoginState,
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-    },
-    create: {
-      userIdentifier: shareId,
-      serverLoginState,
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-    },
-  });
+  await upsertEphemeral(shareId, serverLoginState);
 
   return { loginResponse, shareName: share.name };
 }
@@ -75,15 +59,11 @@ export async function finishShareLogin(
   shareId: string,
   finishLoginRequest: string
 ): Promise<boolean> {
-  const ephemeral = await prisma.opaqueEphemeral.findUnique({
-    where: { userIdentifier: shareId },
-  });
+  const ephemeral = await getEphemeral(shareId);
 
   if (!ephemeral || ephemeral.expiresAt < new Date()) {
     if (ephemeral) {
-      await prisma.opaqueEphemeral.delete({
-        where: { id: ephemeral.id },
-      });
+      await deleteEphemeral(ephemeral.id);
     }
     return false;
   }
@@ -93,9 +73,7 @@ export async function finishShareLogin(
     finishLoginRequest
   );
 
-  await prisma.opaqueEphemeral.delete({
-    where: { id: ephemeral.id },
-  });
+  await deleteEphemeral(ephemeral.id);
 
   return sessionKey !== null;
 }

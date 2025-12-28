@@ -1,7 +1,8 @@
 "use server";
 
-import { prisma } from "@/lib/db";
 import { createSession } from "@/lib/session/createSessions";
+import { getUserByEmail } from "@/lib/user/getUserByEmail";
+import { upsertEphemeral, getEphemeral, deleteEphemeral } from "@/lib/opaque/ephemeral";
 import * as opaqueServer from "@/lib/opaque/server";
 
 /**
@@ -17,13 +18,7 @@ export async function startLogin(
   startLoginRequest: string
 ): Promise<{ loginResponse: string } | null> {
   // Find the user and their registration record
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: {
-      id: true,
-      opaqueRegistrationRecord: true,
-    },
-  });
+  const user = await getUserByEmail(email);
 
   if (!user || !user.opaqueRegistrationRecord) {
     return null;
@@ -37,18 +32,7 @@ export async function startLogin(
   );
 
   // Store the server login state as ephemeral (expires in 5 minutes)
-  await prisma.opaqueEphemeral.upsert({
-    where: { userIdentifier: email },
-    update: {
-      serverLoginState,
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-    },
-    create: {
-      userIdentifier: email,
-      serverLoginState,
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-    },
-  });
+  await upsertEphemeral(email, serverLoginState);
 
   return { loginResponse };
 }
@@ -66,16 +50,12 @@ export async function finishLogin(
   finishLoginRequest: string
 ): Promise<boolean> {
   // Get the stored ephemeral state
-  const ephemeral = await prisma.opaqueEphemeral.findUnique({
-    where: { userIdentifier: email },
-  });
+  const ephemeral = await getEphemeral(email);
 
   if (!ephemeral || ephemeral.expiresAt < new Date()) {
     // Ephemeral not found or expired
     if (ephemeral) {
-      await prisma.opaqueEphemeral.delete({
-        where: { id: ephemeral.id },
-      });
+      await deleteEphemeral(ephemeral.id);
     }
     return false;
   }
@@ -87,19 +67,14 @@ export async function finishLogin(
   );
 
   // Clean up the ephemeral
-  await prisma.opaqueEphemeral.delete({
-    where: { id: ephemeral.id },
-  });
+  await deleteEphemeral(ephemeral.id);
 
   if (!sessionKey) {
     return false;
   }
 
   // Find the user and create a session
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: { id: true },
-  });
+  const user = await getUserByEmail(email);
 
   if (!user) {
     return false;

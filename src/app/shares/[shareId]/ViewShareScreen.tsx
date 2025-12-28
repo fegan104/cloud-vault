@@ -81,9 +81,9 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
 
       // 3. Decrypt the file using the share key
       const decryptedBlob = await decryptFile(encryptedBlob, shareKey, {
-        fileIv: share.file.fileIv,
+        fileNonce: share.file.fileNonce,
         wrappedFileKey: share.wrappedFileKey,
-        keyWrapIv: share.keyWrapIv,
+        keyWrapNonce: share.keyWrapNonce,
       })
 
       // 4. Trigger download

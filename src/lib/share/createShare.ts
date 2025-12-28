@@ -29,7 +29,7 @@ export async function createShare(
   shareName: string,
   fileId: string,
   wrappedFileKey: string,
-  keyWrapIv: string,
+  keyWrapNonce: string,
   opaqueRegistrationRecord: string
 ) {
   const share = await prisma.share.create({
@@ -38,7 +38,7 @@ export async function createShare(
       name: shareName,
       fileId,
       wrappedFileKey,
-      keyWrapIv,
+      keyWrapNonce,
       opaqueRegistrationRecord,
     },
   })

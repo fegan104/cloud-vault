@@ -1,12 +1,17 @@
 "use server";
 
 import { getSignedDownloadUrl, getSignedUploadUrl, deleteFileFromCloudStorage, doesFileExistInCloudStorage } from "@/lib/firebaseAdmin";
-import { prisma } from "@/lib/db";
+import { createEncryptedFile } from "@/lib/file/createEncryptedFile";
+import { getEncryptedFileById } from "@/lib/file/getEncryptedFile";
+import { updateEncryptedFileKeyParams, renameEncryptedFile } from "@/lib/file/updateEncryptedFile";
+import { deleteEncryptedFile } from "@/lib/file/deleteEncryptedFile";
+import { getSessionWithFile } from "@/lib/session/getSessionWithFiles";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/user/getUser";
 import { getSessionToken } from "@/lib/session/getSessionToken";
+import { upsertEphemeral, getEphemeral, deleteEphemeral } from "@/lib/opaque/ephemeral";
 import * as opaqueServer from "@/lib/opaque/server";
 
 /**
@@ -44,9 +49,9 @@ export async function saveEncryptedFileDetails(
   storagePath: string,
   fileSize: number,
   metadata: {
-    fileIv: string;
+    fileNonce: string;
     wrappedFileKey: string;
-    keyWrapIv: string;
+    keyWrapNonce: string;
     fileAlgorithm: string;
   }
 ) {
@@ -64,18 +69,13 @@ export async function saveEncryptedFileDetails(
     throw new Error("File not found at storage path");
   }
 
-  await prisma.encryptedFile.create({
-    data: {
-      userId: currentUser.id,
-      fileName: fileName,
-      fileSize: fileSize,
-      storagePath: storagePath,
-      fileIv: metadata.fileIv,
-      fileAlgorithm: metadata.fileAlgorithm,
-      wrappedFileKey: metadata.wrappedFileKey,
-      keyWrapIv: metadata.keyWrapIv,
-    }
-  });
+  await createEncryptedFile(
+    currentUser.id,
+    fileName,
+    fileSize,
+    storagePath,
+    metadata
+  );
   revalidatePath("/vault");
 }
 
@@ -90,25 +90,7 @@ export async function getDownloadUrlByFileId(fileId: string) {
     throw new Error("Unauthorized");
   }
 
-  const session = await prisma.session.findUnique({
-    where: {
-      sessionToken,
-      expiresAt: {
-        gt: new Date(), // only include sessions that haven't expired
-      }
-    },
-    include: {
-      user: {
-        include: {
-          encryptedFiles: {
-            where: {
-              id: fileId,
-            },
-          }
-        },
-      },
-    },
-  });
+  const session = await getSessionWithFile(sessionToken, fileId);
 
   const fileRecord = session?.user.encryptedFiles?.[0];
 
@@ -128,12 +110,7 @@ export async function deleteFile(fileId: string) {
   if (!currentUser) throw new Error("User not authenticated");
 
   // Get the file record to ensure it belongs to this user
-  const fileRecord = await prisma.encryptedFile.findUnique({
-    where: {
-      id: fileId,
-      userId: currentUser.id,
-    },
-  });
+  const fileRecord = await getEncryptedFileById(fileId, currentUser.id);
 
   if (!fileRecord) {
     throw new Error("File not found or unauthorized");
@@ -143,9 +120,7 @@ export async function deleteFile(fileId: string) {
   await deleteFileFromCloudStorage(fileRecord.storagePath);
 
   // Delete from database
-  await prisma.encryptedFile.delete({
-    where: { id: fileId },
-  });
+  await deleteEncryptedFile(fileId);
 
   revalidatePath("/vault");
 }
@@ -162,25 +137,7 @@ export async function renameFile(fileId: string, newFileName: string) {
   }
 
   // Get the session and user so we can verify the file belongs to this user
-  const session = await prisma.session.findUnique({
-    where: {
-      sessionToken,
-      expiresAt: {
-        gt: new Date(), // only include sessions that haven't expired
-      }
-    },
-    include: {
-      user: {
-        include: {
-          encryptedFiles: {
-            where: {
-              id: fileId,
-            },
-          }
-        },
-      },
-    },
-  });
+  const session = await getSessionWithFile(sessionToken, fileId);
 
   const fileRecord = session?.user.encryptedFiles?.[0];
 
@@ -189,10 +146,7 @@ export async function renameFile(fileId: string, newFileName: string) {
   }
 
   // Update the file name in the database
-  await prisma.encryptedFile.update({
-    where: { id: fileId },
-    data: { fileName: newFileName },
-  });
+  await renameEncryptedFile(fileId, newFileName);
 
   revalidatePath("/vault");
 }
@@ -219,18 +173,7 @@ export async function createSignInResponseForSession(
   );
 
   // Store the server login state as ephemeral
-  await prisma.opaqueEphemeral.upsert({
-    where: { userIdentifier: user.email },
-    update: {
-      serverLoginState,
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-    },
-    create: {
-      userIdentifier: user.email,
-      serverLoginState,
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-    },
-  });
+  await upsertEphemeral(user.email, serverLoginState);
 
   return { loginResponse };
 }
@@ -250,15 +193,11 @@ export async function verifyPasswordForSession(
     return false;
   }
 
-  const ephemeral = await prisma.opaqueEphemeral.findUnique({
-    where: { userIdentifier: user.email },
-  });
+  const ephemeral = await getEphemeral(user.email);
 
   if (!ephemeral || ephemeral.expiresAt < new Date()) {
     if (ephemeral) {
-      await prisma.opaqueEphemeral.delete({
-        where: { id: ephemeral.id },
-      });
+      await deleteEphemeral(ephemeral.id);
     }
     return false;
   }
@@ -268,9 +207,7 @@ export async function verifyPasswordForSession(
     finishLoginRequest
   );
 
-  await prisma.opaqueEphemeral.delete({
-    where: { id: ephemeral.id },
-  });
+  await deleteEphemeral(ephemeral.id);
 
   return sessionKey !== null;
 }

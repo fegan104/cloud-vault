@@ -98,7 +98,7 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
       const updates = await Promise.all(files.map(async (file) => {
         const { wrappedKey: newWrappedFileKey, wrappedKeyNonce: newKeyWrapNonce } = await rewrapKey({
           wrappedKey: file.wrappedFileKey,
-          wrappedKeyNonce: file.keyWrapIv,
+          wrappedKeyNonce: file.keyWrapNonce,
           unwrappingKey: currentMasterKey,
           wrappingKey: newMasterKey,
         });

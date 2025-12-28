@@ -3,7 +3,8 @@
 import { deleteSessionToken } from "@/lib/session/deleteSessionsToken";
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/user/getUser";
-import { prisma } from "@/lib/db";
+import { updateUserEmail, updateEncryptedFilesTransaction } from "@/lib/user/updateUser";
+import { getEncryptedFilesForUser } from "@/lib/file/getEncryptedFile";
 import { revalidatePath } from "next/cache";
 import * as opaqueServer from "@/lib/opaque/server";
 
@@ -44,14 +45,7 @@ export async function updateEmail(email: string): Promise<boolean> {
     throw new Error("Unauthorized");
   }
 
-  await prisma.user.update({
-    where: {
-      id: user.id
-    },
-    data: {
-      email: email
-    }
-  });
+  await updateUserEmail(user.id, email);
 
   revalidatePath("/account");
 
@@ -59,24 +53,13 @@ export async function updateEmail(email: string): Promise<boolean> {
 }
 
 // Returns the necessary data to decrypt and re-encrypt the file keys
-export async function getAllEncryptedFilesKeyDerivationParams(): Promise<{ id: string; wrappedFileKey: string; keyWrapIv: string; }[]> {
+export async function getAllEncryptedFilesKeyDerivationParams(): Promise<{ id: string; wrappedFileKey: string; keyWrapNonce: string; }[]> {
   const user = await getUser();
   if (!user) {
     throw new Error("Unauthorized");
   }
 
-  const files = await prisma.encryptedFile.findMany({
-    where: {
-      userId: user.id
-    },
-    select: {
-      id: true,
-      wrappedFileKey: true,
-      keyWrapIv: true,
-    }
-  });
-
-  return files;
+  return await getEncryptedFilesForUser(user.id);
 }
 
 // Updates the encrypted file key derivation params in the database
@@ -90,30 +73,7 @@ export async function updateEncryptedFilesKeyDerivationParams(
     throw new Error("Unauthorized");
   }
 
-  await prisma.$transaction(
-    [...updates.map((update) =>
-      // Update each encrypted file
-      prisma.encryptedFile.update({
-        where: {
-          id: update.id,
-          userId: user.id, // Ensure user owns the file
-        },
-        data: {
-          wrappedFileKey: update.wrappedFileKey,
-          keyWrapIv: update.keyWrapNonce,
-        },
-      })
-    ),
-    // Update user account details
-    prisma.user.update({
-      where: {
-        id: user.id
-      },
-      data: {
-        opaqueRegistrationRecord: opaqueRegistrationRecord,
-      }
-    })]
-  );
+  await updateEncryptedFilesTransaction(user.id, updates, opaqueRegistrationRecord);
 
   revalidatePath("/account");
 

@@ -78,9 +78,9 @@ export function decryptFile(
   encryptedBlob: Blob,
   unwrappingKey: CryptoKey,
   metadata: {
-    fileIv: string;
+    fileNonce: string;
     wrappedFileKey: string;
-    keyWrapIv: string;
+    keyWrapNonce: string;
   }
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -108,9 +108,9 @@ export function encryptFile(
   return new Promise<{
     encryptedFileBlob: Blob;
     metadata: {
-      fileIv: string;
+      fileNonce: string;
       wrappedFileKey: string;
-      keyWrapIv: string;
+      keyWrapNonce: string;
       fileAlgorithm: string;
     };
   }>((resolve, reject) => {
@@ -128,10 +128,10 @@ export function encryptFile(
       worker.terminate();
     };
 
-    const fileIv = generateNonce();
-    const keyWrapIv = generateNonce();
+    const fileNonce = generateNonce();
+    const keyWrapNonce = generateNonce();
 
-    worker.postMessage({ file, masterKey, fileIv, keyWrapIv });
+    worker.postMessage({ file, masterKey, fileNonce, keyWrapNonce });
   });
 }
 

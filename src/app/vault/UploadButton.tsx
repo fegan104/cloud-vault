@@ -12,9 +12,9 @@ export function UploadButton({ onEncrypted }: {
     storagePath: string,
     fileSize: number,
     metadata: {
-      fileIv: string;
+      fileNonce: string;
       wrappedFileKey: string;
-      keyWrapIv: string;
+      keyWrapNonce: string;
       fileAlgorithm: string;
     }
   ) => Promise<void>;

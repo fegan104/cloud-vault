@@ -59,9 +59,9 @@ export default function VaultScreen({ files }: VaultScreenProps) {
 
       // 3. Decrypt the file
       const decryptedBlob = await decryptFile(encryptedBlob, masterKey, {
-        fileIv: file.fileIv,
+        fileNonce: file.fileNonce,
         wrappedFileKey: file.wrappedFileKey,
-        keyWrapIv: file.keyWrapIv,
+        keyWrapNonce: file.keyWrapNonce,
       });
 
       // 4. Trigger download
@@ -180,7 +180,7 @@ export default function VaultScreen({ files }: VaultScreenProps) {
       // 4. Wrap the file key with the share key
       const { wrappedKey: wrappedShareKey, wrappedKeyNonce: wrappedShareKeyNonce } = await rewrapKey({
         wrappedKey: fileToShare.wrappedFileKey,
-        wrappedKeyNonce: fileToShare.keyWrapIv,
+        wrappedKeyNonce: fileToShare.keyWrapNonce,
         unwrappingKey: masterKey,
         wrappingKey: shareKey,
       });

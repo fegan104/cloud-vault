@@ -1,9 +1,9 @@
 'use server';
 
-import { prisma } from "../../lib/db";
 import { createSession } from "@/lib/session/createSessions";
-import { User } from "@prisma/client";
+import { createUser as createUserDb } from "@/lib/user/createUser";
 import * as opaqueServer from "@/lib/opaque/server";
+import { User } from "@prisma/client";
 
 /**
  * Step 1 of OPAQUE registration: Create a registration response.
@@ -36,12 +36,7 @@ export async function createUser({
   registrationRecord: string;
 }): Promise<User | null> {
   try {
-    const user = await prisma.user.create({
-      data: {
-        email,
-        opaqueRegistrationRecord: registrationRecord,
-      },
-    });
+    const user = await createUserDb(email, registrationRecord);
 
     // Create session for newly created user
     await createSession(user.id);

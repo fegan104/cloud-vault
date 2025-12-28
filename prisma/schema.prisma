@@ -47,10 +47,10 @@ model EncryptedFile {
   fileName          String
   fileSize          Int
   storagePath       String
-  fileIv            String
+  fileNonce         String
   fileAlgorithm     String
   wrappedFileKey    String
-  keyWrapIv         String
+  keyWrapNonce      String
   createdAt         DateTime @default(now())
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -68,7 +68,7 @@ model Share {
   opaqueRegistrationRecord String  // OPAQUE registration record for share password verification
 
   wrappedFileKey    String
-  keyWrapIv         String
+  keyWrapNonce      String
   
   createdAt         DateTime @default(now())
 
