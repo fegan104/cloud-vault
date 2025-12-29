@@ -58,7 +58,7 @@ export default function FileListItem<T extends FileListItemData>({
     <li
       className="relative bg-surface-variant p-5 rounded-sm shadow-[--shadow-2] 
                flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4
-               hover:shadow-[--shadow-3] transition-all duration-200"
+               transition-all duration-200"
     >
       <div className="flex items-start gap-4 min-w-0 flex-1 pr-10 sm:pr-0">
         <div className="shrink-0 pt-1 md:p-3">
@@ -94,13 +94,13 @@ export default function FileListItem<T extends FileListItemData>({
           )}
         </TextButton>
         {hasMenuItems && (
-          <div className="absolute top-5 right-5 sm:relative sm:top-auto sm:right-auto">
+          <div className="absolute top-5 right-5 sm:relative sm:top-auto sm:right-auto pl-1">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               disabled={isBusy}
-              className={`rounded-lg transition-all duration-200
-                text-on-secondary-container hover:bg-secondary-container/70 
-                ${isBusy ? 'opacity-50 cursor-wait' : ''}`}
+              className={`rounded-full p-2 -m-2 transition-all duration-200
+                text-on-secondary-container hover:bg-on-surface/10
+                ${isBusy ? "opacity-50 cursor-wait" : ""}`}
               aria-label="More actions"
             >
               <MoreVertical className="w-5 h-5 text-on-surface" />
