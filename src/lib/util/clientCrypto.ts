@@ -111,7 +111,6 @@ export function encryptFile(
       fileNonce: string;
       wrappedFileKey: string;
       keyWrapNonce: string;
-      fileAlgorithm: string;
     };
   }>((resolve, reject) => {
     const worker = new Worker(

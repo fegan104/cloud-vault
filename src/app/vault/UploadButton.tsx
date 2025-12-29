@@ -15,7 +15,6 @@ export function UploadButton({ onEncrypted }: {
       fileNonce: string;
       wrappedFileKey: string;
       keyWrapNonce: string;
-      fileAlgorithm: string;
     }
   ) => Promise<void>;
 }) {

@@ -4,7 +4,6 @@ interface FileMetadata {
   fileNonce: string;
   wrappedFileKey: string;
   keyWrapNonce: string;
-  fileAlgorithm: string;
 }
 
 /**
@@ -30,7 +29,6 @@ export async function createEncryptedFile(
       fileSize,
       storagePath,
       fileNonce: metadata.fileNonce,
-      fileAlgorithm: metadata.fileAlgorithm,
       wrappedFileKey: metadata.wrappedFileKey,
       keyWrapNonce: metadata.keyWrapNonce,
     },

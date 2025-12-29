@@ -48,7 +48,6 @@ model EncryptedFile {
   fileSize          Int
   storagePath       String
   fileNonce         String
-  fileAlgorithm     String
   wrappedFileKey    String
   keyWrapNonce      String
   createdAt         DateTime @default(now())

@@ -39,7 +39,6 @@ self.onmessage = async (e) => {
     fileNonce: uint8ToBase64(fileNonce),
     wrappedFileKey: uint8ToBase64(new Uint8Array(wrappedFileKey)),
     keyWrapNonce: uint8ToBase64(keyWrapNonce),
-    fileAlgorithm: 'AES-GCM',
   };
 
   self.postMessage({ encryptedContent, metadata }, [encryptedContent] as WindowPostMessageOptions);

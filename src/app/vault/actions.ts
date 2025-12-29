@@ -52,7 +52,6 @@ export async function saveEncryptedFileDetails(
     fileNonce: string;
     wrappedFileKey: string;
     keyWrapNonce: string;
-    fileAlgorithm: string;
   }
 ) {
   const currentUser = await getUser();
