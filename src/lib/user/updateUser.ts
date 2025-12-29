@@ -1,15 +1,19 @@
 import { prisma } from "@/lib/db";
 
 /**
- * Updates a user's email address.
+ * Updates a user's email address and OPAQUE registration record in a transaction.
  * 
  * @param userId - The ID of the user to update
  * @param email - The new email address
+ * @param registrationRecord - The new OPAQUE registration record
  */
-export async function updateUserEmail(userId: string, email: string) {
+export async function updateUserEmailAndRegistration(userId: string, email: string, registrationRecord: string) {
   return await prisma.user.update({
     where: { id: userId },
-    data: { email },
+    data: {
+      email,
+      opaqueRegistrationRecord: registrationRecord
+    },
   });
 }
 

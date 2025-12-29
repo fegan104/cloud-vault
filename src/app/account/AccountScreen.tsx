@@ -1,5 +1,5 @@
 "use client";
-import { signOut, updateEmail, getAllEncryptedFilesKeyDerivationParams, updateEncryptedFilesKeyDerivationParams, createSignUpResponse } from "./actions";
+import { signOut, updateEmail, getAllEncryptedFilesKeyDerivationParams, updateEncryptedFilesKeyDerivationParams, createSignUpResponse, createUpdateEmailSignUpResponse } from "./actions";
 import { Card } from "@/components/Card";
 import { TonalButton } from "@/components/Buttons";
 import { PasswordInput, TextInput } from "@/components/TextInput";
@@ -21,6 +21,7 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const toggleSection = (section: string) => {
@@ -29,14 +30,34 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
   };
 
   const handleChangeEmail = async () => {
-    if (!email) return;
+    if (!email || !currentPassword) return;
 
+    setIsUpdatingEmail(true);
+    setError(null);
     try {
-      await updateEmail(email);
+      // Step 1: Client starts OPAQUE registration for the NEW email
+      const { clientRegistrationState, registrationRequest } = createStartSignUpRequest({ password: currentPassword });
+
+      // Step 2: Server creates registration response for the NEW email
+      const registrationResponse = await createUpdateEmailSignUpResponse(email, registrationRequest);
+
+      // Step 3: Client finishes registration - get registration record
+      const { registrationRecord } = createFinishSignUpRequest({
+        clientRegistrationState,
+        registrationResponse,
+        password: currentPassword,
+      });
+
+      // Step 4: Update email and registration record in DB
+      await updateEmail(email, registrationRecord);
+
       setExpandedSection(null);
+      setCurrentPassword('');
     } catch (err) {
       console.error("Failed to update email:", err);
       setError("Failed to update email. Please try again.");
+    } finally {
+      setIsUpdatingEmail(false);
     }
   };
 
@@ -72,7 +93,6 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
 
       // Current master key derived from the OPAQUE export key
       const currentMasterKey = await importKeyFromExportKey(loginResult.exportKey);
-
 
       // Create new OPAQUE registration for the new password
       // Step 1: Client starts OPAQUE registration
@@ -156,7 +176,7 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
 
           {expandedSection === 'email' && (
             <div className="px-6 pb-6 border-t border-gray-100 mt-2 pt-4">
-              <form action={handleChangeEmail}>
+              <div className="flex flex-col gap-4">
                 <div className="flex flex-col md:flex-row md:items-end gap-2">
                   <TextInput
                     label="New Email Address"
@@ -165,9 +185,22 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
                     onChange={setEmail}
                     className="w-full"
                   />
-                  <TonalButton type="submit" className="mb-[2px]">Update</TonalButton>
+                  <PasswordInput
+                    label="Re-enter Password"
+                    value={currentPassword}
+                    onChange={setCurrentPassword}
+                  />
                 </div>
-              </form>
+
+                <TonalButton
+                  onClick={handleChangeEmail}
+                  disabled={isUpdatingEmail || !email || !currentPassword}
+                  className="mb-[2px]"
+                >
+                  {isUpdatingEmail ? <CircularProgress size={20} className="mr-2" /> : null}
+                  {isUpdatingEmail ? "Updating..." : "Update"}
+                </TonalButton>
+              </div>
             </div>
           )}
         </Card>

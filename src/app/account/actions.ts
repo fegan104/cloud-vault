@@ -3,7 +3,7 @@
 import { deleteSessionToken } from "@/lib/session/deleteSessionsToken";
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/user/getUser";
-import { updateUserEmail, updateEncryptedFilesTransaction } from "@/lib/user/updateUser";
+import { updateEncryptedFilesTransaction } from "@/lib/user/updateUser";
 import { getEncryptedFilesForUser } from "@/lib/file/getEncryptedFile";
 import { revalidatePath } from "next/cache";
 import * as opaqueServer from "@/lib/opaque/server";
@@ -25,6 +25,27 @@ export async function createSignUpResponse(
 
   return await opaqueServer.createSignUpResponse(user.email, registrationRequest);
 }
+
+/**
+ * Creates an OPAQUE registration response for email change.
+ * Used when the user is changing their account email.
+ * 
+ * @param email - The new email address
+ * @param registrationRequest - The OPAQUE registration request from the client
+ * @returns The registration response to send back to the client
+ */
+export async function createUpdateEmailSignUpResponse(
+  email: string,
+  registrationRequest: string
+): Promise<string> {
+  const user = await getUser();
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  return await opaqueServer.createSignUpResponse(email, registrationRequest);
+}
+
 /**
  * Signs out the user. This deletes the session cookie and removes 
  * the session from the database. Then redirects to the home page.
@@ -35,17 +56,19 @@ export async function signOut() {
 }
 
 /**
- * Updates the user's email.
+ * Updates the user's email and registration record.
  * @param email The new email address.
+ * @param registrationRecord The new OPAQUE registration record.
  * @returns true if the update was successful, false otherwise.
  */
-export async function updateEmail(email: string): Promise<boolean> {
+export async function updateEmail(email: string, registrationRecord: string): Promise<boolean> {
   const user = await getUser();
   if (!user) {
     throw new Error("Unauthorized");
   }
 
-  await updateUserEmail(user.id, email);
+  const { updateUserEmailAndRegistration } = await import("@/lib/user/updateUser");
+  await updateUserEmailAndRegistration(user.id, email, registrationRecord);
 
   revalidatePath("/account");
 
