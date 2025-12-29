@@ -25,8 +25,7 @@ type VaultScreenProps = {
 
 export default function VaultScreen({ files }: VaultScreenProps) {
   const { masterKey } = useMasterKey();
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [downloadProgress, setDownloadProgress] = useState<number>(0);
+  const [activeDownloads, setActiveDownloads] = useState<Record<string, number>>({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [fileToDelete, setFileToDelete] = useState<EncryptedFile | null>(null);
   const [fileToRename, setFileToRename] = useState<EncryptedFile | null>(null);
@@ -48,14 +47,18 @@ export default function VaultScreen({ files }: VaultScreenProps) {
    */
   const handleDownload = async (file: EncryptedFile) => {
     if (!masterKey) return;
-    setDownloadingId(file.id);
+
+    // Track progress for this specific file
+    setActiveDownloads(prev => ({ ...prev, [file.id]: 0 }));
 
     try {
       // 1. Get a signed URL for the file
       const downloadUrl = await getDownloadUrlByFileId(file.id);
 
       // 2. Fetch the encrypted file
-      const encryptedBlob = await downloadFileWithProgress(downloadUrl, setDownloadProgress);
+      const encryptedBlob = await downloadFileWithProgress(downloadUrl, (progress) => {
+        setActiveDownloads(prev => ({ ...prev, [file.id]: progress }));
+      });
 
       // 3. Decrypt the file
       const decryptedBlob = await decryptFile(encryptedBlob, masterKey, {
@@ -70,8 +73,12 @@ export default function VaultScreen({ files }: VaultScreenProps) {
       console.error("Download failed:", error);
       alert("Failed to download and decrypt file.");
     } finally {
-      setDownloadingId(null);
-      setDownloadProgress(0);
+      // Remove from active downloads
+      setActiveDownloads(prev => {
+        const next = { ...prev };
+        delete next[file.id];
+        return next;
+      });
     }
   };
 
@@ -276,8 +283,8 @@ export default function VaultScreen({ files }: VaultScreenProps) {
                     <FileListItem
                       key={file.id}
                       file={file}
-                      isDownloading={downloadingId === file.id}
-                      downloadProgress={downloadProgress}
+                      isDownloading={activeDownloads[file.id] !== undefined}
+                      downloadProgress={activeDownloads[file.id] || 0}
                       isDeleting={deletingId === file.id}
                       isRenaming={renamingId === file.id}
                       onDownload={handleDownload}

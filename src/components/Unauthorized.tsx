@@ -4,7 +4,6 @@ import { ShieldAlert } from "lucide-react";
 import { TonalButton, TextButton } from "./Buttons";
 import { deleteSessionToken } from "@/lib/session/deleteSessionsToken";
 import { useRouter } from "next/navigation";
-import { Card } from "./Card";
 
 const Unauthorized: React.FC = () => {
   const router = useRouter();
