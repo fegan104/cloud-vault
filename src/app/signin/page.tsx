@@ -1,7 +1,7 @@
 'use client';
-import { requestSignInChallenge, verifySignInChallenge } from '../../app/signin/actions';
+
+import { startLogin, finishLogin } from '../../app/signin/actions';
 import { useMasterKey } from '../../components/MasterKeyContext';
-import { deriveMasterKey, signChallenge } from '../../lib/util/clientCrypto';
 import { redirect } from 'next/navigation';
 import { useState } from 'react';
 import { LogIn } from 'lucide-react';
@@ -10,7 +10,9 @@ import { TextInput, PasswordInput } from '@/components/TextInput';
 import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
 import CircularProgress from '@/components/CircularProgress';
-import { base64ToUint8Array } from '@/lib/util/arrayHelpers';
+import { importKeyFromExportKey } from '@/lib/util/clientCrypto';
+import { createStartSignInRequest, createFinishSignInRequest } from '@/lib/opaque/client';
+
 
 export default function SignInPage() {
   const [email, setEmail] = useState('');
@@ -20,32 +22,56 @@ export default function SignInPage() {
   const { setMasterKey } = useMasterKey()
 
   /**
-   * Handles the request for a challenge to verify the user's identity.
-   * @param event The form event.
+   * Handles the sign in process using OPAQUE protocol.
+   * The OPAQUE export key is used directly as the master key for file encryption.
    */
-  async function handleRequestChallenge(event: React.FormEvent) {
+  async function handleSignIn(event: React.FormEvent) {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
 
-    // 1. Request a challenge from the server
-    const { challenge, masterKeySalt } = await requestSignInChallenge(email);
+    // Step 1: Client starts OPAQUE login
+    const { clientLoginState, startLoginRequest } = createStartSignInRequest({
+      password,
+    });
 
-    // 2. Sign the challenge with the user's master password
-    const signature = await signChallenge(password, masterKeySalt, challenge)
+    // Step 2: Server starts login and returns response
+    const loginStart = await startLogin(email, startLoginRequest);
 
-    // 3. Verify the challenge with the server
-    const verified = await verifySignInChallenge(email, challenge, signature);
+    if (!loginStart) {
+      setError('Invalid email or password');
+      setIsLoading(false);
+      return;
+    }
+
+    const { loginResponse } = loginStart;
+
+    // Step 3: Client finishes login - get export key for encryption
+    const loginResult = createFinishSignInRequest({
+      clientLoginState,
+      loginResponse,
+      password,
+    });
+
+    if (!loginResult) {
+      setError('Invalid email or password');
+      setIsLoading(false);
+      return;
+    }
+
+    const { finishLoginRequest, exportKey } = loginResult;
+
+    // Step 4: Server verifies and creates session
+    const verified = await finishLogin(email, finishLoginRequest);
 
     if (verified) {
-      // 4. Derive the master key from the password and salt
-      const saltBytes = base64ToUint8Array(masterKeySalt)
-      const masterKey = await deriveMasterKey(password, saltBytes)
-      setMasterKey(masterKey)
-      redirect("/vault")
+      // Use OPAQUE export key as master key (convert hex to CryptoKey)
+      const masterKey = await importKeyFromExportKey(exportKey);
+      setMasterKey(masterKey);
+      redirect("/vault");
     } else {
       setIsLoading(false);
-      setError('Invalid email or password')
+      setError('Invalid email or password');
     }
   }
 
@@ -60,16 +86,16 @@ export default function SignInPage() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-container mb-4">
                 <LogIn className="w-8 h-8 text-primary" />
               </div>
-              <h1 className="text-[--font-headline-md] font-semibold text-on-surface mb-2">
+              <h1 className="text-2xl font-semibold text-on-surface mb-2">
                 Welcome Back
               </h1>
-              <p className="text-[--font-body-md] text-on-surface-variant">
+              <p className="text-on-surface-variant">
                 Sign in to access your encrypted vault
               </p>
             </div>
 
             {/* Form */}
-            <form onSubmit={handleRequestChallenge} className="space-y-5">
+            <form onSubmit={handleSignIn} className="space-y-5">
               {/* Email Input */}
               <TextInput
                 label="Email"
@@ -89,8 +115,8 @@ export default function SignInPage() {
 
               {/* Error Message */}
               {error && (
-                <div className="p-3 rounded-[var(--radius-md)] bg-error-container">
-                  <p className="text-[--font-body-sm] text-on-error-container">{error}</p>
+                <div className="p-3 rounded-md bg-error-container">
+                  <p className="text-sm text-on-error-container">{error}</p>
                 </div>
               )}
 
@@ -107,7 +133,7 @@ export default function SignInPage() {
 
             {/* Sign Up Link */}
             <div className="mt-6 text-center">
-              <p className="text-[--font-body-sm] text-on-surface-variant">
+              <p className="text-sm text-on-surface-variant">
                 Don't have an account?{' '}
                 <Link
                   href="/signup"

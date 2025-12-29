@@ -21,7 +21,6 @@ export default async function VaultPage() {
 
   return (
     <VaultScreen
-      masterKeySalt={user.masterKeySalt}
       files={user.encryptedFiles}
     />
   );

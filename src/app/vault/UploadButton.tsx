@@ -6,22 +6,15 @@ import { Upload } from "lucide-react";
 import CircularProgress from "@/components/CircularProgress";
 import { getUploadUrl } from "./actions";
 
-export function UploadButton({ masterKeySalt, onEncrypted }: {
-  masterKeySalt: string,
+export function UploadButton({ onEncrypted }: {
   onEncrypted: (
     fileName: string,
     storagePath: string,
     fileSize: number,
     metadata: {
-      fileIv: string;
+      fileNonce: string;
       wrappedFileKey: string;
-      keyWrapIv: string;
-      fileAlgorithm: string;
-      keyDerivationSalt: string;
-      argon2MemorySize: number;
-      argon2Iterations: number;
-      argon2Parallelism: number;
-      argon2HashLength: number;
+      keyWrapNonce: string;
     }
   ) => Promise<void>;
 }) {
@@ -48,7 +41,7 @@ export function UploadButton({ masterKeySalt, onEncrypted }: {
 
     try {
       // 1. Encrypt the file locally
-      const { encryptedFileBlob, metadata } = await encryptFile(file, masterKey, masterKeySalt);
+      const { encryptedFileBlob, metadata } = await encryptFile(file, masterKey);
 
       // 2. Request a signed upload URL from the server
       const { uploadUrl, storagePath } = await getUploadUrl();

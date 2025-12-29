@@ -8,16 +8,25 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
-  masterKeySalt String
-  publicKey     String
-  createdAt     DateTime @default(now())
+  id                       String   @id @default(uuid())
+  email                    String   @unique
+  opaqueRegistrationRecord String
+  createdAt                DateTime @default(now())
 
   sessions       Session[]
   encryptedFiles EncryptedFile[]
 
   @@map("users")
+}
+
+model OpaqueEphemeral {
+  id               String   @id @default(uuid())
+  userIdentifier   String   @unique
+  serverLoginState String
+  createdAt        DateTime @default(now())
+  expiresAt        DateTime
+
+  @@map("opaque_ephemerals")
 }
 
 model Session {
@@ -32,31 +41,15 @@ model Session {
   @@map("sessions")
 }
 
-model Challenge {
-  id        String   @id @default(uuid())
-  challenge String   @unique
-  createdAt DateTime @default(now())
-  expiresAt DateTime
-
-  @@map("challenges")
-}
-
 model EncryptedFile {
   id                String @id @default(uuid())
   userId            String
   fileName          String
   fileSize          Int
   storagePath       String
-  fileIv            String
-  fileAlgorithm     String
+  fileNonce         String
   wrappedFileKey    String
-  keyWrapIv         String
-  keyDerivationSalt String
-
-  argon2MemorySize  Int
-  argon2Iterations  Int
-  argon2Parallelism Int
-  argon2HashLength  Int
+  keyWrapNonce      String
   createdAt         DateTime @default(now())
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -71,16 +64,11 @@ model Share {
 
   fileId    String
   name      String
-  publicKey String
+  opaqueRegistrationRecord String  // OPAQUE registration record for share password verification
 
   wrappedFileKey    String
-  keyWrapIv         String
-  keyDerivationSalt String
-
-  argon2MemorySize  Int
-  argon2Iterations  Int
-  argon2Parallelism Int
-  argon2HashLength  Int
+  keyWrapNonce      String
+  
   createdAt         DateTime @default(now())
 
   file EncryptedFile @relation(fields: [fileId], references: [id], onDelete: Cascade)

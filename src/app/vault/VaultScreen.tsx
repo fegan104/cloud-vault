@@ -2,7 +2,7 @@
 
 import { useMasterKey } from "../../components/MasterKeyContext";
 import MasterKeyGuard from "./MasterKeyGuard";
-import { decryptFile, deriveShareKey, rewrapKey, generateSalt } from "../../lib/util/clientCrypto";
+import { decryptFile, rewrapKey, importKeyFromExportKey } from "../../lib/util/clientCrypto";
 import { useState } from "react";
 import { EncryptedFile } from "@prisma/client";
 import { getDownloadUrlByFileId, saveEncryptedFileDetails, deleteFile, renameFile } from "./actions";
@@ -11,18 +11,19 @@ import { UploadButton } from "./UploadButton";
 import { TonalButton } from "@/components/Buttons";
 import { DeleteConfirmationModal, TextInputModal, CreateShareModal } from "@/components/Modals";
 import Scaffold from "../../components/Scaffold";
-import { createShare } from "@/lib/share/createShare";
+import { createShare, startShareRegistration } from "@/lib/share/createShare";
 import FileListItem from "@/components/FileListItem";
-import { uint8ToBase64 } from "@/lib/util/arrayHelpers";
 import { saveFileToDevice } from "@/lib/util/saveFileToDevice";
 import { downloadFileWithProgress } from "@/lib/util/downloadFileWithProgress";
+import { createFinishSignUpRequest, createStartSignUpRequest } from "@/lib/opaque/client";
+
+
 
 type VaultScreenProps = {
-  masterKeySalt: string;
   files: EncryptedFile[];
 };
 
-export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) {
+export default function VaultScreen({ files }: VaultScreenProps) {
   const { masterKey } = useMasterKey();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<number>(0);
@@ -58,9 +59,9 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
 
       // 3. Decrypt the file
       const decryptedBlob = await decryptFile(encryptedBlob, masterKey, {
-        fileIv: file.fileIv,
+        fileNonce: file.fileNonce,
         wrappedFileKey: file.wrappedFileKey,
-        keyWrapIv: file.keyWrapIv,
+        keyWrapNonce: file.keyWrapNonce,
       });
 
       // 4. Trigger download
@@ -144,6 +145,7 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
 
   /**
    * This function is called when the user confirms the sharing of a file.
+   * Uses OPAQUE registration to create a password-protected share.
    * @param shareName The name of the share.
    * @param password The password for the share.
    */
@@ -153,30 +155,44 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
     setIsCreatingShare(true);
 
     try {
-      // 1. Generate a random salt for the share key derivation
-      const shareSaltBytes = generateSalt();
-      const shareSaltB64 = uint8ToBase64(shareSaltBytes);
+      // Generate a temporary share ID for OPAQUE registration
+      const newShareId = crypto.randomUUID();
 
-      // 2. Derive the share key from the password
-      const { shareKey, publicKey, metadata } = await deriveShareKey(password, shareSaltBytes);
+      // Step 1: Start OPAQUE registration for the share
+      const { clientRegistrationState, registrationRequest } = createStartSignUpRequest({ password });
 
-      // 3. Wrap the file key with the share key
-      const { wrappedKey: wrappedShareKey, wrappedKeyIv: wrappedShareKeyIv } = await rewrapKey({
+      // Step 2: Get registration response from server
+      const registrationResponse = await startShareRegistration(
+        newShareId,
+        registrationRequest
+      );
+
+      // Step 3: Complete registration - get export key to use as share key
+      const { registrationRecord, exportKey } = createFinishSignUpRequest({
+        clientRegistrationState,
+        registrationResponse,
+        password,
+      });
+
+      // Convert export key to CryptoKey for wrapping
+      const shareKey = await importKeyFromExportKey(exportKey);
+
+      // 4. Wrap the file key with the share key
+      const { wrappedKey: wrappedShareKey, wrappedKeyNonce: wrappedShareKeyNonce } = await rewrapKey({
         wrappedKey: fileToShare.wrappedFileKey,
-        wrappedKeyIv: fileToShare.keyWrapIv,
+        wrappedKeyNonce: fileToShare.keyWrapNonce,
         unwrappingKey: masterKey,
         wrappingKey: shareKey,
       });
 
-      // 4. Create the share record in the database
+      // 5. Create the share record in the database
       const share = await createShare(
+        newShareId,
         shareName,
         fileToShare.id,
         wrappedShareKey,
-        wrappedShareKeyIv,
-        shareSaltB64,
-        publicKey,
-        metadata
+        wrappedShareKeyNonce,
+        registrationRecord
       );
 
       return share.id;
@@ -227,21 +243,21 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
           isLoading={isCreatingShare}
         />
 
-        <MasterKeyGuard masterKeySalt={masterKeySalt}>
+        <MasterKeyGuard>
           <div className="flex-1 overflow-y-auto md:ring-1 ring-on-surface rounded-2xl md:m-4" style={{ "scrollbarWidth": "none" }}>
             <div className="w-full max-w-5xl mx-auto p-4 flex flex-col items-center">
               <div className="w-full mb-8 text-center">
-                <h2 className="text-[--font-headline-lg] font-bold text-on-surface mb-3">
+                <h2 className="font-bold text-on-surface mb-3">
                   Your Encrypted Files
                 </h2>
-                <p className="text-[--font-body-md] text-on-surface-variant">
+                <p className="text-on-surface-variant">
                   All files are encrypted with your master key
                 </p>
               </div>
 
               {/* Upload Button */}
               <div className="w-full max-w-3xl mb-6">
-                <UploadButton masterKeySalt={masterKeySalt} onEncrypted={saveEncryptedFileDetails} />
+                <UploadButton onEncrypted={saveEncryptedFileDetails} />
               </div>
 
               {/* File List */}
@@ -283,11 +299,11 @@ export default function VaultScreen({ masterKeySalt, files }: VaultScreenProps) 
 function EmptyState({ searchQuery, children }: { searchQuery: string; children: React.ReactNode }) {
   return (
     <div className="w-full max-w-3xl mt-12 text-center">
-      <div className="bg-surface rounded-[var(--radius-xl)] p-12 shadow-[--shadow-2]">
+      <div className="bg-surface p-12 shadow-[--shadow-2]">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-variant mb-4">
           <FileText className="w-8 h-8 text-primary" />
         </div>
-        <p className="text-[--font-body-lg] text-on-surface-variant">
+        <p className="text-on-surface-variant">
           {searchQuery.trim()
             ? `No files found matching "${searchQuery}".`
             : "No files uploaded yet. Upload your first file to get started."

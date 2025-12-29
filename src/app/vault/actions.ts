@@ -1,14 +1,18 @@
 "use server";
 
 import { getSignedDownloadUrl, getSignedUploadUrl, deleteFileFromCloudStorage, doesFileExistInCloudStorage } from "@/lib/firebaseAdmin";
-import { prisma } from "@/lib/db";
+import { createEncryptedFile } from "@/lib/file/createEncryptedFile";
+import { getEncryptedFileById } from "@/lib/file/getEncryptedFile";
+import { updateEncryptedFileKeyParams, renameEncryptedFile } from "@/lib/file/updateEncryptedFile";
+import { deleteEncryptedFile } from "@/lib/file/deleteEncryptedFile";
+import { getSessionWithFile } from "@/lib/session/getSessionWithFiles";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/user/getUser";
-import { generateChallenge } from "@/lib/challenge/generateChallenge";
 import { getSessionToken } from "@/lib/session/getSessionToken";
-import { verifyChallenge } from "@/lib/challenge/verifyChallenge";
+import { upsertEphemeral, getEphemeral, deleteEphemeral } from "@/lib/opaque/ephemeral";
+import * as opaqueServer from "@/lib/opaque/server";
 
 /**
  * Generates a URL for uploading a file to cloud storage.
@@ -45,15 +49,9 @@ export async function saveEncryptedFileDetails(
   storagePath: string,
   fileSize: number,
   metadata: {
-    fileIv: string;
+    fileNonce: string;
     wrappedFileKey: string;
-    keyWrapIv: string;
-    fileAlgorithm: string;
-    keyDerivationSalt: string;
-    argon2MemorySize: number;
-    argon2Iterations: number;
-    argon2Parallelism: number;
-    argon2HashLength: number;
+    keyWrapNonce: string;
   }
 ) {
   const currentUser = await getUser();
@@ -70,23 +68,13 @@ export async function saveEncryptedFileDetails(
     throw new Error("File not found at storage path");
   }
 
-  await prisma.encryptedFile.create({
-    data: {
-      userId: currentUser.id,
-      fileName: fileName,
-      fileSize: fileSize,
-      storagePath: storagePath,
-      fileIv: metadata.fileIv,
-      fileAlgorithm: metadata.fileAlgorithm,
-      wrappedFileKey: metadata.wrappedFileKey,
-      keyWrapIv: metadata.keyWrapIv,
-      keyDerivationSalt: metadata.keyDerivationSalt,
-      argon2MemorySize: metadata.argon2MemorySize,
-      argon2Iterations: metadata.argon2Iterations,
-      argon2Parallelism: metadata.argon2Parallelism,
-      argon2HashLength: metadata.argon2HashLength,
-    }
-  });
+  await createEncryptedFile(
+    currentUser.id,
+    fileName,
+    fileSize,
+    storagePath,
+    metadata
+  );
   revalidatePath("/vault");
 }
 
@@ -101,25 +89,7 @@ export async function getDownloadUrlByFileId(fileId: string) {
     throw new Error("Unauthorized");
   }
 
-  const session = await prisma.session.findUnique({
-    where: {
-      sessionToken,
-      expiresAt: {
-        gt: new Date(), // only include sessions that haven't expired
-      }
-    },
-    include: {
-      user: {
-        include: {
-          encryptedFiles: {
-            where: {
-              id: fileId,
-            },
-          }
-        },
-      },
-    },
-  });
+  const session = await getSessionWithFile(sessionToken, fileId);
 
   const fileRecord = session?.user.encryptedFiles?.[0];
 
@@ -139,12 +109,7 @@ export async function deleteFile(fileId: string) {
   if (!currentUser) throw new Error("User not authenticated");
 
   // Get the file record to ensure it belongs to this user
-  const fileRecord = await prisma.encryptedFile.findUnique({
-    where: {
-      id: fileId,
-      userId: currentUser.id,
-    },
-  });
+  const fileRecord = await getEncryptedFileById(fileId, currentUser.id);
 
   if (!fileRecord) {
     throw new Error("File not found or unauthorized");
@@ -154,9 +119,7 @@ export async function deleteFile(fileId: string) {
   await deleteFileFromCloudStorage(fileRecord.storagePath);
 
   // Delete from database
-  await prisma.encryptedFile.delete({
-    where: { id: fileId },
-  });
+  await deleteEncryptedFile(fileId);
 
   revalidatePath("/vault");
 }
@@ -173,25 +136,7 @@ export async function renameFile(fileId: string, newFileName: string) {
   }
 
   // Get the session and user so we can verify the file belongs to this user
-  const session = await prisma.session.findUnique({
-    where: {
-      sessionToken,
-      expiresAt: {
-        gt: new Date(), // only include sessions that haven't expired
-      }
-    },
-    include: {
-      user: {
-        include: {
-          encryptedFiles: {
-            where: {
-              id: fileId,
-            },
-          }
-        },
-      },
-    },
-  });
+  const session = await getSessionWithFile(sessionToken, fileId);
 
   const fileRecord = session?.user.encryptedFiles?.[0];
 
@@ -200,40 +145,68 @@ export async function renameFile(fileId: string, newFileName: string) {
   }
 
   // Update the file name in the database
-  await prisma.encryptedFile.update({
-    where: { id: fileId },
-    data: { fileName: newFileName },
-  });
+  await renameEncryptedFile(fileId, newFileName);
 
   revalidatePath("/vault");
 }
 
 /**
- * Verifies a challenge for an authenticated user.
- * @param challengeFromClient - the challenge string that was signed
- * @param clientSignedChallenge - base64-encoded signature produced by client
- * @returns boolean - true if signature verifies, false otherwise
+ * Starts OPAQUE login for an already-authenticated user (for re-verifying password).
+ * This is used when the client needs to verify the password to derive the master key.
+ * 
+ * @param startLoginRequest - The OPAQUE start login request from the client
+ * @returns loginResponse if successful, null if failed
  */
-export async function verifyChallengeForSession(
-  challengeFromClient: string,
-  clientSignedChallenge: string
+export async function createSignInResponseForSession(
+  startLoginRequest: string
+): Promise<{ loginResponse: string } | null> {
+  const user = await getUser();
+  if (!user || !user.opaqueRegistrationRecord) {
+    return null;
+  }
+
+  const { loginResponse, serverLoginState } = await opaqueServer.createSignInResponse(
+    user.email,
+    user.opaqueRegistrationRecord,
+    startLoginRequest
+  );
+
+  // Store the server login state as ephemeral
+  await upsertEphemeral(user.email, serverLoginState);
+
+  return { loginResponse };
+}
+
+/**
+ * Finishes OPAQUE login for an already-authenticated user.
+ * This verifies the password is correct without creating a new session.
+ * 
+ * @param finishLoginRequest - The OPAQUE finish login request from the client
+ * @returns boolean - true if password verification succeeded
+ */
+export async function verifyPasswordForSession(
+  finishLoginRequest: string
 ): Promise<boolean> {
   const user = await getUser();
   if (!user) {
     return false;
   }
 
-  return await verifyChallenge(user.publicKey, challengeFromClient, clientSignedChallenge);
-}
+  const ephemeral = await getEphemeral(user.email);
 
-/**
- * Generates a challenge for an authenticated user.
- * @returns the challenge string
- */
-export async function generateChallengeForSession() {
-  const user = await getUser();
-  if (!user) {
-    throw new Error("User not authenticated");
+  if (!ephemeral || ephemeral.expiresAt < new Date()) {
+    if (ephemeral) {
+      await deleteEphemeral(ephemeral.id);
+    }
+    return false;
   }
-  return await generateChallenge();
+
+  const sessionKey = await opaqueServer.finishSignIn(
+    ephemeral.serverLoginState,
+    finishLoginRequest
+  );
+
+  await deleteEphemeral(ephemeral.id);
+
+  return sessionKey !== null;
 }

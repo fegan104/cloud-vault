@@ -1,7 +1,6 @@
 'use client';
 
-import { createUser } from './actions';
-import { deriveKeypair, deriveMasterKey, generateSalt } from '../../lib/util/clientCrypto';
+import { createSignUpResponse, createUser } from './actions';
 import { useState } from 'react';
 import { useMasterKey } from '../../components/MasterKeyContext';
 import { redirect } from 'next/navigation';
@@ -10,8 +9,9 @@ import Link from 'next/link';
 import { TextInput, PasswordInput } from '@/components/TextInput';
 import { TonalButton } from '@/components/Buttons';
 import { Card } from '@/components/Card';
-import { uint8ToBase64 } from '@/lib/util/arrayHelpers';
 import CircularProgress from '@/components/CircularProgress';
+import { importKeyFromExportKey } from '@/lib/util/clientCrypto';
+import { createFinishSignUpRequest, createStartSignUpRequest } from '@/lib/opaque/client';
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
@@ -22,8 +22,8 @@ export default function SignUpPage() {
   const { setMasterKey } = useMasterKey()
 
   /**
-   * Handles the sign up process by creating a new user on the server and storing the master key in memory client-side.
-   * @param event The form event.
+   * Handles the sign up process using OPAQUE protocol.
+   * The OPAQUE export key is used directly as the master key for file encryption.
    */
   async function handleSignUp(event: React.FormEvent) {
     event.preventDefault();
@@ -36,26 +36,35 @@ export default function SignUpPage() {
       setIsLoading(false);
       return;
     }
+    // Step 1: Client starts OPAQUE registration
+    const { clientRegistrationState, registrationRequest } = createStartSignUpRequest({ password });
 
-    // 1) Generate salt
-    const saltBytes = generateSalt();
-    const salt = uint8ToBase64(saltBytes);
+    // Step 2: Server creates registration response
+    const registrationResponse = await createSignUpResponse(email, registrationRequest);
 
-    // 2) Generate public key
-    const { publicKey } = await deriveKeypair(password, saltBytes)
-    const publicKeyBase64 = uint8ToBase64(publicKey);
+    // Step 3: Client finishes registration - get export key for encryption
+    const { registrationRecord, exportKey } = createFinishSignUpRequest({
+      clientRegistrationState,
+      registrationResponse,
+      password,
+    });
 
-    // 3) Create user account on server
-    const user = await createUser({ email, salt, publicKey: publicKeyBase64 });
+    // Step 4: Server stores registration record and creates user
+    const user = await createUser({
+      email,
+      registrationRecord,
+    });
+
     if (!user) {
       setError('Failed to create user, that email may already be in use.');
       setIsLoading(false);
       return;
     }
-    // 4) Derive master key locally and store in memory
-    const masterKey = await deriveMasterKey(password, saltBytes)
-    setMasterKey(masterKey)
-    redirect('/vault')
+
+    // Use OPAQUE export key as master key (convert hex to CryptoKey)
+    const masterKey = await importKeyFromExportKey(exportKey);
+    setMasterKey(masterKey);
+    redirect('/vault');
   }
 
   return (
@@ -69,10 +78,10 @@ export default function SignUpPage() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-secondary-container mb-4">
                 <UserPlus className="w-8 h-8 text-primary" />
               </div>
-              <h1 className="text-[--font-headline-md] font-semibold text-on-surface mb-2">
+              <h1 className="text-2xl font-semibold text-on-surface mb-2">
                 Create Account
               </h1>
-              <p className="text-[--font-body-md] text-on-surface-variant">
+              <p className="text-on-surface-variant">
                 Start securing your files with end-to-end encryption
               </p>
             </div>
@@ -104,14 +113,14 @@ export default function SignUpPage() {
                 placeholder="Re-enter your password"
                 error={confirmPassword.length > 0 && password !== confirmPassword ? 'Passwords do not match' : null}
               />
-              <p className="text-[--font-body-sm] text-on-surface-variant">
+              <p className="text-sm text-on-surface-variant">
                 Choose a strong password. You cannot recover it if lost.
               </p>
 
               {/* Error Message */}
               {error && (
-                <div className="p-3 rounded-[var(--radius-md)] bg-error-container">
-                  <p className="text-[--font-body-sm] text-on-error-container">{error}</p>
+                <div className="p-3 rounded-md bg-error-container">
+                  <p className="text-sm text-on-error-container">{error}</p>
                 </div>
               )}
 
@@ -128,7 +137,7 @@ export default function SignUpPage() {
 
             {/* Sign In Link */}
             <div className="mt-6 text-center">
-              <p className="text-[--font-body-sm] text-on-surface-variant">
+              <p className="text-sm text-on-surface-variant">
                 Already have an account?{' '}
                 <Link
                   href="/signin"

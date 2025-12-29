@@ -1,18 +1,19 @@
 "use client";
-import { User } from "@prisma/client";
-import { signOut, updateEmail, getAllEncryptedFilesKeyDerivationParams, updateEncryptedFilesKeyDerivationParams } from "./actions";
+import { signOut, updateEmail, getAllEncryptedFilesKeyDerivationParams, updateEncryptedFilesKeyDerivationParams, createSignUpResponse, createUpdateEmailSignUpResponse } from "./actions";
 import { Card } from "@/components/Card";
 import { TonalButton } from "@/components/Buttons";
 import { PasswordInput, TextInput } from "@/components/TextInput";
 import { useState } from "react";
 import { Mail, Lock, LogOut } from "lucide-react";
 import { useMasterKey } from "@/components/MasterKeyContext";
-import { deriveKeypair, deriveMasterKey, generateSalt, rewrapKey } from "@/lib/util/clientCrypto";
-import { base64ToUint8Array, uint8ToBase64 } from "@/lib/util/arrayHelpers";
+import { rewrapKey, importKeyFromExportKey } from "@/lib/util/clientCrypto";
 import CircularProgress from "@/components/CircularProgress";
 import { TopAppBar } from "@/components/TopAppBar";
+import { createFinishSignUpRequest, createStartSignUpRequest, createStartSignInRequest, createFinishSignInRequest } from "@/lib/opaque/client";
+import { createSignInResponseForSession, verifyPasswordForSession } from "../vault/actions";
 
-export default function AccountScreen({ currentEmail, masterKeySalt }: { currentEmail: string, masterKeySalt: string }) {
+
+export default function AccountScreen({ currentEmail }: { currentEmail: string }) {
   const [email, setEmail] = useState(currentEmail);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const { setMasterKey } = useMasterKey()
@@ -20,6 +21,7 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const toggleSection = (section: string) => {
@@ -28,14 +30,34 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
   };
 
   const handleChangeEmail = async () => {
-    if (!email) return;
+    if (!email || !currentPassword) return;
 
+    setIsUpdatingEmail(true);
+    setError(null);
     try {
-      await updateEmail(email);
+      // Step 1: Client starts OPAQUE registration for the NEW email
+      const { clientRegistrationState, registrationRequest } = createStartSignUpRequest({ password: currentPassword });
+
+      // Step 2: Server creates registration response for the NEW email
+      const registrationResponse = await createUpdateEmailSignUpResponse(email, registrationRequest);
+
+      // Step 3: Client finishes registration - get registration record
+      const { registrationRecord } = createFinishSignUpRequest({
+        clientRegistrationState,
+        registrationResponse,
+        password: currentPassword,
+      });
+
+      // Step 4: Update email and registration record in DB
+      await updateEmail(email, registrationRecord);
+
       setExpandedSection(null);
+      setCurrentPassword('');
     } catch (err) {
       console.error("Failed to update email:", err);
       setError("Failed to update email. Please try again.");
+    } finally {
+      setIsUpdatingEmail(false);
     }
   };
 
@@ -45,22 +67,58 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
     setIsUpdatingPassword(true);
     setError(null);
     try {
-      // derive current master key
-      const salt = base64ToUint8Array(masterKeySalt);
-      const currentMasterKey = await deriveMasterKey(currentPassword, salt);
+      // Step 1: Derive current master key
+      const { clientLoginState, startLoginRequest } = createStartSignInRequest({ password: currentPassword });
+      const loginStart = await createSignInResponseForSession(startLoginRequest);
+      if (!loginStart) {
+        setError("Invalid current password");
+        return;
+      }
+      const loginResult = createFinishSignInRequest({
+        clientLoginState,
+        loginResponse: loginStart.loginResponse,
+        password: currentPassword,
+      });
+      if (!loginResult) {
+        setError("Invalid current password");
+        return;
+      }
 
-      // derive new master key
-      const newMasterKeySalt = generateSalt();
-      const newMasterKey = await deriveMasterKey(newPassword, newMasterKeySalt);
+      // Step 2: Verify password for session
+      const verified = await verifyPasswordForSession(loginResult.finishLoginRequest);
+      if (!verified) {
+        setError("Invalid current password");
+        return;
+      }
 
-      // fetch all encrypted file key derivation data
+      // Current master key derived from the OPAQUE export key
+      const currentMasterKey = await importKeyFromExportKey(loginResult.exportKey);
+
+      // Create new OPAQUE registration for the new password
+      // Step 1: Client starts OPAQUE registration
+      const { clientRegistrationState, registrationRequest } = createStartSignUpRequest({ password: newPassword });
+
+      // Step 2: Server creates registration response
+      const registrationResponse = await createSignUpResponse(registrationRequest);
+
+      // Step 3: Client finishes registration - get new export key
+      const { registrationRecord, exportKey } = createFinishSignUpRequest({
+        clientRegistrationState,
+        registrationResponse,
+        password: newPassword,
+      });
+
+      // Convert new export key to CryptoKey
+      const newMasterKey = await importKeyFromExportKey(exportKey);
+
+      // Fetch all encrypted file key derivation data
       const files = await getAllEncryptedFilesKeyDerivationParams();
 
-      // decrypt all wrappedFileKeys and rewrap with new master key
+      // Decrypt all wrappedFileKeys and rewrap with new master key
       const updates = await Promise.all(files.map(async (file) => {
-        const { wrappedKey: newWrappedFileKey, wrappedKeyIv: newKeyWrapIv } = await rewrapKey({
+        const { wrappedKey: newWrappedFileKey, wrappedKeyNonce: newKeyWrapNonce } = await rewrapKey({
           wrappedKey: file.wrappedFileKey,
-          wrappedKeyIv: file.keyWrapIv,
+          wrappedKeyNonce: file.keyWrapNonce,
           unwrappingKey: currentMasterKey,
           wrappingKey: newMasterKey,
         });
@@ -68,15 +126,14 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
         return {
           id: file.id,
           wrappedFileKey: newWrappedFileKey,
-          keyWrapIv: newKeyWrapIv,
+          keyWrapNonce: newKeyWrapNonce,
         };
       }));
 
-      // update all encrypted file key derivation data in database transactionally
-      const { publicKey } = await deriveKeypair(newPassword, newMasterKeySalt);
-      await updateEncryptedFilesKeyDerivationParams(updates, uint8ToBase64(publicKey), uint8ToBase64(newMasterKeySalt));
+      // Update all encrypted file key derivation data in database transactionally
+      await updateEncryptedFilesKeyDerivationParams(updates, registrationRecord);
 
-      // update master key with master key context
+      // Update master key in memory
       setMasterKey(newMasterKey);
 
       // Reset form
@@ -87,7 +144,7 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
 
     } catch (err) {
       console.error("Failed to change password:", err);
-      setError("Failed to change password. Please check your current password.");
+      setError("Failed to change password. Please try again.");
     } finally {
       setIsUpdatingPassword(false);
     }
@@ -119,7 +176,7 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
 
           {expandedSection === 'email' && (
             <div className="px-6 pb-6 border-t border-gray-100 mt-2 pt-4">
-              <form action={handleChangeEmail}>
+              <div className="flex flex-col gap-4">
                 <div className="flex flex-col md:flex-row md:items-end gap-2">
                   <TextInput
                     label="New Email Address"
@@ -128,9 +185,22 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
                     onChange={setEmail}
                     className="w-full"
                   />
-                  <TonalButton type="submit" className="mb-[2px]">Update</TonalButton>
+                  <PasswordInput
+                    label="Re-enter Password"
+                    value={currentPassword}
+                    onChange={setCurrentPassword}
+                  />
                 </div>
-              </form>
+
+                <TonalButton
+                  onClick={handleChangeEmail}
+                  disabled={isUpdatingEmail || !email || !currentPassword}
+                  className="mb-[2px]"
+                >
+                  {isUpdatingEmail ? <CircularProgress size={20} className="mr-2" /> : null}
+                  {isUpdatingEmail ? "Updating..." : "Update"}
+                </TonalButton>
+              </div>
             </div>
           )}
         </Card>
@@ -170,7 +240,7 @@ export default function AccountScreen({ currentEmail, masterKeySalt }: { current
               <TonalButton
                 onClick={handleChangePassword}
                 className="btn-neutral w-full mt-2"
-                disabled={isUpdatingPassword}
+                disabled={isUpdatingPassword || !newPassword || !confirmNewPassword || newPassword !== confirmNewPassword}
               >
                 {isUpdatingPassword ? <CircularProgress size={20} /> : null}
                 {isUpdatingPassword ? 'Updating...' : "Update Master Password"}

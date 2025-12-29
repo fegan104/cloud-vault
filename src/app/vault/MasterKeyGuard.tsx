@@ -1,22 +1,22 @@
 "use client";
-
+import { importKeyFromExportKey } from "@/lib/util/clientCrypto";
 import { useMasterKey } from "../../components/MasterKeyContext";
-import { deriveMasterKey, signChallenge } from "../../lib/util/clientCrypto";
 import { useState } from "react";
 import CircularProgress from "../../components/CircularProgress";
 import { Key } from "lucide-react";
 import { PasswordInput } from "@/components/TextInput";
 import { TonalButton } from "@/components/Buttons";
 import { Card } from "../../components/Card";
-import { verifyChallengeForSession, generateChallengeForSession } from "./actions";
-import { base64ToUint8Array } from "@/lib/util/arrayHelpers";
+import { createSignInResponseForSession, verifyPasswordForSession } from "./actions";
+import { createFinishSignInRequest, createStartSignInRequest } from "@/lib/opaque/client";
+
+
 
 type MasterKeyGuardProps = {
-  masterKeySalt: string;
   children: React.ReactNode;
 };
 
-export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGuardProps) {
+export default function MasterKeyGuard({ children }: MasterKeyGuardProps) {
   const [password, setPassword] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,21 +28,49 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
   };
 
   /**
-   * Handles the submission of the password to verify the master key.
+   * Handles the submission of the password using OPAQUE protocol.
+   * The export key from OPAQUE is used directly as the master key.
    */
   const handleSubmitPassword = async () => {
     try {
       setIsLoading(true);
-      // 1. Request a challenge from the server
-      const { challenge } = await generateChallengeForSession();
-      // 2. Sign the challenge with the password
-      const signature = await signChallenge(password, masterKeySalt, challenge);
-      // 3. Verify the challenge with the signature
-      const verified = await verifyChallengeForSession(challenge, signature);
-      // 4. If verified, derive the master key and set it in the context
+
+      // Step 1: Client starts OPAQUE login
+      const { clientLoginState, startLoginRequest } = createStartSignInRequest({
+        password,
+      });
+
+      // Step 2: Server starts login
+      const loginStart = await createSignInResponseForSession(startLoginRequest);
+      if (!loginStart) {
+        setError("Failed to verify password");
+        setIsLoading(false);
+        return;
+      }
+
+      const { loginResponse } = loginStart;
+
+      // Step 3: Client finishes login - get export key
+      const loginResult = createFinishSignInRequest({
+        clientLoginState,
+        loginResponse,
+        password,
+      });
+
+      if (!loginResult) {
+        setError("Incorrect password");
+        setIsLoading(false);
+        return;
+      }
+
+      const { finishLoginRequest, exportKey } = loginResult;
+
+      // Step 4: Server verifies
+      const verified = await verifyPasswordForSession(finishLoginRequest);
+
       if (verified) {
-        const masterKeySaltBytes = base64ToUint8Array(masterKeySalt);
-        const newMasterKey = await deriveMasterKey(password, masterKeySaltBytes);
+        // Use OPAQUE export key as master key
+        const newMasterKey = await importKeyFromExportKey(exportKey);
         setMasterKey(newMasterKey);
       } else {
         setError("Incorrect password");
@@ -65,10 +93,10 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-container mb-4">
                 <Key className="w-8 h-8 text-primary" />
               </div>
-              <h2 className="text-[--font-headline-md] font-semibold text-on-surface mb-2">
+              <h2 className="text-2xl font-semibold text-on-surface mb-2">
                 Unlock Your Vault
               </h2>
-              <p className="text-[--font-body-md] text-on-surface-variant">
+              <p className="text-on-surface-variant">
                 Enter your password to decrypt your files
               </p>
             </div>
@@ -90,8 +118,8 @@ export default function MasterKeyGuard({ masterKeySalt, children }: MasterKeyGua
               />
 
               {error && (
-                <div className="p-3 rounded-[var(--radius-md)] bg-error-container">
-                  <p className="text-[--font-body-sm] text-on-error-container">{error}</p>
+                <div className="p-3 rounded-md bg-error-container">
+                  <p className="text-sm text-on-error-container">{error}</p>
                 </div>
               )}
 
