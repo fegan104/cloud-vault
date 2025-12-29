@@ -117,6 +117,7 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
       setMasterKey(newMasterKey);
 
       // Reset form
+      setCurrentPassword('');
       setNewPassword('');
       setConfirmNewPassword('');
       setExpandedSection(null);

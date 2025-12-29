@@ -21,7 +21,7 @@ export async function startShareRegistration(
  * @param shareName - Name for the share
  * @param fileId - ID of the file being shared
  * @param wrappedFileKey - File key wrapped with the share export key
- * @param keyWrapIv - IV used for key wrapping
+ * @param keyWrapNonce - IV used for key wrapping
  * @param opaqueRegistrationRecord - OPAQUE registration record
  */
 export async function createShare(

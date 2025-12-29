@@ -14,7 +14,7 @@ export async function renameEncryptedFile(fileId: string, newFileName: string) {
 }
 
 /**
- * Updates encryption paramters for an encrypted file.
+ * Updates encryption parameters for an encrypted file.
  * 
  * @param fileId - The ID of the file
  * @param userId - The ID of the user (for security)
