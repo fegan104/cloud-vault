@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db"
 
 export async function getSharesForUser() {
   const sessionToken = await getSessionToken()
-  if (!sessionToken) return []
+  if (!sessionToken) return null
 
   const session = await prisma.session.findUnique({
     where: {
@@ -34,7 +34,7 @@ export async function getSharesForUser() {
     }
   })
 
-  if (!session) return []
+  if (!session) return null
 
   return session.user.encryptedFiles.map((encryptedFile) => encryptedFile.shares).flat()
 }

@@ -21,9 +21,5 @@ export async function getUserWithFiles(sessionToken: string) {
     },
   });
 
-  if (!session) {
-    throw new Error("Unauthorized");
-  }
-
-  return session.user;
+  return session?.user;
 }

@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import VaultScreen from "./VaultScreen";
 import { getSessionToken } from "@/lib/session/getSessionToken";
-import { deleteSessionToken } from "@/lib/session/deleteSessionsToken";
 import { getUserWithFiles } from "@/lib/user/getUserWithFiles";
+import Unauthorized from "@/components/Unauthorized";
+import Scaffold from "@/components/Scaffold";
 
 export default async function VaultPage() {
   const sessionToken = await getSessionToken()
@@ -14,9 +15,11 @@ export default async function VaultPage() {
   const user = await getUserWithFiles(sessionToken)
 
   if (!user) {
-    // Delete the session token cookie in case one is leftover
-    deleteSessionToken()
-    redirect("/signin")
+    return (
+      <Scaffold>
+        <Unauthorized />
+      </Scaffold>
+    )
   }
 
   return (

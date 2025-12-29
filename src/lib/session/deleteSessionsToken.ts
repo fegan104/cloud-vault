@@ -1,3 +1,4 @@
+"use server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 
@@ -9,5 +10,9 @@ export async function deleteSessionToken() {
   const sessionToken = requestCookies.get("session")?.value;
   requestCookies.delete("session")
   if (!sessionToken) return;
-  await prisma.session.delete({ where: { sessionToken } })
+  try {
+    await prisma.session.delete({ where: { sessionToken } })
+  } catch (error) {
+    console.log(error)
+  }
 }

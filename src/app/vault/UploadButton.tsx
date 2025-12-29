@@ -21,13 +21,26 @@ export function UploadButton({ onEncrypted }: {
   const [error, setError] = useState<string>('');
   const [inProgress, setInProgress] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [currentFileIndex, setCurrentFileIndex] = useState<number>(0);
+  const [totalFiles, setTotalFiles] = useState<number>(0);
   const { masterKey } = useMasterKey()
 
   const onFileSelected = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const files = e.target.files;
     setError('');
-    if (!file) return;
-    handleEncrypt(file)
+    if (!files || files.length === 0) return;
+
+    setTotalFiles(files.length);
+    setInProgress(true);
+
+    for (let i = 0; i < files.length; i++) {
+      setCurrentFileIndex(i + 1);
+      await handleEncrypt(files[i]);
+    }
+
+    setInProgress(false);
+    setTotalFiles(0);
+    setCurrentFileIndex(0);
   }
 
   const handleEncrypt = async (file: File) => {
@@ -36,8 +49,8 @@ export function UploadButton({ onEncrypted }: {
       return;
     }
 
-    setInProgress(true);
     setError('');
+    setUploadProgress(0);
 
     try {
       // 1. Encrypt the file locally
@@ -53,10 +66,8 @@ export function UploadButton({ onEncrypted }: {
       await onEncrypted(file.name, storagePath, encryptedFileBlob.size, metadata);
     } catch (err) {
       console.error(err);
-      setError(`Encryption failed: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      setInProgress(false);
-      setUploadProgress(0);
+      setError(`Upload failed for ${file.name}: ${err instanceof Error ? err.message : String(err)}`);
+      // We continue with other files even if one fails
     }
   };
 
@@ -78,6 +89,7 @@ export function UploadButton({ onEncrypted }: {
             id="file-upload"
             name="file-upload"
             type="file"
+            multiple
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
             onChange={onFileSelected}
             disabled={inProgress}
@@ -87,12 +99,16 @@ export function UploadButton({ onEncrypted }: {
             {inProgress ? (
               <>
                 <CircularProgress size={20} />
-                <span className="text-[--font-label-lg]">Uploading... {uploadProgress}%</span>
+                <span className="text-[--font-label-lg]">
+                  {totalFiles > 1
+                    ? `Uploading ${currentFileIndex} of ${totalFiles} (${uploadProgress}%)`
+                    : `Uploading... ${uploadProgress}%`}
+                </span>
               </>
             ) : (
               <>
                 <Upload className="w-5 h-5" />
-                <span className="text-[--font-label-lg]">Upload Encrypted File</span>
+                <span className="text-[--font-label-lg]">Upload Encrypted Files</span>
               </>
             )}
           </div>
@@ -100,8 +116,8 @@ export function UploadButton({ onEncrypted }: {
       </form>
 
       {error && (
-        <div className="mt-3 p-3 rounded-[var(--radius-md)] bg-error-container">
-          <p className="text-[--font-body-sm] text-on-error-container">{error}</p>
+        <div className="mt-3 p-3 rounded-md bg-error-container">
+          <p className="text-on-error-container">{error}</p>
         </div>
       )}
     </div>
