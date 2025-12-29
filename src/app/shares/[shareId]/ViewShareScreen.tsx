@@ -142,7 +142,7 @@ function ShareScreen({
       <ul className="w-full max-w-3xl space-y-3">
         {error && (
           <div className="p-3 rounded-md bg-error-container mb-4">
-            <p className="text-on-error-container">{error}</p>
+            <p className="text-sm text-on-error-container">{error}</p>
           </div>
         )}
         <FileListItem
