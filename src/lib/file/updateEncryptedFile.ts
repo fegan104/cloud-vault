@@ -19,7 +19,7 @@ export async function renameEncryptedFile(fileId: string, newFileName: string) {
  * @param fileId - The ID of the file
  * @param userId - The ID of the user (for security)
  * @param wrappedFileKey - The new wrapped file key
- * @param keyWrapIv - The new IV used for wrapping the file key
+ * @param keyWrapNonce - The new IV used for wrapping the file key
  */
 export async function updateEncryptedFileKeyParams(
   fileId: string,
