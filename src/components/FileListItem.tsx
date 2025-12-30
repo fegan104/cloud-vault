@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { FileText, Trash2, FilePenLine, MoreVertical, Share2, Download } from "lucide-react";
 import CircularProgress from "@/components/CircularProgress";
-import { TextButton } from "@/components/Buttons";
+import { TextButton, TonalButton } from "@/components/Buttons";
 import { useIsSupportedBrowser } from "../hooks/useIsSupportedBrowser";
 
 export function formatFileSize(bytes: number): string {
@@ -56,7 +56,7 @@ export default function FileListItem<T extends FileListItemData>({
 
   return (
     <li
-      className="relative bg-surface-variant p-5 rounded-sm shadow-[--shadow-2] 
+      className="relative bg-surface p-5 rounded-sm shadow-[--shadow-2] 
                flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4
                transition-all duration-200"
     >
@@ -75,11 +75,10 @@ export default function FileListItem<T extends FileListItemData>({
       </div>
       {isSupportedBrowser ? null : <UnsupportedBrowserMessage />}
       <div className="flex gap-2 w-full sm:w-auto justify-end items-center shrink-0">
-        <TextButton
+        <TonalButton
           onClick={() => onDownload(file)}
           disabled={isBusy || !isSupportedBrowser}
-          className={`w-fit sm:flex-initial ring-1 ring-primary 
-              ${isBusy ? 'opacity-50 cursor-wait' : ''}`}
+          className={`w-fit sm:flex-initial ${isBusy ? 'opacity-50 cursor-wait' : ''}`}
         >
           {isDownloading ? (
             <div className="flex items-center gap-2">
@@ -92,9 +91,9 @@ export default function FileListItem<T extends FileListItemData>({
               <span>Download</span>
             </div>
           )}
-        </TextButton>
+        </TonalButton>
         {hasMenuItems && (
-          <div className="absolute top-5 right-5 sm:relative sm:top-auto sm:right-auto pl-1">
+          <div className="absolute top-5 right-5 sm:relative sm:top-auto sm:right-auto pl-1 md:pt-1">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               disabled={isBusy}

@@ -15,7 +15,7 @@ export default function HomePage() {
               Cloud Vault
             </h1>
             <p className="text-[--font-body-lg] text-on-surface-variant mb-10 max-w-lg mx-auto">
-              Files are encrypted client-side using AES-GCM. Encryption keys are derived locally using <a target="_blank" className="text-primary" href="https://en.wikipedia.org/wiki/Argon2">Argon2id</a> and never transmitted to the server, ensuring a zero-knowledge architecture where only you can access your data.
+              Files are encrypted client-side using AES-GCM. Encryption keys are derived locally using <a target="_blank" className="text-primary underline" href="https://en.wikipedia.org/wiki/Argon2">Argon2id</a> and never transmitted to the server, ensuring a zero-knowledge architecture where only you can access your data.
             </p>
 
             {/* CTA Buttons */}
@@ -23,7 +23,7 @@ export default function HomePage() {
               <Link
                 href="/signup"
                 className="w-full sm:w-auto bg-primary text-on-primary px-8 py-4 rounded-full
-                           font-semibold text-[--font-label-lg] shadow-[--shadow-3]
+                           font-semibold shadow-[--shadow-3]
                            hover:shadow-[--shadow-4] hover:brightness-110
                            active:shadow-[--shadow-2]
                            transition-all duration-200"
@@ -33,7 +33,7 @@ export default function HomePage() {
               <Link
                 href="/signin"
                 className="w-full sm:w-auto bg-secondary text-on-secondary px-8 py-4 rounded-full
-                           font-semibold text-[--font-label-lg] shadow-[--shadow-2]
+                           font-semibold shadow-[--shadow-2]
                            hover:shadow-[--shadow-3] hover:brightness-110
                            active:shadow-[--shadow-1]
                            transition-all duration-200"

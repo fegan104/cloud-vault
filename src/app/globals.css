@@ -1,55 +1,97 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fafafa;
+  --background: #f0f4f9;
   --foreground: #171717;
+  --surface: #ffffff;
+  --surface-variant: #dbeafe;
+  --on-surface: #121212;
+  --on-surface-variant: #524345;
+  --outline: #857375;
+  --outline-variant: #D7C2C4;
+
+  --primary: #1d4ed8;
+  --primary-container: #dbeafe;
+  --on-primary: #ffffff;
+  --on-primary-container: #3E001D;
+
+  --secondary: #5F527E;
+  --secondary-container: #DCE2F9;
+  --on-secondary: #ffffff;
+  --on-secondary-container: #151B2C;
+
+  --error: #BA1A1A;
+  --error-container: #FFDAD5;
+  --on-error: #ffffff;
+  --on-error-container: #410002;
 }
 
-/*
-  Material 3 Color Scheme
-  Defined as CSS Variables for Tailwind v4 using @theme
-  (Light Theme)
-*/
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f172a;
+    --foreground: #f8fafc;
+    --surface: #1e293b;
+    --surface-variant: #334155;
+    --on-surface: #f1f5f9;
+    --on-surface-variant: #94a3b8;
+    --outline: #475569;
+    --outline-variant: #334155;
+
+    --primary: #60a5fa;
+    --primary-container: #1e3a8a;
+    --on-primary: #0f172a;
+    --on-primary-container: #dbeafe;
+
+    --secondary: #94a3b8;
+    --secondary-container: #3E4663;
+    --on-secondary: #0f172a;
+    --on-secondary-container: #cbd5e1;
+
+    --error: #f87171;
+    --error-container: #450a0a;
+    --on-error: #ffffff;
+    --on-error-container: #fca5a5;
+  }
+}
 
 @theme {
   /*
     The --color-* namespace generates utility classes (e.g., bg-primary, text-on-primary-container).
-    It is best practice to define the variables with the --color- prefix.
   */
 
   /* Primary */
-  --color-primary: #1d4ed8;
-  --color-primary-container: #dbeafe;
-  --color-on-primary: #FFFFFF;
-  --color-on-primary-container: #3E001D;
+  --color-primary: var(--primary);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary: var(--on-primary);
+  --color-on-primary-container: var(--on-primary-container);
 
   /* Secondary */
-  --color-secondary: #5F527E;
-  --color-secondary-container: #DCE2F9;
-  --color-on-secondary: #FFFFFF;
-  --color-on-secondary-container: #151B2C;
+  --color-secondary: var(--secondary);
+  --color-secondary-container: var(--secondary-container);
+  --color-on-secondary: var(--on-secondary);
+  --color-on-secondary-container: var(--on-secondary-container);
 
   /* Surface, Background, and Outline */
-  --color-background: #f0f4f9;
-  --color-surface: #fff;
-  --color-surface-variant: #dbeafe;
-  --color-on-surface: #121212;
-  --color-on-surface-variant: #524345;
-  --color-outline: #857375;
-  --color-outline-variant: #D7C2C4;
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-variant: var(--surface-variant);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-outline: var(--outline);
+  --color-outline-variant: var(--outline-variant);
 
   /* Error */
-  --color-error: #BA1A1A;
-  --color-error-container: #FFDAD5;
-  --color-on-error: #FFFFFF;
-  --color-on-error-container: #410002;
+  --color-error: var(--error);
+  --color-error-container: var(--error-container);
+  --color-on-error: var(--on-error);
+  --color-on-error-container: var(--on-error-container);
 
   /* Material 3 Elevation Shadows */
-  --shadow-1: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-2: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-3: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-4: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-5: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-1: 0 1px 2px 0 rgb(0 0 0 / 0.1);
+  --shadow-2: 0 1px 3px 0 rgb(0 0 0 / 0.2), 0 1px 2px -1px rgb(0 0 0 / 0.2);
+  --shadow-3: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --shadow-4: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+  --shadow-5: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
 
   /* Material 3 Shape (Border Radius) */
   --radius-xs: 4px;
@@ -88,14 +130,6 @@
   --font-body-md: 0.875rem;
   --font-body-sm: 0.75rem;
 }
-
-/* @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
- */
 
 body {
   background: var(--background);
