@@ -107,8 +107,8 @@ export function UploadButton({ onEncrypted }: {
               </>
             ) : (
               <>
-                <Upload className="w-5 h-5" />
-                <span className="text-[--font-label-lg]">Upload Encrypted Files</span>
+                <Upload className="w-5 h-5 text-background" />
+                <span className="text-[--font-label-lg] text-background">Upload Encrypted Files</span>
               </>
             )}
           </div>

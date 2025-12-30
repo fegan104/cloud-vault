@@ -160,7 +160,7 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
         <h2 className="text-2xl font-bold mb-4 w-full text-center">Account</h2>
 
         {/* Email Section */}
-        <Card className="hover:bg-gray-50 transition-colors rounded-b-none">
+        <Card className="hover:bg-surface-variant/50 transition-colors rounded-b-none">
           <div
             className="py-4 px-6 cursor-pointer"
             onClick={() => toggleSection('email')}
@@ -169,7 +169,7 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
               <Mail className="w-6 h-6 text-gray-600" />
               <div className="flex-1">
                 <h3 className="text-lg font-medium">Update Account Email</h3>
-                <p className="text-sm text-gray-600">{email}</p>
+                <p className="text-sm text-on-surface/80">{email}</p>
               </div>
             </div>
           </div>
@@ -206,7 +206,7 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
         </Card>
 
         {/* Master Password Section */}
-        <Card className="hover:bg-gray-50 transition-colors rounded-none">
+        <Card className="hover:bg-surface-variant/50 transition-colors rounded-none">
           <div
             className="p-6 cursor-pointer"
             onClick={() => toggleSection('password')}
@@ -250,7 +250,7 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
         </Card>
 
         {/* Sign Out Section */}
-        <Card className="hover:bg-gray-50 transition-colors rounded-t-none">
+        <Card className="hover:bg-surface-variant/50 transition-colors rounded-t-none">
           <div className="p-0">
             <form action={signOut} className="w-full">
               <button className="w-full p-6 flex items-center gap-4 text-left cursor-pointer">

@@ -33,7 +33,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
   return (
     <div className={`flex flex-col ${className}`}>
       {label && (
-        <label htmlFor={name} className="mb-1 text-sm font-medium text-gray-700">
+        <label htmlFor={name} className="mb-1 text-sm font-medium text-on-surface/80">
           {label}
         </label>
       )}
@@ -89,7 +89,7 @@ export const TextInput: React.FC<TextInputProps> = ({
   return (
     <div className="flex flex-col gap-1 flex-1">
       {label && (
-        <label className="text-sm font-medium text-gray-700">
+        <label className="text-sm font-medium text-on-surface/80">
           {label}
         </label>
       )}
