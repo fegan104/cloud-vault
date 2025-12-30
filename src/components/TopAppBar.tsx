@@ -60,7 +60,7 @@ export function TopAppBar({ searchQuery = "", onSearchChange, searchPlaceholder,
         </div>
 
         {/* Mobile layout */}
-        <div className="md:hidden flex items-center gap-3 min-h-10">
+        <div className="md:hidden flex items-center gap-3 min-h-9">
           {!isSearchExpanded ? (
             <>
               {/* Default mobile view */}
