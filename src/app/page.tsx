@@ -14,8 +14,10 @@ export default function HomePage() {
             <h1 className="text-[--font-display-sm] font-bold text-on-surface mb-4">
               Cloud Vault
             </h1>
-            <p className="text-[--font-body-lg] text-on-surface-variant mb-10 max-w-lg mx-auto">
-              Files are encrypted client-side using AES-GCM. Encryption keys are derived locally using <a target="_blank" className="text-primary underline" href="https://en.wikipedia.org/wiki/Argon2">Argon2id</a> and never transmitted to the server, ensuring a zero-knowledge architecture where only you can access your data.
+            <p className="text-[--font-body-lg] text-on-surface-variant mb-10 max-w-lg mx-auto text-left">
+              Cloud Vault is a secure cloud storage vault where files are encrypted client-side using <a className="text-primary underline" href="https://en.wikipedia.org/wiki/Advanced_Encryption_Standard">AES-GCM</a>.
+
+              Encryption keys are derived by the client and server through an asymmetric password-authenticated key exchange (<a className="text-primary underline" href="https://eprint.iacr.org/2018/163.pdf">OPAQUE</a>). Even if the server database is compromised, attackers cannot perform offline brute-force or dictionary attacks to recover your master key.
             </p>
 
             {/* CTA Buttons */}

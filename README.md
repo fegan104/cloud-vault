@@ -4,9 +4,7 @@ Cloud Vault is a secure file storage solution where files are encrypted client-s
 
 ## Security Features
 - End-to-End Encryption: Files are encrypted using AES-GCM before leaving your device.
-- Hardened Key Derivation: We use Argon2id for local key stretching.
-- OPAQUE PAKE Integration: Authentication and master key derivation are handled via the OPAQUE protocol.
-- Offline Brute-Force Resistance: Because we use a PAKE, the server never stores a crackable password hash. Even if the server database is compromised, attackers cannot perform offline brute-force or dictionary attacks to recover your master key.
+- Hardened Key Derivation: Cloud Vault uses [Argon2id](https://en.wikipedia.org/wiki/Argon2) for client-side key stretching.
 
 ## Getting Started
 
