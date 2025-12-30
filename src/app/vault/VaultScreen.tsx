@@ -253,13 +253,10 @@ export default function VaultScreen({ files }: VaultScreenProps) {
         <MasterKeyGuard>
           <div className="flex-1 overflow-y-auto md:ring-1 ring-on-surface rounded-2xl md:m-4" style={{ "scrollbarWidth": "none" }}>
             <div className="w-full max-w-5xl mx-auto p-4 flex flex-col items-center">
-              <div className="w-full mb-8 text-center">
-                <h2 className="font-bold text-on-surface mb-3">
-                  Your Encrypted Files
+              <div className="w-full my-6 text-center">
+                <h2 className="text-xl font-bold text-on-surface">
+                  Encrypted File Vault
                 </h2>
-                <p className="text-on-surface-variant">
-                  All files are encrypted with your master key
-                </p>
               </div>
 
               {/* Upload Button */}
@@ -306,7 +303,7 @@ export default function VaultScreen({ files }: VaultScreenProps) {
 function EmptyState({ searchQuery, children }: { searchQuery: string; children: React.ReactNode }) {
   return (
     <div className="w-full max-w-3xl mt-12 text-center">
-      <div className="bg-surface p-12 shadow-[--shadow-2]">
+      <div className="bg-surface p-12 shadow-[--shadow-2] rounded-md">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-surface-variant mb-4">
           <FileText className="w-8 h-8 text-primary" />
         </div>

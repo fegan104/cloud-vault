@@ -61,13 +61,10 @@ export default function SharesScreen({ shares, isLoading = false }: SharesScreen
       <div className="overflow-hidden flex flex-col h-full">
         <div className="flex-1 overflow-y-auto md:ring-1 ring-on-surface rounded-2xl md:m-4" style={{ scrollbarWidth: "none" }}>
           <div className="w-full max-w-5xl mx-auto p-4 flex flex-col items-center">
-            <div className="w-full mb-8 text-center">
-              <h2 className="font-bold text-on-surface mb-3">
-                Your Shared Files
+            <div className="w-full text-center">
+              <h2 className="text-xl font-bold my-6 w-full text-center">
+                Shared Files
               </h2>
-              <p className="text-on-surface-variant">
-                Manage your file shares
-              </p>
             </div>
 
             {isLoading ? (
@@ -138,23 +135,23 @@ function ShareListItem({ share, onDelete }: { share: ShareWithFile; onDelete: ()
 
   return (
     <li
-      className="bg-surface-variant p-5 rounded-sm shadow-[--shadow-2] 
+      className="bg-surface p-4 rounded-sm shadow-[--shadow-2] 
                flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4
                hover:shadow-[--shadow-3] transition-all duration-200"
     >
       <div className="flex items-center gap-4 w-full">
-        <div className="p-3 flex-shrink-0">
+        <div className="p-3 shrink-0">
           <Users className="w-6 h-6 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-[--font-body-lg] text-on-surface mb-1 break-words">
+          <p className="font-semibold text-[--font-body-lg] mb-1 wrap-break-words">
             {share.name}
           </p>
-          <div className="flex items-center gap-2 text-[--font-body-sm] text-on-surface-variant">
-            <FileText className="w-4 h-4 flex-shrink-0" />
+          <div className="flex items-center gap-2 text-[--font-body-sm]">
+            <FileText className="w-4 h-4 shrink-0" />
             <span className="truncate">{share.file.fileName}</span>
           </div>
-          <p className="text-[--font-body-sm] text-on-surface-variant mt-1">
+          <p className="text-[--font-body-sm] mt-1">
             {formatFileSize(share.file.fileSize)} •{" "}
             {new Date(share.createdAt).toLocaleDateString()}
           </p>
@@ -165,8 +162,8 @@ function ShareListItem({ share, onDelete }: { share: ShareWithFile; onDelete: ()
             <div className="relative">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="rounded-lg transition-all duration-200
-                text-on-secondary-container hover:bg-secondary-container/70"
+                className="rounded-full p-2 -m-2 transition-all duration-200
+                text-on-secondary-container hover:bg-on-surface/10"
                 aria-label="More actions"
               >
                 <MoreVertical className="w-5 h-5 text-on-surface" />

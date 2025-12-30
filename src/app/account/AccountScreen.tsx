@@ -8,10 +8,9 @@ import { Mail, Lock, LogOut } from "lucide-react";
 import { useMasterKey } from "@/components/MasterKeyContext";
 import { rewrapKey, importKeyFromExportKey } from "@/lib/util/clientCrypto";
 import CircularProgress from "@/components/CircularProgress";
-import { TopAppBar } from "@/components/TopAppBar";
+import Scaffold from "@/components/Scaffold";
 import { createFinishSignUpRequest, createStartSignUpRequest, createStartSignInRequest, createFinishSignInRequest } from "@/lib/opaque/client";
 import { createSignInResponseForSession, verifyPasswordForSession } from "../vault/actions";
-
 
 export default function AccountScreen({ currentEmail }: { currentEmail: string }) {
   const [email, setEmail] = useState(currentEmail);
@@ -151,125 +150,126 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
   }
 
   return (
-    <div className="flex flex-col overflow-hidden size-full items-center bg-background">
-      <div className="flex flex-col w-full pt-1.5 md:pt-0">
-        <TopAppBar />
-      </div>
-      <div className="flex flex-col gap-1 w-full max-w-2xl p-4">
+    <Scaffold>
+      <div className="overflow-hidden flex flex-col h-full bg-background">
+        <div className="flex-1 overflow-y-auto md:ring-1 ring-on-surface rounded-2xl md:m-4" style={{ "scrollbarWidth": "none" }}>
+          <div className="flex flex-col gap-1 w-full max-w-2xl mx-auto p-4">
 
-        <h2 className="text-2xl font-bold mb-4 w-full text-center">Account</h2>
+            <h2 className="text-xl font-bold my-6 w-full text-center">Account</h2>
 
-        {/* Email Section */}
-        <Card className="hover:bg-surface-variant/50 transition-colors rounded-b-none">
-          <div
-            className="py-4 px-6 cursor-pointer"
-            onClick={() => toggleSection('email')}
-          >
-            <div className="flex items-center gap-4">
-              <Mail className="w-6 h-6 text-gray-600" />
-              <div className="flex-1">
-                <h3 className="text-lg font-medium">Update Account Email</h3>
-                <p className="text-sm text-on-surface/80">{email}</p>
+            {/* Email Section */}
+            <Card className="hover:bg-on-surface/10 transition-colors rounded-b-none">
+              <div
+                className="py-4 px-6 cursor-pointer"
+                onClick={() => toggleSection('email')}
+              >
+                <div className="flex items-center gap-4">
+                  <Mail className="w-6 h-6 text-on-surface-variant" />
+                  <div className="flex-1">
+                    <h3 className="text-lg font-medium">Update Account Email</h3>
+                    <p className="text-sm text-on-surface/80">{email}</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          {expandedSection === 'email' && (
-            <div className="px-6 pb-6 border-t border-gray-100 mt-2 pt-4">
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-col md:flex-row md:items-end gap-2">
-                  <TextInput
-                    label="New Email Address"
-                    type="email"
-                    value={email}
-                    onChange={setEmail}
-                    className="w-full"
-                  />
+              {expandedSection === 'email' && (
+                <div className="px-6 pb-6 border-t border-gray-100 mt-2 pt-4">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-col md:flex-row md:items-end gap-2">
+                      <TextInput
+                        label="New Email Address"
+                        type="email"
+                        value={email}
+                        onChange={setEmail}
+                        className="w-full"
+                      />
+                      <PasswordInput
+                        label="Re-enter Password"
+                        value={currentPassword}
+                        onChange={setCurrentPassword}
+                      />
+                    </div>
+
+                    <TonalButton
+                      onClick={handleChangeEmail}
+                      disabled={isUpdatingEmail || !email || !currentPassword}
+                      className="mb-[2px]"
+                    >
+                      {isUpdatingEmail ? <CircularProgress size={20} className="mr-2" /> : null}
+                      {isUpdatingEmail ? "Updating..." : "Update"}
+                    </TonalButton>
+                  </div>
+                </div>
+              )}
+            </Card>
+
+            {/* Master Password Section */}
+            <Card className="hover:bg-on-surface/10 transition-colors rounded-none">
+              <div
+                className="p-6 cursor-pointer"
+                onClick={() => toggleSection('password')}
+              >
+                <div className="flex items-center gap-4">
+                  <Lock className="w-6 h-6 text-on-surface-variant" />
+                  <div className="flex-1">
+                    <h3 className="text-lg font-medium">Change Master Password</h3>
+                  </div>
+                </div>
+              </div>
+
+              {expandedSection === 'password' && (
+                <div className="flex flex-col gap-2 px-6 pb-6 border-t border-on-surface-variant/50 mt-2 pt-4">
                   <PasswordInput
-                    label="Re-enter Password"
+                    label="Current Password"
                     value={currentPassword}
                     onChange={setCurrentPassword}
                   />
+                  <PasswordInput
+                    label="New Password"
+                    value={newPassword}
+                    onChange={setNewPassword}
+                  />
+                  <PasswordInput
+                    label="Confirm New Password"
+                    value={confirmNewPassword}
+                    onChange={setConfirmNewPassword}
+                  />
+
+                  <TonalButton
+                    onClick={handleChangePassword}
+                    className="btn-neutral w-full mt-2"
+                    disabled={isUpdatingPassword || !newPassword || !confirmNewPassword || newPassword !== confirmNewPassword}
+                  >
+                    {isUpdatingPassword ? <CircularProgress size={20} /> : null}
+                    {isUpdatingPassword ? 'Updating...' : "Update Master Password"}
+                  </TonalButton>
                 </div>
+              )}
+            </Card>
 
-                <TonalButton
-                  onClick={handleChangeEmail}
-                  disabled={isUpdatingEmail || !email || !currentPassword}
-                  className="mb-[2px]"
-                >
-                  {isUpdatingEmail ? <CircularProgress size={20} className="mr-2" /> : null}
-                  {isUpdatingEmail ? "Updating..." : "Update"}
-                </TonalButton>
+            {/* Sign Out Section */}
+            <Card className="hover:bg-on-surface/10 transition-colors rounded-t-none">
+              <div className="p-0">
+                <form action={signOut} className="w-full">
+                  <button className="w-full p-6 flex items-center gap-4 text-left cursor-pointer">
+                    <LogOut className="w-6 h-6 text-on-surface-variant" />
+                    <div className="flex-1">
+                      <h3 className="text-lg font-medium">Sign Out</h3>
+                    </div>
+                  </button>
+                </form>
               </div>
-            </div>
-          )}
-        </Card>
+            </Card>
 
-        {/* Master Password Section */}
-        <Card className="hover:bg-surface-variant/50 transition-colors rounded-none">
-          <div
-            className="p-6 cursor-pointer"
-            onClick={() => toggleSection('password')}
-          >
-            <div className="flex items-center gap-4">
-              <Lock className="w-6 h-6 text-gray-600" />
-              <div className="flex-1">
-                <h3 className="text-lg font-medium">Change Master Password</h3>
+            {/* Error Message */}
+            {error && (
+              <div className="mt-2 p-3 rounded-md bg-error-container">
+                <p className="text-on-error-container">{error}</p>
               </div>
-            </div>
+            )}
           </div>
-
-          {expandedSection === 'password' && (
-            <div className="flex flex-col gap-2 px-6 pb-6 border-t border-gray-100 mt-2 pt-4">
-              <PasswordInput
-                label="Current Password"
-                value={currentPassword}
-                onChange={setCurrentPassword}
-              />
-              <PasswordInput
-                label="New Password"
-                value={newPassword}
-                onChange={setNewPassword}
-              />
-              <PasswordInput
-                label="Confirm New Password"
-                value={confirmNewPassword}
-                onChange={setConfirmNewPassword}
-              />
-
-              <TonalButton
-                onClick={handleChangePassword}
-                className="btn-neutral w-full mt-2"
-                disabled={isUpdatingPassword || !newPassword || !confirmNewPassword || newPassword !== confirmNewPassword}
-              >
-                {isUpdatingPassword ? <CircularProgress size={20} /> : null}
-                {isUpdatingPassword ? 'Updating...' : "Update Master Password"}
-              </TonalButton>
-            </div>
-          )}
-        </Card>
-
-        {/* Sign Out Section */}
-        <Card className="hover:bg-surface-variant/50 transition-colors rounded-t-none">
-          <div className="p-0">
-            <form action={signOut} className="w-full">
-              <button className="w-full p-6 flex items-center gap-4 text-left cursor-pointer">
-                <LogOut className="w-6 h-6 text-gray-600" />
-                <div className="flex-1">
-                  <h3 className="text-lg font-medium">Sign Out</h3>
-                </div>
-              </button>
-            </form>
-          </div>
-        </Card>
-
-        {/* Error Message */}
-        {error && (
-          <div className="mt-2 p-3 rounded-md bg-error-container">
-            <p className="text-on-error-container">{error}</p>
-          </div>
-        )}
+        </div>
       </div>
-    </div>
+    </Scaffold>
   );
 }
