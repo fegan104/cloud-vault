@@ -64,9 +64,9 @@ export function TopAppBar({ searchQuery = "", onSearchChange, searchPlaceholder,
           {!isSearchExpanded ? (
             <>
               {/* Default mobile view */}
-              <div className="flex items-center gap-3 flex-1">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
                 <Link href="/">
-                  <h1 className="text-[--font-title-lg] font-semibold">Cloud Vault</h1>
+                  <h1 className="text-[--font-title-lg] font-semibold truncate">Cloud Vault</h1>
                 </Link>
               </div>
 

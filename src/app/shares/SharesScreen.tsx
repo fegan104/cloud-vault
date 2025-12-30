@@ -144,7 +144,7 @@ function ShareListItem({ share, onDelete }: { share: ShareWithFile; onDelete: ()
           <Users className="w-6 h-6 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-[--font-body-lg] mb-1 wrap-break-words">
+          <p className="font-semibold text-[--font-body-lg] mb-1 break-all">
             {share.name}
           </p>
           <div className="flex items-center gap-2 text-[--font-body-sm]">

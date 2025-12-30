@@ -50,14 +50,14 @@ export function DeleteConfirmationModal({
         <div className="flex-shrink-0 w-12 h-12 rounded-full bg-error-container flex items-center justify-center">
           <Trash2 className="w-6 h-6 text-on-error-container" />
         </div>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <h2 className="text-[--font-title-lg] font-semibold text-on-surface mb-2">
             {title}
           </h2>
           <p className="text-[--font-body-md] text-on-surface-variant mb-1">
             Are you sure you want to delete:
           </p>
-          <p className="text-[--font-body-md] font-semibold text-on-surface break-words">
+          <p className="text-[--font-body-md] font-semibold text-on-surface break-all">
             {fileName}
           </p>
           <p className="text-[--font-body-sm] text-on-surface-variant mt-2">
@@ -119,7 +119,7 @@ export function TextInputModal({
         <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary-container flex items-center justify-center">
           <Text className="w-6 h-6 text-on-primary-container" />
         </div>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <h2 className="text-[--font-title-lg] font-semibold text-on-surface mb-2">
             {title}
           </h2>
@@ -219,11 +219,11 @@ export function CreateShareModal({
             <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary-container flex items-center justify-center">
               <Text className="w-6 h-6 text-on-primary-container" />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <h2 className="text-[--font-title-lg] font-semibold text-on-surface mb-2">
                 Create Share Link
               </h2>
-              <p className="text-[--font-body-md] text-on-surface-variant mb-4">
+              <p className="text-[--font-body-md] text-on-surface-variant mb-4 break-all">
                 Create a password-protected share for &quot;{fileName}&quot;
               </p>
               <div className="flex flex-col gap-4">

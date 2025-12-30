@@ -165,7 +165,7 @@ export default function AccountScreen({ currentEmail }: { currentEmail: string }
               >
                 <div className="flex items-center gap-4">
                   <Mail className="w-6 h-6 text-on-surface-variant" />
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-medium">Update Account Email</h3>
                     <p className="text-sm text-on-surface/80">{email}</p>
                   </div>
