@@ -60,13 +60,13 @@ export function TopAppBar({ searchQuery = "", onSearchChange, searchPlaceholder,
         </div>
 
         {/* Mobile layout */}
-        <div className="md:hidden flex items-center gap-3">
+        <div className="md:hidden flex items-center gap-3 min-h-10">
           {!isSearchExpanded ? (
             <>
               {/* Default mobile view */}
               <div className="flex items-center gap-3 flex-1">
                 <Link href="/">
-                  <h1 className="text-[--font-title-lg] font-semibold text-on-surface">Cloud Vault</h1>
+                  <h1 className="text-[--font-title-lg] font-semibold">Cloud Vault</h1>
                 </Link>
               </div>
 
