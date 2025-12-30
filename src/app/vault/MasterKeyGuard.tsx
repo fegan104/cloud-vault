@@ -51,19 +51,19 @@ export default function MasterKeyGuard({ children }: MasterKeyGuardProps) {
       const { loginResponse } = loginStart;
 
       // Step 3: Client finishes login - get export key
-      const loginResult = createFinishSignInRequest({
+      const finishSignInRequest = createFinishSignInRequest({
         clientLoginState,
         loginResponse,
         password,
       });
 
-      if (!loginResult) {
+      if (!finishSignInRequest) {
         setError("Incorrect password");
         setIsLoading(false);
         return;
       }
 
-      const { finishLoginRequest, exportKey } = loginResult;
+      const { finishLoginRequest, exportKey } = finishSignInRequest;
 
       // Step 4: Server verifies
       const verified = await verifyPasswordForSession(finishLoginRequest);

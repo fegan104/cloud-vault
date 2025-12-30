@@ -3,11 +3,9 @@
 import { getSignedDownloadUrl, getSignedUploadUrl, deleteFileFromCloudStorage, doesFileExistInCloudStorage } from "@/lib/firebaseAdmin";
 import { createEncryptedFile } from "@/lib/file/createEncryptedFile";
 import { getEncryptedFileById } from "@/lib/file/getEncryptedFile";
-import { updateEncryptedFileKeyParams, renameEncryptedFile } from "@/lib/file/updateEncryptedFile";
+import { renameEncryptedFile } from "@/lib/file/updateEncryptedFile";
 import { deleteEncryptedFile } from "@/lib/file/deleteEncryptedFile";
 import { getSessionWithFile } from "@/lib/session/getSessionWithFiles";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getUser } from "@/lib/user/getUser";
 import { getSessionToken } from "@/lib/session/getSessionToken";

@@ -1,6 +1,6 @@
 'use client';
 
-import { startLogin, finishLogin } from '../../app/signin/actions';
+import { createSignInResponse, finishSignIn } from '../../app/signin/actions';
 import { useMasterKey } from '../../components/MasterKeyContext';
 import { redirect } from 'next/navigation';
 import { useState } from 'react';
@@ -36,33 +36,33 @@ export default function SignInPage() {
     });
 
     // Step 2: Server starts login and returns response
-    const loginStart = await startLogin(email, startLoginRequest);
+    const signInResponse = await createSignInResponse(email, startLoginRequest);
 
-    if (!loginStart) {
+    if (!signInResponse) {
       setError('Invalid email or password');
       setIsLoading(false);
       return;
     }
 
-    const { loginResponse } = loginStart;
+    const { loginResponse } = signInResponse;
 
     // Step 3: Client finishes login - get export key for encryption
-    const loginResult = createFinishSignInRequest({
+    const finishSignInResponse = createFinishSignInRequest({
       clientLoginState,
       loginResponse,
       password,
     });
 
-    if (!loginResult) {
+    if (!finishSignInResponse) {
       setError('Invalid email or password');
       setIsLoading(false);
       return;
     }
 
-    const { finishLoginRequest, exportKey } = loginResult;
+    const { finishLoginRequest, exportKey } = finishSignInResponse;
 
     // Step 4: Server verifies and creates session
-    const verified = await finishLogin(email, finishLoginRequest);
+    const verified = await finishSignIn(email, finishLoginRequest);
 
     if (verified) {
       // Use OPAQUE export key as master key (convert hex to CryptoKey)

@@ -26,7 +26,7 @@ export async function getShareDownloadUrl(shareId: string): Promise<string> {
  * @param startLoginRequest - OPAQUE start login request from client
  * @returns loginResponse and share name if successful
  */
-export async function startShareLogin(
+export async function createSignInResponseForShare(
   shareId: string,
   startLoginRequest: string
 ): Promise<{ loginResponse: string; shareName: string } | null> {

@@ -1,5 +1,4 @@
 import { initializeApp, getApps, cert, ServiceAccount } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
 import { getStorage } from "firebase-admin/storage";
 
 // Load service account credentials from environment variables
@@ -13,7 +12,7 @@ const app = getApps().length
   ? getApps()[0]
   : initializeApp({
     credential: cert(serviceAccount),
-    storageBucket: "web-encryption-7ac01.firebasestorage.app"
+    storageBucket: `${process.env.FIREBASE_PROJECT_ID}.firebasestorage.app`,
   });
 
 const storage = getStorage(app).bucket();

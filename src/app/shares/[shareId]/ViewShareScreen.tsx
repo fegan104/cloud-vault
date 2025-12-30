@@ -5,7 +5,7 @@ import FileListItem from "@/components/FileListItem";
 import { downloadFileWithProgress } from "@/lib/util/downloadFileWithProgress";
 import { decryptFile, importKeyFromExportKey } from "@/lib/util/clientCrypto";
 import { useState } from "react";
-import { startShareLogin, getShareDownloadUrl, finishShareLogin } from "./actions";
+import { createSignInResponseForShare, getShareDownloadUrl, finishShareLogin } from "./actions";
 import { getShareById, ShareWithFile } from "@/lib/share/getShareById";
 import { saveFileToDevice } from "@/lib/util/saveFileToDevice";
 import { createStartSignInRequest, createFinishSignInRequest } from "@/lib/opaque/client";
@@ -31,25 +31,25 @@ export default function ViewShareScreen({ shareId, name }: { shareId: string, na
     });
 
     // Step 2: Server starts login
-    const loginStart = await startShareLogin(shareId, startLoginRequest);
-    if (!loginStart) {
+    const signInResult = await createSignInResponseForShare(shareId, startLoginRequest);
+    if (!signInResult) {
       throw new Error("Share not found");
     }
 
-    const { loginResponse } = loginStart;
+    const { loginResponse } = signInResult;
 
     // Step 3: Client finishes login - get export key
-    const loginResult = createFinishSignInRequest({
+    const finishSignInRequest = createFinishSignInRequest({
       clientLoginState,
       loginResponse,
       password,
     });
 
-    if (!loginResult) {
+    if (!finishSignInRequest) {
       throw new Error("Incorrect password");
     }
 
-    const { finishLoginRequest, exportKey } = loginResult;
+    const { finishLoginRequest, exportKey } = finishSignInRequest;
 
     // Step 4: Server verifies
     const verified = await finishShareLogin(shareId, finishLoginRequest);

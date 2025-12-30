@@ -13,7 +13,7 @@ import * as opaqueServer from "@/lib/opaque/server";
  * @param startLoginRequest - The OPAQUE start login request from the client
  * @returns The login response, or null if user not found
  */
-export async function startLogin(
+export async function createSignInResponse(
   email: string,
   startLoginRequest: string
 ): Promise<{ loginResponse: string } | null> {
@@ -45,7 +45,7 @@ export async function startLogin(
  * @param finishLoginRequest - The OPAQUE finish login request from the client
  * @returns True if login successful, false otherwise
  */
-export async function finishLogin(
+export async function finishSignIn(
   email: string,
   finishLoginRequest: string
 ): Promise<boolean> {
