@@ -131,7 +131,7 @@ function ShareScreen({
   return (
     <div className="size-full p-4 flex flex-col items-center bg-background">
       <div className="w-full mb-8 text-center">
-        <h2 className="font-bold text-on-surface mb-3">
+        <h2 className="text-xl font-bold text-on-surface mb-3">
           {share.name}
         </h2>
         <p className="text-on-surface-variant">
